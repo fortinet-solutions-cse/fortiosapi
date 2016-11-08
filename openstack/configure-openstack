@@ -158,24 +158,24 @@ nova quota-class-update --security-group-rules -1 $TENANT_ID
 echo "Uploading images to glance"
 
 #Upload images to glance
-#openstack image create --disk-format qcow2 --container-format ovf   --public "Trusty x86_64"  --file /srv/data/trusty-server-cloudimg-amd64-disk1.img 
+folder=$HOME/playground/images
 
-openstack image show "Precise x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare   --public  "Precise x86_64"  --file /srv/data/precise-server-cloudimg-amd64-disk1.img 
-openstack image show  "Trusty x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare --public  "Trusty x86_64"  --file  /srv/data/trusty-server-cloudimg-amd64-disk1.img 
-openstack image show  "Centos 7 x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "Centos 7 x86_64"  --file  /srv/data/CentOS-7-x86_64-GenericCloud.qcow2
+openstack image show "Precise x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare   --public  "Precise x86_64"  --file $folder/precise-server-cloudimg-amd64-disk1.img 
+openstack image show  "Trusty x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare --public  "Trusty x86_64"  --file  $folder/trusty-server-cloudimg-amd64-disk1.img 
+openstack image show  "Centos 7 x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "Centos 7 x86_64"  --file  $folder/CentOS-7-x86_64-GenericCloud.qcow2
+openstack image show  "Cirros 0.3.4" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "Cirros 0.3.4"  --file  $folder/cirros-0.3.4-x86_64-disk.img
 
+#glance image-create --name="Precise x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  $folder/precise-server-cloudimg-amd64-disk1.img 
+#glance image-show "Trusty x86_64" > /dev/null 2>&1 || glance image-create --name="Trusty x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  $folder/trusty-server-cloudimg-amd64-disk1.img
+#glance image-show "Xenial x86_64" > /dev/null 2>&1 || glance image-create --name="Xenial x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  $folder/xenial-server-cloudimg-amd64-disk1.img
 
-#glance image-create --name="Precise x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  /srv/data/precise-server-cloudimg-amd64-disk1.img 
-#glance image-show "Trusty x86_64" > /dev/null 2>&1 || glance image-create --name="Trusty x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  /srv/data/trusty-server-cloudimg-amd64-disk1.img
-#glance image-show "Xenial x86_64" > /dev/null 2>&1 || glance image-create --name="Xenial x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  /srv/data/xenial-server-cloudimg-amd64-disk1.img
-
-#glance image-show "CentOS 6.4" > /dev/null 2>&1 || glance image-create --name="CentOS 6.4" --is-public=true --container-format=bare --disk-format=qcow2 < /srv/data/centos6.4-x86_64-gold-master.img
-#glance image-show "Cirros 0.3" > /dev/null 2>&1 || glance image-create --name="Cirros 0.3" --is-public=true --container-format=bare --disk-format=qcow2 < /srv/data/cirros-0.3.2-x86_64-disk.img
+#glance image-show "CentOS 6.4" > /dev/null 2>&1 || glance image-create --name="CentOS 6.4" --is-public=true --container-format=bare --disk-format=qcow2 < $folder/centos6.4-x86_64-gold-master.img
+#glance image-show "Cirros 0.3" > /dev/null 2>&1 || glance image-create --name="Cirros 0.3" --is-public=true --container-format=bare --disk-format=qcow2 < $folder/cirros-0.3.2-x86_64-disk.img
 ## image name is used by script to generate metadata .. don't screw the series
-#glance image-show "win2012r2" > /dev/null 2>&1 || gzip -cd /srv/data/windows_server_2012_r2_standard_eval_kvm_20151021.qcow2.gz |glance image-create --name="Windows Server 2012" --is-public=true --container-format=bare --disk-format=qcow2
+#glance image-show "win2012r2" > /dev/null 2>&1 || gzip -cd $folder/windows_server_2012_r2_standard_eval_kvm_20151021.qcow2.gz |glance image-create --name="Windows Server 2012" --is-public=true --container-format=bare --disk-format=qcow2
 
 
 ## working
-#glance image-create --name "Cirros 0.3" --progress --visibility public  --disk-format=qcow2 --container-format=bare --file /srv/data/cirros-0.3.2-x86_64-disk.img
+#glance image-create --name "Cirros 0.3" --progress --visibility public  --disk-format=qcow2 --container-format=bare --file $folder/cirros-0.3.2-x86_64-disk.img
 ## must modify glance service to allow insecure upload
 exit
