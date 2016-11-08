@@ -44,14 +44,14 @@ usage()
 {
 cat << EOF
     
-setup-playground - This script aims to setup you host to be fully ready for playground usage LXD/Docker peros lab
+setup-playground - This script aims to setup you host to be fully ready for playground usage LXD/Docker perso lab
 
 USAGE: -p /dev/sdaX
 
   The options  must be passed as follows:
-  -p,--partition /dev/sdaX   - give a free to use partition 
-  -h,--help
-  -d , --debug		debug mode 
+  -p , --partition /dev/sdaX   - mandatory free to use partition 
+  -h , --help
+  -d , --debug		optionnal debug mode 
  Note: actions requires root privileges use sudo 
 
 EOF
@@ -112,7 +112,9 @@ lxd-init()
     sudo lxd init --auto   --storage-backend=zfs --storage-create-device=$PARTITION --storage-pool=lxd || exit 2
      # weird way to trigger the reconfigure script reconfigure does not work..
     sudo apt --reinstall install lxd || sudo dpkg --configure -a || exit 2
-  
+    sudo lxc profile device add default eth1 nic nictype=bridged parent=lxdbr0  || exit 2
+    sudo lxc profile device add default kvm unix-char path=/dev/kvm  || (echo "you must enable vt-x on your machine for this to work" ; exit 2)
+
      # should be : sudo dpkg-reconfigure -p high lxd
 }
 
