@@ -15,7 +15,7 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-set -e
+set -ex
 export LC_ALL=C
 
 ## avoid warnings about utf-8
@@ -72,7 +72,7 @@ is-lxd-ready()
 	echo "should run this script as a user in the lxd group to check availability"
 	exit 2
     fi
- }
+}
 
 lxd-init()
 {
