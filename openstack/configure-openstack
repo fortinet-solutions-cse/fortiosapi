@@ -1,0 +1,181 @@
+#!/bin/bash
+#
+#    fortinet-configure-openstack
+#    Copyright (C) 2016 Fortinet  Ltd.
+#
+#    Authors: Nicolas Thomss  <nthomas fortinet.com>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, version 3 of the License.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -ex
+
+echo "This command is run to configure an Orange-Box Openstack deployment"
+
+NEUTRON_EXT_NET_GW="10.10.10.1"
+NEUTRON_EXT_NET_CIDR="10.10.10.0/23"
+
+NEUTRON_EXT_NET_NAME="ext_net" # Unused
+NEUTRON_DNS="192.168.0.254"
+NEUTRON_FLOAT_RANGE_START="10.10.11.12"
+NEUTRON_FLOAT_RANGE_END="10.10.11.253"
+
+NEUTRON_FIXED_NET_CIDR="192.168.16.0/22"
+
+
+#Check if VIP is set on keystone
+keystone_VIP=`juju config keystone| python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"vip\"][\"value\"]"||true`
+
+if [ -n "$keystone_VIP" ]
+then
+    keystone=$keystone_VIP
+else
+    #if os-public-hostname is set and not VIP assume we need to use those at OpenStack endpoints.
+    keystone_PUBENDPOINT=`juju config keystone| python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"os-public-hostname\"][\"value\"]"||true`
+    if [ -n "$keystone_PUBENDPOINT" ]
+    then
+	## will need to add the PUBENPOINT to the different services interfaces to enable access on ob-num+2 network.
+	## Assume a fresh install where the unit ID is 0 keystone/0 for example (TO BE FIXED)
+	unset DEVICE
+	for service in keystone cinder glance neutron-api nova-cloud-controller ceph-radosgw
+	do
+	    DEVICE=`juju ssh ${service}/0 "ip route" | grep 172.27.$((obnum+2)). |head -1 | awk '{ print $3}'`
+	    # assuming the os-public-name are IPs not names will fail if not set
+	    OSPUBLICIP=`juju config  ${service}| python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"os-public-hostname\"][\"value\"]"||true`
+	    [ -n "$OSPUBLICIP" ] &&  juju ssh ${service}/0 "sudo ifconfig $DEVICE:1 $OSPUBLICIP"
+	done
+	keystone=$keystone_PUBENDPOINT
+    else
+	keystone=$(juju status keystone --format=yaml | grep public-address | head -1 | awk '{print $2}')
+    fi
+fi
+
+
+echo "export SERVICE_ENDPOINT=http://$keystone:35357/v2.0/
+unset SERVICE_TOKEN
+unset SERVICE_ENDPOINT 
+export OS_AUTH_URL=http://$keystone:35357/v2.0/
+export OS_USERNAME=$(juju config keystone | python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"admin-user\"][\"value\"]")
+export OS_PASSWORD=$(juju config keystone | python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"admin-password\"][\"value\"]")
+export OS_TENANT_NAME=admin
+export OS_REGION_NAME=$(juju config keystone | python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"region\"][\"value\"]")
+" > ~/nova.rc
+
+source ~/nova.rc
+
+# Determine the tenant id for the configured tenant name.
+export TENANT_ID="$(keystone tenant-list | grep $OS_TENANT_NAME | awk '{ print $2 }')"
+
+if [ "$TENANT_ID" = "" ]; then
+	echo "Unable to find tenant ID, keystone auth problem"
+	exit
+fi
+
+echo "Configuring Openstack Neutron Networking"
+
+#create ext network with neutron for floating IPs
+neutron net-show ext_net > /dev/null 2>&1 || neutron net-create ext_net --tenant-id $TENANT_ID -- --router:external=True
+EXTERNAL_NETWORK_ID=$(neutron net-show ext_net | grep " id" | awk '{print $4}')
+neutron subnet-show ext_net_subnet > /dev/null 2>&1 || neutron subnet-create ext_net $NEUTRON_EXT_NET_CIDR --name ext_net_subnet --tenant-id $TENANT_ID \
+--allocation-pool start=$NEUTRON_FLOAT_RANGE_START,end=$NEUTRON_FLOAT_RANGE_END \
+--gateway $NEUTRON_EXT_NET_GW --disable-dhcp --dns_nameservers $NEUTRON_DNS list=true
+
+#Create private network for neutron for tenant VMs
+neutron net-show private > /dev/null 2>&1 || neutron net-create private
+neutron subnet-show private_subnet > /dev/null 2>&1 || neutron subnet-create private $NEUTRON_FIXED_NET_CIDR -- --name private_subnet --dns_nameservers list=true $NEUTRON_DNS
+SUBNET_ID=$(neutron subnet-show private_subnet | grep " id" | awk '{print $4}')
+
+#Create router for external network and private network
+neutron router-show provider-router > /dev/null 2>&1 || neutron router-create --tenant-id $TENANT_ID provider-router
+ROUTER_ID=$(neutron router-show provider-router | grep " id" | awk '{print $4}')
+
+neutron router-gateway-clear provider-router || true
+neutron router-gateway-set $ROUTER_ID $EXTERNAL_NETWORK_ID
+## make it always ok to have it indempodent.
+neutron router-interface-add $ROUTER_ID $SUBNET_ID || true
+
+
+echo "Configuring security groups for access to ICMP, SSH and RDP by default"
+
+#Configure the default security group to allow ICMP and SSH
+nova secgroup-list-rules default | grep icmp  > /dev/null 2>&1 || nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0 > /dev/null 2>&1
+nova secgroup-list-rules default | grep 22  > /dev/null 2>&1 || nova secgroup-add-rule default tcp 22 22 0.0.0.0/0 > /dev/null 2>&1
+#for rdp
+nova secgroup-list-rules default | grep 3389  > /dev/null 2>&1 || nova secgroup-add-rule default tcp 3389 3389 0.0.0.0/0 > /dev/null 2>&1
+
+
+
+echo "Uploading default SSH key"
+
+#Upload a default SSH key
+nova keypair-list | grep default  > /dev/null 2>&1 || nova  keypair-add --pub-key ~/.ssh/id_rsa.pub default > /dev/null 2>&1
+
+echo "Modifying the flavors to be better sized for the Orange Box"
+
+#Modify the flavours to fit better on the OB
+#nova flavor-create FLAVOR_NAME FLAVOR_ID RAM_IN_MB ROOT_DISK_IN_GB NUMBER_OF_VCPUS
+nova flavor-delete m1.tiny > /dev/null 2>&1
+nova flavor-delete m1.small > /dev/null 2>&1
+nova flavor-delete m1.medium > /dev/null 2>&1
+nova flavor-delete m1.large > /dev/null 2>&1
+nova flavor-delete m1.xlarge > /dev/null 2>&1
+nova flavor-create --is-public true m1.tiny auto 512 5 1 > /dev/null 2>&1
+nova flavor-create --is-public true m1.small auto 1024 10 1 > /dev/null 2>&1
+nova flavor-create --is-public true m1.medium auto 2048 10 2 > /dev/null 2>&1
+nova flavor-create --is-public true m1.large auto 3072 10 2 > /dev/null 2>&1
+## need extra for windows image (15g)
+nova flavor-create --is-public true m1.xlarge auto 8096 30 4  > /dev/null 2>&1
+
+echo "modifying default quotas for admin user"
+
+#Modify quotas for the tenant to allow large deployments
+nova quota-update --instances 400 $TENANT_ID
+nova quota-update --cores 800 $TENANT_ID
+nova quota-update --ram 404800 $TENANT_ID
+nova quota-update --security-groups 4000 $TENANT_ID
+nova quota-update --floating_ips -1 $TENANT_ID
+nova quota-update --security-group-rules -1 $TENANT_ID
+
+### need to find how to change quota for the project not the tenant
+
+### modify default quota the same way..
+nova quota-class-update --instances 400 $TENANT_ID
+nova quota-class-update --cores 800 $TENANT_ID
+nova quota-class-update --ram 404800 $TENANT_ID
+nova quota-class-update --security-groups 4000 $TENANT_ID
+nova quota-class-update --floating_ips -1 $TENANT_ID
+nova quota-class-update --security-group-rules -1 $TENANT_ID
+
+echo "Uploading images to glance"
+
+#Upload images to glance
+#openstack image create --disk-format qcow2 --container-format ovf   --public "Trusty x86_64"  --file /srv/data/trusty-server-cloudimg-amd64-disk1.img 
+
+openstack image show "Precise x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare   --public  "Precise x86_64"  --file /srv/data/precise-server-cloudimg-amd64-disk1.img 
+openstack image show  "Trusty x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare --public  "Trusty x86_64"  --file  /srv/data/trusty-server-cloudimg-amd64-disk1.img 
+openstack image show  "Centos 7 x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "Centos 7 x86_64"  --file  /srv/data/CentOS-7-x86_64-GenericCloud.qcow2
+
+
+#glance image-create --name="Precise x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  /srv/data/precise-server-cloudimg-amd64-disk1.img 
+#glance image-show "Trusty x86_64" > /dev/null 2>&1 || glance image-create --name="Trusty x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  /srv/data/trusty-server-cloudimg-amd64-disk1.img
+#glance image-show "Xenial x86_64" > /dev/null 2>&1 || glance image-create --name="Xenial x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  /srv/data/xenial-server-cloudimg-amd64-disk1.img
+
+#glance image-show "CentOS 6.4" > /dev/null 2>&1 || glance image-create --name="CentOS 6.4" --is-public=true --container-format=bare --disk-format=qcow2 < /srv/data/centos6.4-x86_64-gold-master.img
+#glance image-show "Cirros 0.3" > /dev/null 2>&1 || glance image-create --name="Cirros 0.3" --is-public=true --container-format=bare --disk-format=qcow2 < /srv/data/cirros-0.3.2-x86_64-disk.img
+## image name is used by script to generate metadata .. don't screw the series
+#glance image-show "win2012r2" > /dev/null 2>&1 || gzip -cd /srv/data/windows_server_2012_r2_standard_eval_kvm_20151021.qcow2.gz |glance image-create --name="Windows Server 2012" --is-public=true --container-format=bare --disk-format=qcow2
+
+
+## working
+#glance image-create --name "Cirros 0.3" --progress --visibility public  --disk-format=qcow2 --container-format=bare --file /srv/data/cirros-0.3.2-x86_64-disk.img
+## must modify glance service to allow insecure upload
+exit
