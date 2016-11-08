@@ -94,12 +94,12 @@ lxd-init()
 }
 
 
-check-zfspart()
-{
+ #check-zfspart()
+ #{
     # check the partition is up and type zfs 
      #sudo parted $PARTITION print -m | grep zfs
     
-}
+ #}
 
 
 install-packages()
