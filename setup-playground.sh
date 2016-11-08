@@ -69,8 +69,11 @@ EOF
      gsettings set  org.gnome.Vino enabled true
       #   for broken clients like rdp/Macos
      gsettings set  org.gnome.Vino  require-encryption false
-     gsettings set  org.gnome.Vino vnc-password 'Zm9ydGluZXQ='
+     gsettings set  org.gnome.Vino vnc-password Zm9ydGluZXQ=
      gsettings set org.gnome.Vino use-upnp true
+     gsettings set org.gnome.Vino notify-on-connect false
+     gsettings set org.gnome.Vino prompt-enabled false
+     gsettings set org.gnome.Vino authentication-methods  "['vnc']"
 }
 
 is-lxd-ready()
