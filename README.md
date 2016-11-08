@@ -1,8 +1,18 @@
-# playground
+# playground #
+
 Scripts to setup ubuntu based LXD/Docker to experiment with complex Cloud environements
 
-run :
-./setup-playground.sh /dev/sda3
+Install a fresh ubuntu 16.04, go in advance mode for disk to ensure
+you create a 100G minimum free partition. (Can be done after install
+for power users).
 
-Assuming /dev/sda3 is a free to use zfs partition.
+## Run this scripts ##
+
+on your newly installed Ubuntu:
+
+`git clone https://github.com/thomnico/playground.git
+cd playground
+./setup-playground.sh -p /dev/sdaX `
+
+Be sure to replace /dev/sdaX with a free to use partition.
 
