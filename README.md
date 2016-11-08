@@ -11,7 +11,9 @@ for power users).
 on your newly installed Ubuntu:
 
 `git clone https://github.com/thomnico/playground.git`
+
 `cd playground`
+
 `./setup-playground.sh -p /dev/sdaX`
 
 Be sure to replace /dev/sdaX with a free to use partition.
