@@ -75,21 +75,21 @@ EOF
 
 is-lxd-ready()
 {
-    is_ready=0
+    lxd_ready=0
     # check lxc is on zfs
-    (dpkg -l zfsutils-linux >/dev/null ) || (is_ready=1;return 0)
-    ( lxc info |grep "storage:" | grep zfs >/dev/null ) || (is_ready=1; return 2)
+    (dpkg -l zfsutils-linux >/dev/null ) || lxd_ready=1
+    ( lxc info |grep "storage:" | grep zfs >/dev/null ) || lxd_ready=2
     if [ "$(id -u)" != "0" ]; then
-        if [ $is_ready == 0 ]; then
-                lxc launch ubuntu:16.04 testme || is_ready=1
-                lxc exec testme apt update || is_ready=1
+        if [ $lxd_ready == 0 ]; then
+                lxc launch ubuntu:16.04 testme || lxd_ready=1
+                lxc exec testme apt update || lxd_ready=1
                 lxc delete testme --force || echo "cleaned up"
         fi 
     else
         echo "should run this script as a user in the lxd group to check availability"
-        return 2
+        exit 2
     fi
-    return $is_ready
+    return $lxd_ready
 }
 
 lxd-init()
@@ -108,7 +108,7 @@ lxd-init()
     sudo debconf-set-selections <<< "lxd lxd/setup-bridge string true"
     sudo debconf-set-selections <<< "lxd lxd/bridge-ipv4-dhcp-leases string 510"
     sudo cp lxd-bridge /etc/default/
-    sudo zpool create lxd $PARTITION || exit 2
+
     sudo lxd init --auto   --storage-backend=zfs --storage-create-device=$PARTITION --storage-pool=lxd || exit 2
      # weird way to trigger the reconfigure script reconfigure does not work..
     sudo apt --reinstall install lxd || sudo dpkg --configure -a || exit 2
