@@ -73,12 +73,12 @@ EOF
      gsettings set org.gnome.Vino use-upnp true
 }
 
- is-lxd-ready()
+is-lxd-ready()
 {
     is_ready=0
     # check lxc is on zfs
-    (dpkg -l zfsutils-linux >/dev/null ) || is_ready=1;return 0
-    ( lxc info |grep "storage:" | grep zfs >/dev/null ) || is_ready=1; return 2
+    (dpkg -l zfsutils-linux >/dev/null ) || (is_ready=1;return 0)
+    ( lxc info |grep "storage:" | grep zfs >/dev/null ) || (is_ready=1; return 2)
     if [ "$(id -u)" != "0" ]; then
         if [ $is_ready == 0 ]; then
                 lxc launch ubuntu:16.04 testme || is_ready=1
@@ -108,8 +108,12 @@ lxd-init()
     sudo debconf-set-selections <<< "lxd lxd/setup-bridge string true"
     sudo debconf-set-selections <<< "lxd lxd/bridge-ipv4-dhcp-leases string 510"
     sudo cp lxd-bridge /etc/default/
+    sudo zpool create lxd $PARTITION || exit 2
     sudo lxd init --auto   --storage-backend=zfs --storage-create-device=$PARTITION --storage-pool=lxd || exit 2
-    sudo dpkg-reconfigure -p high lxd
+     # weird way to trigger the reconfigure script reconfigure does not work..
+    sudo apt --reinstall install lxd || sudo dpkg --configure -a || exit 2
+  
+     # should be : sudo dpkg-reconfigure -p high lxd
 }
 
 
@@ -125,7 +129,7 @@ install-packages()
 {
    #  Go passwordless for sudo this is a dev playground DO NOT DO in Prod
 
-    echo "$USER ALL=(ALL) NOPASSWD:ALL" > sudo tee /etc/sudoers.d/99-nopasswd
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" |  sudo tee /etc/sudoers.d/99-nopasswd
     # install all the package/ppa sudo kernel setup .
 
     [ -f /etc/apt/sources.list.d/ubuntu-lxc-ubuntu-lxd-stable-xenial.list ] || sudo add-apt-repository -y ppa:ubuntu-lxc/lxd-stable
