@@ -30,11 +30,11 @@ is-root()
 }
 
 control_c()
-# run if user hits control-c
 {
-  echo -en "\n*** Ouch! Exiting ***\n"
-  # can put some cleaning here
-  exit $?
+    # run if user hits control-c
+    echo -en "\n*** Ouch! Exiting ***\n"
+    # can put some cleaning here
+    exit $?
 }
  
 # trap keyboard interrupt (control-c)
@@ -72,6 +72,7 @@ is-lxd-ready()
 	echo "should run this script as a user in the lxd group to check availability"
 	exit 2
     fi
+    exit $is_ready
 }
 
 lxd-init()
@@ -106,7 +107,7 @@ install-packages()
 {
    #  Go passwordless for sudo this is a dev playground DO NOT DO in Prod
 
-    echo “ubuntu ALL=(ALL) NOPASSWD:ALL” > sudo tee /etc/sudoers.d/99-nopasswd
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > sudo tee /etc/sudoers.d/99-nopasswd
     # install all the package/ppa sudo kernel setup .
 
     sudo add-apt-repository -y ppa:ubuntu-lxc/lxd-stable
