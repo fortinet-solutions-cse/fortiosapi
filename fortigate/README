@@ -1,0 +1,27 @@
+
+. /nova.rc
+
+#Push image
+openstack image create --disk-format qcow2 --container-format bare  --public  "FGT VM64 1084"  --file fortios.qcow2
+#http://docs.openstack.org/user-guide/cli-cheat-sheet.html
+cat << EOF > fgt-user-data.txt
+config system interface
+edit "port1"
+set mode dhcp
+set allowaccess http https ssh ping telnet
+next
+end
+config sys dns
+set primary 8.8.8.8
+unset secondary
+end
+config sys global
+set hostname fgt
+end
+EOF
+
+
+#Tried (ref http://docs.openstack.org/cli-reference/nova.html)
+
+nova boot --image "FGT VM64 1084" FGT1 --key-name default --security-group default --flavor m1.small --user-data fgt-user-data.txt --config-drive=true --file license=FGVMUL0000075926.lic --nic net-name=private
+nova boot --image "Trusty x86_64" U --key-name default --security-group default --flavor m1.small --nic net-name=private

@@ -1,7 +1,7 @@
 series: xenial
 applications: 
   "ceph-mon": 
-    charm: "cs:xenial/ceph-mon-3"
+    charm: "cs:xenial/ceph-mon"
     num_units: 3
     options: 
       "expected-osd-count": 3
@@ -13,7 +13,7 @@ applications:
       - "1"
       - "2"
   "ceph-osd": 
-    charm: "cs:xenial/ceph-osd-3"
+    charm: "cs:xenial/ceph-osd"
     num_units: 3
     options: 
       "osd-devices": /srv/osd
@@ -27,7 +27,7 @@ applications:
       - "4"
       - "5"
   "ceph-radosgw": 
-    charm: "cs:xenial/ceph-radosgw-5"
+    charm: "cs:xenial/ceph-radosgw"
     num_units: 1
     options: 
       "use-embedded-webserver": true
@@ -37,7 +37,7 @@ applications:
     to: 
       - "6"
   cinder: 
-    charm: "cs:xenial/cinder-2"
+    charm: "cs:xenial/cinder"
     num_units: 1
     options: 
       "block-device": None
@@ -48,12 +48,12 @@ applications:
     to: 
       - "7"
   "cinder-ceph": 
-    charm: "cs:xenial/cinder-ceph-2"
+    charm: "cs:xenial/cinder-ceph"
     annotations: 
       "gui-x": "750"
       "gui-y": "250"
   glance: 
-    charm: "cs:xenial/glance-2"
+    charm: "cs:xenial/glance"
     num_units: 1
     annotations: 
       "gui-x": "250"
@@ -61,7 +61,7 @@ applications:
     to: 
       - "8"
   keystone: 
-    charm: "cs:xenial/keystone-2"
+    charm: "cs:xenial/keystone"
     num_units: 1
     options: 
       "admin-password": openstack
@@ -71,7 +71,7 @@ applications:
     to: 
       - "9"
   mysql: 
-    charm: "cs:xenial/percona-cluster-2"
+    charm: "cs:xenial/percona-cluster"
     num_units: 1
     options: 
       "dataset-size": 256M
@@ -82,7 +82,7 @@ applications:
     to: 
       - "10"
   "neutron-api": 
-    charm: "cs:xenial/neutron-api-3"
+    charm: "cs:xenial/neutron-api"
     num_units: 1
     options: 
       "neutron-security-groups": true
@@ -93,7 +93,7 @@ applications:
     to: 
       - "11"
   "neutron-gateway": 
-    charm: "cs:xenial/neutron-gateway-2"
+    charm: "cs:xenial/neutron-gateway"
     num_units: 1
     options: 
       "bridge-mappings": "physnet1:br-ex"
@@ -106,12 +106,12 @@ applications:
     to: 
       - "12"
   "neutron-openvswitch": 
-    charm: "cs:xenial/neutron-openvswitch-3"
+    charm: "cs:xenial/neutron-openvswitch"
     annotations: 
       "gui-x": "250"
       "gui-y": "500"
   "nova-cloud-controller": 
-    charm: "cs:xenial/nova-cloud-controller-3"
+    charm: "cs:xenial/nova-cloud-controller"
     num_units: 1
     options: 
       "network-manager": Neutron
@@ -121,7 +121,7 @@ applications:
     to: 
       - "13"
   "nova-compute": 
-    charm: "cs:xenial/nova-compute-2"
+    charm: "cs:xenial/nova-compute"
     num_units: 3
     options: 
       "enable-live-migration": true
@@ -131,16 +131,16 @@ applications:
       "gui-x": "250"
       "gui-y": "250"
     to: 
-      - "14"
-      - "15"
-      - "16"
+      - "3"
+      - "4"
+      - "5"
   ntp: 
-    charm: "cs:xenial/ntp-0"
+    charm: "cs:xenial/ntp"
     annotations: 
       "gui-x": "1000"
       "gui-y": "0"
   "openstack-dashboard": 
-    charm: "cs:xenial/openstack-dashboard-2"
+    charm: "cs:xenial/openstack-dashboard"
     num_units: 1
     expose: true
     annotations: 
@@ -149,7 +149,7 @@ applications:
     to: 
       - "17"
   "rabbitmq-server": 
-    charm: "cs:xenial/rabbitmq-server-5"
+    charm: "cs:xenial/rabbitmq-server"
     num_units: 1
     annotations: 
       "gui-x": "500"
@@ -157,31 +157,31 @@ applications:
     to: 
       - "18"
   heat: 
-    charm: "cs:xenial/heat-3"
+    charm: "cs:xenial/heat"
     num_units: 1
     annotations: 
       "gui-x": "300"
       "gui-y": "300"
     to: 
-      - "19"
+      - "14"
   ceilometer: 
-    charm: "cs:xenial/ceilometer-3"
+    charm: "cs:xenial/ceilometer"
     num_units: 1
     annotations: 
       "gui-x": "600"
       "gui-y": "300"
     to: 
-      - "20"
+      - "15"
   mongodb: 
-    charm: "cs:trusty/mongodb-37"
+    charm: "cs:trusty/mongodb"
     num_units: 1
     annotations: 
       "gui-x": "1200"
       "gui-y": "300"
     to: 
-      - "21"
+      - "16"
   "ceilometer-agent": 
-    charm: "cs:xenial/ceilometer-agent-2"
+    charm: "cs:xenial/ceilometer-agent"
     annotations: 
       "gui-x": "1049"
       "gui-y": "121.00001525878906"
@@ -324,20 +324,11 @@ machines:
     series: xenial
     constraints: arch=amd64
   "16": 
-    series: xenial
+    series: trusty
     constraints: arch=amd64
   "17": 
     series: xenial
     constraints: arch=amd64
   "18": 
     series: xenial
-    constraints: arch=amd64
-  "19": 
-    series: xenial
-    constraints: arch=amd64
-  "20": 
-    series: xenial
-    constraints: arch=amd64
-  "21": 
-    series: trusty
     constraints: arch=amd64

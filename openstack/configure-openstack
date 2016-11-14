@@ -3,7 +3,7 @@
 #    fortinet-configure-openstack
 #    Copyright (C) 2016 Fortinet  Ltd.
 #
-#    Authors: Nicolas Thomss  <nthomas fortinet.com>
+#    Authors: Nicolas Thomss  <nthomasfortinet.com>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -19,7 +19,11 @@
 
 set -ex
 
-echo "This command is run to configure an Orange-Box Openstack deployment"
+echo "This script helps configure any openstack deployed by juju "
+
+PKGS=" python-keystone python-neutronclient python-novaclient python-glanceclient python-openstackclient"
+dpkg -l $PKGS > /dev/null || sudo apt install -y $PKGS
+
 
 NEUTRON_EXT_NET_GW="10.10.10.1"
 NEUTRON_EXT_NET_CIDR="10.10.10.0/23"
@@ -73,11 +77,11 @@ export OS_REGION_NAME=$(juju config keystone | python -c "import yaml; import sy
 source ~/nova.rc
 
 # Determine the tenant id for the configured tenant name.
-export TENANT_ID="$(keystone tenant-list | grep $OS_TENANT_NAME | awk '{ print $2 }')"
+export TENANT_ID="$(openstack project list | grep $OS_TENANT_NAME | awk '{ print $2 }')"
 
 if [ "$TENANT_ID" = "" ]; then
 	echo "Unable to find tenant ID, keystone auth problem"
-	exit
+	exit 2
 fi
 
 echo "Configuring Openstack Neutron Networking"
@@ -104,56 +108,29 @@ neutron router-gateway-set $ROUTER_ID $EXTERNAL_NETWORK_ID
 neutron router-interface-add $ROUTER_ID $SUBNET_ID || true
 
 
-echo "Configuring security groups for access to ICMP, SSH and RDP by default"
 
 #Configure the default security group to allow ICMP and SSH
-nova secgroup-list-rules default | grep icmp  > /dev/null 2>&1 || nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0 > /dev/null 2>&1
-nova secgroup-list-rules default | grep 22  > /dev/null 2>&1 || nova secgroup-add-rule default tcp 22 22 0.0.0.0/0 > /dev/null 2>&1
-#for rdp
-nova secgroup-list-rules default | grep 3389  > /dev/null 2>&1 || nova secgroup-add-rule default tcp 3389 3389 0.0.0.0/0 > /dev/null 2>&1
-
-
-
-echo "Uploading default SSH key"
+openstack security group rule create --proto icmp default
+openstack security group rule create --proto tcp --dst-port 22 default
+openstack security group rule create --proto tcp --dst-port 80 default
+openstack security group rule create --proto tcp --dst-port 443 default
+openstack security group rule create --proto tcp --dst-port 3389 default
 
 #Upload a default SSH key
-nova keypair-list | grep default  > /dev/null 2>&1 || nova  keypair-add --pub-key ~/.ssh/id_rsa.pub default > /dev/null 2>&1
+openstack keypair create  --public-key ~/.ssh/id_rsa.pub default
 
-echo "Modifying the flavors to be better sized for the Orange Box"
-
-#Modify the flavours to fit better on the OB
-#nova flavor-create FLAVOR_NAME FLAVOR_ID RAM_IN_MB ROOT_DISK_IN_GB NUMBER_OF_VCPUS
-nova flavor-delete m1.tiny > /dev/null 2>&1
-nova flavor-delete m1.small > /dev/null 2>&1
-nova flavor-delete m1.medium > /dev/null 2>&1
-nova flavor-delete m1.large > /dev/null 2>&1
-nova flavor-delete m1.xlarge > /dev/null 2>&1
-nova flavor-create --is-public true m1.tiny auto 512 5 1 > /dev/null 2>&1
-nova flavor-create --is-public true m1.small auto 1024 10 1 > /dev/null 2>&1
-nova flavor-create --is-public true m1.medium auto 2048 10 2 > /dev/null 2>&1
-nova flavor-create --is-public true m1.large auto 3072 10 2 > /dev/null 2>&1
-## need extra for windows image (15g)
-nova flavor-create --is-public true m1.xlarge auto 8096 30 4  > /dev/null 2>&1
-
-echo "modifying default quotas for admin user"
+#Remove the m1.tiny as it is too small for Ubuntu.
+openstack flavor create m1.small --id auto --ram 1024 --disk 20 --vcpus 2
+openstack flavor create m1.medium --id auto --ram 2048 --disk 20 --vcpus 2
+openstack flavor create m1.large --id auto --ram 4096 --disk 20 --vcpus 4
 
 #Modify quotas for the tenant to allow large deployments
-nova quota-update --instances 400 $TENANT_ID
-nova quota-update --cores 800 $TENANT_ID
-nova quota-update --ram 404800 $TENANT_ID
-nova quota-update --security-groups 4000 $TENANT_ID
-nova quota-update --floating_ips -1 $TENANT_ID
-nova quota-update --security-group-rules -1 $TENANT_ID
+openstack quota  set --ram 204800 --cores 200 --instances 100 admin
+neutron quota-update --security-group 100 --security-group-rule 500 
 
-### need to find how to change quota for the project not the tenant
+#setup heat
+juju run-action heat/0 domain-setup || echo "heat not installed"
 
-### modify default quota the same way..
-nova quota-class-update --instances 400 $TENANT_ID
-nova quota-class-update --cores 800 $TENANT_ID
-nova quota-class-update --ram 404800 $TENANT_ID
-nova quota-class-update --security-groups 4000 $TENANT_ID
-nova quota-class-update --floating_ips -1 $TENANT_ID
-nova quota-class-update --security-group-rules -1 $TENANT_ID
 
 echo "Uploading images to glance"
 
