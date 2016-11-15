@@ -29,7 +29,7 @@ NEUTRON_EXT_NET_GW="10.10.10.1"
 NEUTRON_EXT_NET_CIDR="10.10.10.0/23"
 
 NEUTRON_EXT_NET_NAME="ext_net" # Unused
-NEUTRON_DNS="192.168.0.254"
+NEUTRON_DNS=$NEUTRON_EXT_NET_GW
 NEUTRON_FLOAT_RANGE_START="10.10.11.12"
 NEUTRON_FLOAT_RANGE_END="10.10.11.253"
 
@@ -64,10 +64,10 @@ else
 fi
 
 
-echo "export SERVICE_ENDPOINT=http://$keystone:35357/v2.0/
+echo "export SERVICE_ENDPOINT=http://$keystone:5000/v2.0/
 unset SERVICE_TOKEN
 unset SERVICE_ENDPOINT 
-export OS_AUTH_URL=http://$keystone:35357/v2.0/
+export OS_AUTH_URL=http://$keystone:5000/v2.0/
 export OS_USERNAME=$(juju config keystone | python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"admin-user\"][\"value\"]")
 export OS_PASSWORD=$(juju config keystone | python -c "import yaml; import sys; print yaml.load(sys.stdin)[\"settings\"][\"admin-password\"][\"value\"]")
 export OS_TENANT_NAME=admin
@@ -110,16 +110,20 @@ neutron router-interface-add $ROUTER_ID $SUBNET_ID || true
 
 
 #Configure the default security group to allow ICMP and SSH
-openstack security group rule create --proto icmp default
-openstack security group rule create --proto tcp --dst-port 22 default
-openstack security group rule create --proto tcp --dst-port 80 default
-openstack security group rule create --proto tcp --dst-port 443 default
-openstack security group rule create --proto tcp --dst-port 3389 default
+openstack security group show default | grep icmp > /dev/null 2>&1 || openstack security group rule create --proto icmp default
+openstack security group show default | grep 22 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 22 default
+openstack security group show default | grep 80 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 80 default
+openstack security group show default | grep 443 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 443 default
+openstack security group show default | grep 3389 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 3389 default
 
 #Upload a default SSH key
-openstack keypair create  --public-key ~/.ssh/id_rsa.pub default
+openstack keypair create  --public-key ~/.ssh/id_rsa.pub default  || echo "asssuming key is already uploaded"
 
 #Remove the m1.tiny as it is too small for Ubuntu.
+for flavor in m1.tiny m1.small m1.medium m1.large m1.xlarge
+do
+openstack  flavor delete $flavor || true
+done
 openstack flavor create m1.small --id auto --ram 1024 --disk 20 --vcpus 2
 openstack flavor create m1.medium --id auto --ram 2048 --disk 20 --vcpus 2
 openstack flavor create m1.large --id auto --ram 4096 --disk 20 --vcpus 4
@@ -137,22 +141,9 @@ echo "Uploading images to glance"
 #Upload images to glance
 folder=$HOME/playground/images
 
-openstack image show "Precise x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare   --public  "Precise x86_64"  --file $folder/precise-server-cloudimg-amd64-disk1.img 
 openstack image show  "Trusty x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare --public  "Trusty x86_64"  --file  $folder/trusty-server-cloudimg-amd64-disk1.img 
 openstack image show  "Centos 7 x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "Centos 7 x86_64"  --file  $folder/CentOS-7-x86_64-GenericCloud.qcow2
 openstack image show  "Cirros 0.3.4" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "Cirros 0.3.4"  --file  $folder/cirros-0.3.4-x86_64-disk.img
 
-#glance image-create --name="Precise x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  $folder/precise-server-cloudimg-amd64-disk1.img 
-#glance image-show "Trusty x86_64" > /dev/null 2>&1 || glance image-create --name="Trusty x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  $folder/trusty-server-cloudimg-amd64-disk1.img
-#glance image-show "Xenial x86_64" > /dev/null 2>&1 || glance image-create --name="Xenial x86_64" --is-public=true --container-format=ovf --disk-format=qcow2 <  $folder/xenial-server-cloudimg-amd64-disk1.img
-
-#glance image-show "CentOS 6.4" > /dev/null 2>&1 || glance image-create --name="CentOS 6.4" --is-public=true --container-format=bare --disk-format=qcow2 < $folder/centos6.4-x86_64-gold-master.img
-#glance image-show "Cirros 0.3" > /dev/null 2>&1 || glance image-create --name="Cirros 0.3" --is-public=true --container-format=bare --disk-format=qcow2 < $folder/cirros-0.3.2-x86_64-disk.img
-## image name is used by script to generate metadata .. don't screw the series
-#glance image-show "win2012r2" > /dev/null 2>&1 || gzip -cd $folder/windows_server_2012_r2_standard_eval_kvm_20151021.qcow2.gz |glance image-create --name="Windows Server 2012" --is-public=true --container-format=bare --disk-format=qcow2
-
-
-## working
-#glance image-create --name "Cirros 0.3" --progress --visibility public  --disk-format=qcow2 --container-format=bare --file $folder/cirros-0.3.2-x86_64-disk.img
-## must modify glance service to allow insecure upload
-exit
+openstack image show "Precise x86_64" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare   --public  "Precise x86_64"  --file $folder/precise-server-cloudimg-amd64-disk1.img 
+ 

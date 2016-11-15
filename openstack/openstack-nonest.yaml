@@ -115,6 +115,7 @@ applications:
     num_units: 1
     options: 
       "network-manager": Neutron
+      console-access-protocol: spice
     annotations: 
       "gui-x": "0"
       "gui-y": "500"

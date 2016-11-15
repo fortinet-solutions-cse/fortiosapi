@@ -8,11 +8,21 @@ cat << EOF > fgt-user-data.txt
 config system interface
 edit "port1"
 set mode dhcp
-set allowaccess http https ssh ping telnet
+set allowaccess ping https ssh http snmp fgfm
 next
+    edit "port2"
+	set mode dhcp
+	set allowaccess ping
+    next
 end
-config sys dns
-set primary 8.8.8.8
+config router static
+    edit 1
+        set gateway 192.168.16.1
+        set device "port1"
+    next
+end
+config system dns
+set primary 10.10.10.1
 unset secondary
 end
 config sys global
@@ -25,3 +35,8 @@ EOF
 
 nova boot --image "FGT VM64 1084" FGT1 --key-name default --security-group default --flavor m1.small --user-data fgt-user-data.txt --config-drive=true --file license=FGVMUL0000075926.lic --nic net-name=private
 nova boot --image "Trusty x86_64" U --key-name default --security-group default --flavor m1.small --nic net-name=private
+
+
+nova floating-ip-associate FGT1 10.10.11.15
+sudo iptables -t nat -A PREROUTING -p tcp --dport 4043 -j DNAT --to-destination 10.10.11.15:443
+sudo iptables -t nat -A PREROUTING -p tcp --dport 4022 -j DNAT --to-destination 10.10.11.15:22
