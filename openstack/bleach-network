@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -ex
+for i in `nova list | awk '{print $2}' | grep -v ID`; do nova delete $i ; done
+
+for IP in `nova floating-ip-list | awk '{print $4}' | grep -v IP`; do nova floating-ip-delete $IP ; done
+
+neutron router-interface-delete provider-router private_subnet
+neutron router-delete provider-router
+neutron net-delete ext_net

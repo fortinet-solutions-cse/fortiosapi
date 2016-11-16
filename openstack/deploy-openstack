@@ -1,0 +1,5 @@
+#!/bin/bash
+
+juju bootstrap lxd lxd
+juju add-model mitaka
+juju deploy openstack-nonest.yaml

@@ -82,7 +82,8 @@ bleach-lxd()
 {
     for L in `lxc list | awk '{print $2}' | grep -v NAME`; do lxc delete $L --force ; done
     for I in `lxc image list | awk '{print $4}' | grep -v FINGERPRINT`; do lxc image delete $I ; done
-    sudo apt purge lxd
+    sudo zpool destroy lxd  || echo "looks like lxd was not using zfs before"
+    rm -rf ~/.local/share/juju/
 }
 
 lxd-init()
