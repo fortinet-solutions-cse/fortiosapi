@@ -189,7 +189,7 @@ install()
 
 
 OPTS=$(getopt -o hdp: --long help,debug,partition: \
-     -n 'setup-playground' -- "$@")
+     -n 'playground' -- "$@")
 
 
 
@@ -205,13 +205,13 @@ while true ; do
 	    -d|--debug) set -x; shift ;;
             -p|--partition) PARTITION="$2" ; MAIN=0; shift 2 ;;
 	    # code to collect multiple actions in a row if we want 
-            --) shift; echo "$#" ;  ACTIONS=$@; shift ;;
+            --) shift ;  ACTIONS=$@; shift ;;
             *) echo "$# param left"; [ $# ] || shift && break ;;
 	    # purge the list (shift)/break if zero
         esac
 done
 
 eval set -- "$ACTIONS"
-while true; do
+while [ "$#" != 0 ] ; do
     $1 ; shift
 done
