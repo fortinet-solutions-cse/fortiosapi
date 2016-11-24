@@ -14,7 +14,7 @@ on your newly installed Ubuntu:
 
 `cd playground`
 
-`./setup-playground.sh -p /dev/sdaX`
+`./playground -p /dev/sdaX install`
 
 Be sure to replace /dev/sdaX with a free to use partition.
 
