@@ -46,7 +46,7 @@ cat << EOF
     
 setup-playground - This script aims to setup you host to be fully ready for playground usage LXD/Docker perso lab
 
-USAGE: -p /dev/sdaX
+USAGE: -p /dev/sdaX install
 
   The options  must be passed as follows:
   -p , --partition /dev/sdaX   - mandatory free to use partition 
@@ -175,9 +175,24 @@ sudo rm /usr/lib/sysctl.d/juju-2.0.conf
 sudo sysctl --system
 
 }
-   
+
+install()
+{
+    is-root
+    install-packages
+    bleach-lxd
+    lxd-init
+    lxd-prod-configure
+    desktop-setup
+    echo "You are all set it is highly recommended to restart now"
+}
+
+
 OPTS=$(getopt -o hdp: --long help,debug,partition: \
-     -n 'setup-playground' -- "$@")
+     -n 'playground' -- "$@")
+
+
+
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
@@ -189,17 +204,14 @@ while true ; do
             -h|--help) usage ; exit 0 ;;
 	    -d|--debug) set -x; shift ;;
             -p|--partition) PARTITION="$2" ; MAIN=0; shift 2 ;;
-            --) break ;;
-            *) usage; exit 1 ;;
+	    # code to collect multiple actions in a row if we want 
+            --) shift ;  ACTIONS=$@; shift ;;
+            *) echo "$# param left"; [ $# ] || shift && break ;;
+	    # purge the list (shift)/break if zero
         esac
 done
 
-if [ "$MAIN" == "0" ]; then
-   is-root
-   install-packages
-   bleach-lxd
-   lxd-init
-   lxd-prod-configure
-   desktop-setup
-   echo "You are all set it is highly recommended to restart now"
-fi
+eval set -- "$ACTIONS"
+while [ "$#" != 0 ] ; do
+    $1 ; shift
+done
