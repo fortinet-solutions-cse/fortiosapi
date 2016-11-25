@@ -88,8 +88,11 @@ bleach-lxd()
 
 lxd-init()
 {
-    # assume lxd as not been setup correctly 
-   
+
+    [ ${#PARTITION$} == 0 ] || (echo "a Partition parameter is mandatory";exit 2)
+    (sudo fdisk -l | grep $PARTITION )|| (echo "$PARTITION does not appaer in partition table";exit 2)
+
+    # assume lxd as not been setup correctly    
     sudo debconf-set-selections <<< "lxd lxd/bridge-empty-error boolean true"
     sudo debconf-set-selections <<< "lxd lxd/bridge-name string lxdbr0"
     sudo debconf-set-selections <<< "lxd lxd/bridge-ipv6 string false"
@@ -106,7 +109,8 @@ lxd-init()
     sudo lxd init --auto   --storage-backend=zfs --storage-create-device=$PARTITION --storage-pool=lxd || exit 2
      # weird way to trigger the reconfigure script reconfigure does not work..
     sudo apt --reinstall install lxd || sudo dpkg --configure -a || exit 2
-    sudo lxc profile device add default eth1 nic nictype=bridged parent=lxdbr0  || exit 2
+    ( lxc profile device list default| grep eth1 ) && sudo lxc profile device remove default eth1
+    sudo lxc profile device add default eth1 nic nictype=bridged parent=lxdbr0
     #  lxc profile device set default eth0 mtu 9000  || exit 2
     #  sudo lxc network set lxdbr0 bridge.mtu 9000  || exit 2
     sudo lxc profile device add default kvm unix-char path=/dev/kvm  || (echo "you must enable vt-x on your machine for this to work" ; exit 2)
@@ -114,6 +118,7 @@ lxd-init()
     sudo lxc profile set default linux.kernel_modules openvswitch,nbd,ip_tables,ip6_tables,netlink_diag
      # should be : sudo dpkg-reconfigure -p high lxd
 }
+ 
 
 
  #check-zfspart()
