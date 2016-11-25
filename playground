@@ -89,7 +89,7 @@ bleach-lxd()
 lxd-init()
 {
 
-    [ ${#PARTITION$} == 0 ] || (echo "a Partition parameter is mandatory";exit 2)
+    [ ${#PARTITION} == 0 ] || (echo "a Partition parameter is mandatory";exit 2)
     (sudo fdisk -l | grep $PARTITION )|| (echo "$PARTITION does not appaer in partition table";exit 2)
 
     # assume lxd as not been setup correctly    
