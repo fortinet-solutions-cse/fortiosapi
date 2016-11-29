@@ -14,7 +14,7 @@ on your newly installed Ubuntu:
 
 `cd playground`
 
-`./playground -p /dev/sdaX install`
+`./playground -p /dev/sdaX sudoers install desktop`
 
 Be sure to replace /dev/sdaX with a free to use partition.
 
