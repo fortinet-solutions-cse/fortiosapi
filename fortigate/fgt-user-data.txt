@@ -1,0 +1,27 @@
+config system interface
+ edit "port1"
+  set mode dhcp
+  set allowaccess ping https ssh http snmp fgfm
+  set mtu 1456
+ next
+ edit "port2"
+  set mode dhcp
+  set allowaccess ping
+  set mtu 1456
+ next
+end
+
+config router static
+    edit 1
+        set gateway 192.168.16.1
+        set device "port1"
+    next
+end
+
+config system dns
+ set primary 10.10.10.1
+ unset secondary
+end
+config sys global
+ set hostname fgt
+end

@@ -110,11 +110,12 @@ neutron router-interface-add $ROUTER_ID $SUBNET_ID || true
 
 
 #Configure the default security group to allow ICMP and SSH
-openstack security group show default | grep icmp > /dev/null 2>&1 || openstack security group rule create --proto icmp default
-openstack security group show default | grep 22 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 22 default
-openstack security group show default | grep 80 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 80 default
-openstack security group show default | grep 443 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 443 default
-openstack security group show default | grep 3389 > /dev/null 2>&1 ||openstack security group rule create --proto tcp --dst-port 3389 default
+openstack security group rule create --proto icmp default || echo "should have been created already"
+openstack security group rule create --proto tcp --dst-port 22 default || echo "should have been created already"
+openstack security group rule create --proto tcp --dst-port 80 default || echo "should have been created already"
+openstack security group rule create --proto tcp --dst-port 443 default || echo "should have been created already"
+#port for RDP
+openstack security group rule create --proto tcp --dst-port 3389 default || echo "should have been created already"
 
 #Upload a default SSH key
 openstack keypair create  --public-key ~/.ssh/id_rsa.pub default  || echo "asssuming key is already uploaded"
