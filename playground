@@ -66,7 +66,7 @@ desktop-setup()
 autologin-user=$USER
 EOF
      sudo systemctl restart lightdm.service
-     sleep 42
+     sleep 12
      export DISPLAY=:0
      gsettings set  org.gnome.Vino enabled true
       #   for broken clients like rdp/Macos
@@ -76,6 +76,8 @@ EOF
      gsettings set org.gnome.Vino notify-on-connect false
      gsettings set org.gnome.Vino prompt-enabled false
      gsettings set org.gnome.Vino authentication-methods  "['vnc']"
+     sudo systemctl restart lightdm.service
+
 }
 
 bleach-lxd()
