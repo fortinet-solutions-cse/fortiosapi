@@ -1,13 +1,14 @@
-cat << EOF > fgt-user-data.txt
 config system interface
  edit "port1"
   set mode dhcp
   set allowaccess ping https ssh http snmp fgfm
+  set mtu-override enable
   set mtu 1456
  next
  edit "port2"
   set mode dhcp
   set allowaccess ping
+  set mtu-override enable
   set mtu 1456
  next
 end

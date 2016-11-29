@@ -17,7 +17,7 @@
 
 set -e
 
-. /nova.rc
+. ~/nova.rc
 
 #Push image
 openstack image show  "FGT VM64 1100" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "FGT VM64 1100"  --file fortios.qcow2

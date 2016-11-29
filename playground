@@ -18,7 +18,7 @@
 
 export LC_ALL=C
 
-## avoid warnings about utf-8
+## avoid warnings about utf-8 for macusers
 
 
 is-root()
