@@ -46,19 +46,24 @@ cat << EOF
     
 setup-playground - This script aims to setup you host to be fully ready for playground usage LXD/Docker perso lab
 
-USAGE: -p /dev/sdaX install
+USAGE: -p /dev/sdaX install sudoers desktop
 
   The options  must be passed as follows:
   -p , --partition /dev/sdaX   - mandatory free to use partition 
   -h , --help
   -d , --debug		optionnal debug mode 
- Note: actions requires root privileges use sudo 
+ Note: some actions requires root privileges
+
+ Multiples actions can be provided as explained here.
+ sudoers - setup sudo passwordless
+ desktop - setup ubuntu-desktop and vnc access for old clients (macos, windows)
+ install - does a complete bleach and reinstall of lxd, packages etc.
 
 EOF
 exit 0
 }
 
-desktop-setup()
+desktop()
 {
  #    auto login
      cat << EOF | sudo tee /etc/lightdm/lightdm.conf.d/50-autolog.conf
@@ -130,6 +135,12 @@ lxd-init()
     
  #}
 
+sudoers()
+{
+   #  Go passwordless for sudo this is a dev playground DO NOT DO in Prod
+
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" |  sudo tee /etc/sudoers.d/99-nopasswd
+}
 
 install-packages()
 {
@@ -190,7 +201,6 @@ install()
     bleach-lxd
     lxd-init
     lxd-prod-configure
-    desktop-setup
     echo "You are all set it is highly recommended to restart now"
 }
 
