@@ -9,6 +9,6 @@ setup(
       install_requires=['requests','json','logging'],
       author='Nicolas Thomas',
       author_email='nthomas@fortinet.com',
-      url='https://fndn.fortinet.net',
+      url='https://github.com/thomnico/fortigateconf',
       packages=['fortigateconf'],
       )
