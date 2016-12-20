@@ -10,6 +10,9 @@
 ###################################################################
 
 import requests
+#Disable warnings.
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import json
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
