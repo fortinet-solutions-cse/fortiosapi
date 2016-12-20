@@ -1,9 +1,0 @@
-README
-setup.py
-fortigateconf/__init__.py
-fortigateconf/fortigateconf.py
-fortigateconf.egg-info/PKG-INFO
-fortigateconf.egg-info/SOURCES.txt
-fortigateconf.egg-info/dependency_links.txt
-fortigateconf.egg-info/requires.txt
-fortigateconf.egg-info/top_level.txt
