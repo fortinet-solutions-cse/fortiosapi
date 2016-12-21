@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
       name='fortigateconf',
-      version='0.2.3',
+      version='0.2.4',
       description='Python modules to interact with Fortigate configuration api',
       install_requires=['requests'],
       author='Nicolas Thomas',
