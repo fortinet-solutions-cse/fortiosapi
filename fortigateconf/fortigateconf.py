@@ -24,9 +24,12 @@ except ImportError:
             pass
 
 logging.getLogger(__name__).addHandler(NullHandler())
-
 # create logger
 LOG = logging.getLogger('fortinetconflib')
+
+from argparse import Namespace
+def json2obj(data):
+    return json.loads(data, object_hook=lambda d: Namespace(**d))
 
 class FortiOSConf(object):
     def __init__(self):
@@ -96,10 +99,10 @@ class FortiOSConf(object):
       
         # return builded URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
-        if vdom:
-            url_postfix += '/?vdom=' + vdom
         if mkey:
             url_postfix = url_postfix + '/' + str(mkey)
+        if vdom:
+            url_postfix += '/?vdom=' + vdom
         url = self.url_prefix + url_postfix
         return url
 
@@ -143,10 +146,11 @@ class FortiOSConf(object):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(url,params=parameters,data=json.dumps(data))            
         self.logging(res)
-        r = json2obj(resp)
+        r = json2obj(res.content)
         if r.http_status == 424:
-            LOG.warning("Try to post on %s failed doing a put to force parameters change consider delete if still fails ", response.request.url)
+            LOG.warning("Try to post on %s failed doing a put to force parameters change consider delete if still fails ", res.request.url)
             mkey = data['seq-num']
-            resp = fgt.put('router','static', mkey=mkey, data=data)
+            url = self.cmdb_url(path, name, mkey=mkey,vdom=vdom)
+            res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)
             self.logging(res)
         return res.content
