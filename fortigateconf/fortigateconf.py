@@ -103,12 +103,6 @@ class FortiOSConf(object):
         url = self.url_prefix + url_postfix
         return url
 
-    def get_webui(self, url_postfix, parameters=None):
-        url = self.url_prefix + url_postfix
-        res = self._session.get(url,params=parameters)
-        self.logging(res)        
-        return res.content    
-
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.get(url,params=parameters)
@@ -149,4 +143,10 @@ class FortiOSConf(object):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(url,params=parameters,data=json.dumps(data))            
         self.logging(res)
+        r = json2obj(resp)
+        if r.http_status == 424:
+            LOG.warning("Try to post on %s failed doing a put to force parameters change consider delete if still fails ", response.request.url)
+            mkey = data['seq-num']
+            resp = fgt.put('router','static', mkey=mkey, data=data)
+            self.logging(res)
         return res.content
