@@ -1,8 +1,24 @@
 #!/usr/bin/env python
+# Copyright 2015 Fortinet, Inc.
+#
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
 
 ###################################################################
 #
-# fortiosconf.py aims at simplyfing the configuration and 
+# fortigateconf.py aims at simplyfing the configuration and 
 # integration of Fortgate configuration using the restapi
 #
 # A Python module to abstract configuration using FortiOS REST API 
@@ -10,7 +26,7 @@
 ###################################################################
 
 import requests
-#Disable warnings.
+#Disable warnings about certificates.
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import json
@@ -50,7 +66,12 @@ class FortiOSConf(object):
                     LOG.debug("Response raw content:  %s ", content)
                 else:
                     if response.status_code is 200 :
-                        LOG.debug("Response results content:  %s ", j['results'])
+                        try:
+                            result=j['results']	
+                        except (KeyError,TypeError):
+                            LOG.debug("Response results content:  %s ", j)
+			else:
+	                    LOG.debug("Response results content:  %s ", result)
                     else:
                         LOG.debug("Response results content:  %s ", j)
                         
@@ -109,8 +130,11 @@ class FortiOSConf(object):
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.get(url,params=parameters)
+        # return the content but add the http method reason (give better hint what to do)
+        resp = json.loads(res.content)
+        resp['reason']=res.reason
         self.logging(res)
-        return res.content
+        return resp
 
     def schema(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)+"?action=schema"
@@ -125,23 +149,31 @@ class FortiOSConf(object):
     def post(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(url,params=parameters,data=json.dumps(data),verify = False)            
+        # return the content but add the http method reason (give better hint what to do)
+        resp = json.loads(res.content)
+        resp['reason']=res.reason
         self.logging(res)
-        return res.content
+        return resp
 
     def put(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
-        res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)            
-        self.logging(res) 
-        return res.content
+        res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)         # return the content but add the http method reason (give better hint what to do)
+        resp = json.loads(res.content)
+        resp['reason']=res.reason
+        self.logging(res)
+        return resp
 
     def delete(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
-        res = self._session.delete(url,params=parameters,data=json.dumps(data))            
+        res = self._session.delete(url,params=parameters,data=json.dumps(data))           
+        # return the content but add the http method reason (give better hint what to do)
+        resp = json.loads(res.content)
+        resp['reason']=res.reason
         self.logging(res)
-        return res.content
+        return resp
+    
 # Set will try to post if err code is 424 will try put (ressource exists)
 #may add a force option to delete and redo if troubles.
-
     def set(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(url,params=parameters,data=json.dumps(data))            
@@ -153,4 +185,8 @@ class FortiOSConf(object):
             url = self.cmdb_url(path, name, mkey=mkey,vdom=vdom)
             res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)
             self.logging(res)
-        return res.content
+        # return the content but add the http method reason (give better hint what to do)
+        resp = json.loads(res.content)
+        resp['reason']=res.reason
+        self.logging(res)
+        return resp

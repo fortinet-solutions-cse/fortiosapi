@@ -7,15 +7,13 @@ import pprint
 import json
 from argparse import Namespace
 import logging
-
-logger = logging.getLogger()
-handler = logging.StreamHandler()
 formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-
-logger.setLevel(logging.WARNING)
+logger = logging.getLogger('fortinetconflib')
+hdlr = logging.FileHandler('/var/tmp/testapi.log')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr) 
+logger.setLevel(logging.DEBUG)
 
 logger.debug('often makes a very good meal of %s', 'visiting tourists')
 
@@ -31,25 +29,20 @@ def main():
     fgt.login('192.168.40.8','admin','')
     data = {
   #         "action" : "add",
-           "seq-num" :"7",
+           "seq-num" :"8",
            "dst": "10.10.30.0 255.255.255.0",
            "device": "port2",
            "gateway": "192.168.40.254",
         }
     pp = pprint.PrettyPrinter(indent=4)
     d=json2obj(json.dumps(data))
-    resp = fgt.schema('router','static')
+    resp = fgt.get('router','static', vdom="root", mkey=8)
     pp.pprint(resp)
     
-    resp = fgt.post('router','static', vdom="root", data=data)
-    r = json2obj(resp)
-    pp.pprint(r)
-    if r.http_status == 424:
-        mkey = data['seq-num']
-        resp = fgt.put('router','static', mkey=mkey, data=data)
-        pp.pprint(json.loads(resp))
+    resp = fgt.delete('router','static', vdom="root", data=data)
+    
+    pp.pprint(resp['reason'])
 
-    pp.pprint(json.loads(resp))
    
     # Sample API calls
     #fgt.get_v1('monitor', 'firewall', 'policy')
