@@ -123,7 +123,8 @@ class FortiOSConf(object):
         if mkey:
             url_postfix = url_postfix + '/' + str(mkey)
         if vdom:
-            url_postfix += '/?vdom=' + vdom
+            url_postfix += '?vdom=' + vdom
+            
         url = self.url_prefix + url_postfix
         return url
 
@@ -137,7 +138,11 @@ class FortiOSConf(object):
         return resp
 
     def schema(self, path, name, vdom=None, mkey=None, parameters=None):
-        url = self.cmdb_url(path, name, vdom, mkey)+"?action=schema"
+        if vdom is None:
+            url = self.cmdb_url(path, name, vdom, mkey)+"?action=schema"
+        else:
+            url = self.cmdb_url(path, name, vdom, mkey)+"&action=schema"
+             
         res = self._session.get(url,params=parameters)
         self.logging(res)
         if res.status_code is 200 :
@@ -181,7 +186,10 @@ class FortiOSConf(object):
         r = json2obj(res.content)
         if r.http_status == 424:
             LOG.warning("Try to post on %s failed doing a put to force parameters change consider delete if still fails ", res.request.url)
-            mkey = data['seq-num']
+            #retreive the table mkey from schema
+            schema = self.schema(path, name, vdom=None)
+            keyname = schema['mkey']
+            mkey = data[keyname]
             url = self.cmdb_url(path, name, mkey=mkey,vdom=vdom)
             res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)
             self.logging(res)
