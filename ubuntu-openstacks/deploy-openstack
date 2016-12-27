@@ -1,5 +1,6 @@
 #!/bin/bash
 
 juju bootstrap lxd lxd
+echo -e "fortinet\nfortinet" | juju change-user-password 
 juju add-model mitaka
 juju deploy openstack-nonest.yaml

@@ -1,0 +1,14 @@
+
+
+##get the default descriptor packages
+git clone https://osm.etsi.org/gerrit/osm/descriptor-packages.git
+
+
+. /nova.rc
+
+lxc exec RO -- openmano datacenter-create openstack-site $OS_AUTH_URL --type openstack --description "OpenStack playground"
+
+
+
+
+lxc exec RO -- "export OPENMANO_TENANT=osm; openmano datacenter-attach openvim-site --vim-tenant-name=osm"

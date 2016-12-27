@@ -1,0 +1,60 @@
+heat_template_version: 2013-05-23
+
+parameters:
+ vmimage:
+  type: string
+  description: Image use to boot a server
+ netname:
+  type: string
+  description: My private network
+
+resources:
+ fgtvm:
+  type: OS::Nova::Server
+  properties:
+   image: { get_param: vmimage }
+   flavor: fgt-flavour
+   user_data_format: RAW
+   user_data: |
+       config system interface
+       edit "port1"
+       set mode dhcp
+       set allowaccess ping https ssh http snmp fgfm
+       set mtu-override enable
+       set mtu 1456
+       next
+       edit "port2"
+       set mode dhcp
+       set allowaccess ping
+       set mtu-override enable
+       set mtu 1456
+       next
+       end
+       
+       config router static
+       edit 1
+       set gateway 192.168.16.1
+       set device "port1"
+       next
+       end
+
+       config system dns
+       set primary 10.10.10.1
+       unset secondary
+       end
+       config sys global
+       set hostname fgt
+       end
+
+   name: FGT-VM
+   config_drive: True
+   security_groups: [ default ]
+   user_data_format: RAW
+   personality: {"license": { get_file: FGVM080000032371.lic }}
+   networks:
+    - network: { get_param: netname }
+
+outputs:
+ fgtvm-info:
+    description: IP address of the FGT in the private network
+    value: { get_attr: [ fgtvm, addresses ] }
