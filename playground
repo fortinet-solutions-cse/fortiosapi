@@ -123,7 +123,7 @@ lxd-init()
     sudo lxc profile device add default kvm unix-char path=/dev/kvm  || (echo "you must enable vt-x on your machine for this to work" ; exit 2)
     sudo lxc profile set default security.privileged true
     sudo lxc profile set default linux.kernel_modules openvswitch,nbd,ip_tables,ip6_tables,netlink_diag
-     # should be : sudo dpkg-reconfigure -p high lxd
+    # should be : sudo dpkg-reconfigure -p high lxd
 }
  
 
