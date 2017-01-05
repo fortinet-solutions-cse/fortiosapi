@@ -1,3 +1,4 @@
+#cloud-config
 config system interface
  edit "port1"
   set mode dhcp
