@@ -98,7 +98,7 @@ lxd-init()
 
     [ ${#PARTITION} == 0 ] || (echo "a Partition parameter is mandatory";exit 2)
     (sudo fdisk -l | grep $PARTITION )|| (echo "$PARTITION does not appaer in partition table";exit 2)
-    sed -i "s|^set mirror_path.*|set mirror_path $MIRRORS_STABLE|"  /etc/default/grub
+    sed -i 's|^GRUB_CMDLINE_LINUX=.*|GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"|'  /etc/default/grub
     sudo update-grub
     # assume lxd as not been setup correctly    
     sudo debconf-set-selections <<< "lxd lxd/bridge-empty-error boolean true"
