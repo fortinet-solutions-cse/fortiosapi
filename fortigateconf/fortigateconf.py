@@ -24,7 +24,8 @@
 # A Python module to abstract configuration using FortiOS REST API 
 #
 ###################################################################
-
+import paramiko
+import subprocess
 import requests
 #Disable warnings about certificates.
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -70,8 +71,8 @@ class FortiOSConf(object):
                             result=j['results']	
                         except (KeyError,TypeError):
                             LOG.debug("Response results content:  %s ", j)
-			else:
-	                    LOG.debug("Response results content:  %s ", result)
+                        else:
+                            LOG.debug("Response results content:  %s ", result)
                     else:
                         LOG.debug("Response results content:  %s ", j)
                         
@@ -132,7 +133,7 @@ class FortiOSConf(object):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.get(url,params=parameters)
         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content)
+        resp = json.loads(res.content.decode('utf-8'))
         resp['reason']=res.reason
         self.logging(res)
         return resp
@@ -146,16 +147,16 @@ class FortiOSConf(object):
         res = self._session.get(url,params=parameters)
         self.logging(res)
         if res.status_code is 200 :
-            return json.loads(res.content)['results']
+            return json.loads(res.content.decode('utf-8'))['results']
         else:
-            return json.loads(res)
+            return json.loads(res.decode('utf-8'))
        
 
     def post(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(url,params=parameters,data=json.dumps(data),verify = False)            
         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content)
+        resp = json.loads(res.content.decode('utf-8'))
         resp['reason']=res.reason
         self.logging(res)
         return resp
@@ -163,7 +164,7 @@ class FortiOSConf(object):
     def put(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content)
+        resp = json.loads(res.content.decode('utf-8'))
         resp['reason']=res.reason
         self.logging(res)
         return resp
@@ -172,7 +173,7 @@ class FortiOSConf(object):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.delete(url,params=parameters,data=json.dumps(data))           
         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content)
+        resp = json.loads(res.content.decode('utf-8'))
         resp['reason']=res.reason
         self.logging(res)
         return resp
@@ -194,7 +195,34 @@ class FortiOSConf(object):
             res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)
             self.logging(res)
         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content)
+        resp = json.loads(res.content.decode('utf-8'))
         resp['reason']=res.reason
         self.logging(res)
         return resp
+
+
+## send multiline string ''' get system status ''' using ssh
+    def ssh(self,cmds, host, user, password=None):
+        ''' Send a multi line string via ssh to the fortigate '''
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(host, port=22, username=user, password=password,
+                       allow_agent=False,timeout=10)
+        LOG.debug("ssh login to  %s ", host)
+        #commands is a multiline string using the ''' string ''' format
+        stdin, stdout, stderr = client.exec_command(cmds)
+            
+        retcode = stdout.channel.recv_exit_status()
+        client.close()  # @TODO re-use connections
+        if retcode > 0:
+            output = stderr.read().strip()
+            raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
+                                                output=output)
+        results=stdout.read()
+        LOG.debug("ssh cmd %s | out: %s | err: %s ", cmds,results,retcode)
+        #fortigate ssh send errors on stdout so checking that 
+        if "Command fail. Return code" in str(results):
+            # TODO fill retcode with the output of the FGT
+            raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
+                                                output=results)
+        return (''.join(str(results)), ''.join(str(stderr)))
