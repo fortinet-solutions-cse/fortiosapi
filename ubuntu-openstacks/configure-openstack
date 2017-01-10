@@ -21,7 +21,7 @@ set -ex
 
 echo "This script helps configure any openstack deployed by juju "
 
-PKGS=" python-keystone python-neutronclient python-novaclient python-glanceclient python-openstackclient"
+PKGS=" python-keystone python-neutronclient python-novaclient python-glanceclient python-openstackclient python-heatclient"
 dpkg -l $PKGS > /dev/null || sudo apt install -y $PKGS
 
 
