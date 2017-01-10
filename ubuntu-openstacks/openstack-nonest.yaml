@@ -64,7 +64,7 @@ applications:
     charm: "cs:xenial/keystone"
     num_units: 1
     options: 
-      "admin-password": openstack
+      "admin-password": fortinet
     annotations: 
       "gui-x": "500"
       "gui-y": "0"
@@ -115,7 +115,7 @@ applications:
     num_units: 1
     options: 
       "network-manager": Neutron
-      console-access-protocol: spice
+      console-access-protocol: novnc
     annotations: 
       "gui-x": "0"
       "gui-y": "500"
