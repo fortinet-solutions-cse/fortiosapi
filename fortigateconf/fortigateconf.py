@@ -71,9 +71,9 @@ class FortiOSConf(object):
                         except (KeyError,TypeError):
                             LOG.debug("Response results content:  %s ", j)
 			else:
-	                    LOG.debug("Response results content:  %s ", result)
+	                    LOG.debug("Response result content:  %s ", result)
                     else:
-                        LOG.debug("Response results content:  %s ", j)
+                        LOG.debug("Response raw content:  %s ", j)
                         
     def debug(self, status):
         if status == 'on':
@@ -149,6 +149,24 @@ class FortiOSConf(object):
             return json.loads(res.content)['results']
         else:
             return json.loads(res)
+
+    def get_name_path_dict(self, vdom=None):
+         # return builded URL
+        url_postfix = '/api/v2/cmdb/'
+        if vdom is None:
+            url_postfix += '?vdom=' + vdom +"&action=schema"
+        else:
+            url_postfix +="?action=schema"
+
+        url = self.url_prefix + url_postfix
+        cmdbschema = self._session.get(url)
+        self.logging(cmdbschema)
+        j = json.loads(cmdbschema.content)['results']
+        dict = [ ]
+        for keys in j:
+            if "__tree__" not in keys['path']:
+                dict.append(keys['path']+" "+keys['name'])
+        return dict
        
 
     def post(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
@@ -169,7 +187,13 @@ class FortiOSConf(object):
         return resp
 
     def delete(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
-        url = self.cmdb_url(path, name, vdom, mkey)
+        # Need to find the type of the mkey to avoid error when integer assume the other types will be ok.
+        schema = self.schema(path, name)
+        keytype = schema['mkey_type']
+        if keytype == "integer" :
+            url = self.cmdb_url(path, name, vdom, mkey)
+        else:
+            url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.delete(url,params=parameters,data=json.dumps(data))           
         # return the content but add the http method reason (give better hint what to do)
         resp = json.loads(res.content)
