@@ -71,13 +71,8 @@ class FortiOSConf(object):
                             result=j['results']	
                         except (KeyError,TypeError):
                             LOG.debug("Response results content:  %s ", j)
-<<<<<<< HEAD
-			else:
-	                    LOG.debug("Response result content:  %s ", result)
-=======
                         else:
-                            LOG.debug("Response results content:  %s ", result)
->>>>>>> 3230fd27cdadb59df00543b13c83aad894eb85c8
+                            LOG.debug("Response result content:  %s ", str(result))
                     else:
                         LOG.debug("Response raw content:  %s ", j)
                         
