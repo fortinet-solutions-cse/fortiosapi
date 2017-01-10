@@ -4,9 +4,9 @@ from setuptools import setup
 
 setup(
       name='fortigateconf',
-      version='0.3.3',
-      description='Python modules to interact with Fortigate configuration api',
-      install_requires=['requests'],
+      version='0.4',
+      description='Python modules to interact with Fortigate configuration rest and ssh',
+      install_requires=['requests','paramiko','logging'],
       author='Nicolas Thomas',
       author_email='nthomas@fortinet.com',
       url='https://github.com/thomnico/fortigateconf',
