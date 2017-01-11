@@ -23,7 +23,7 @@ import os
 import subprocess
 import sys
 import time
-
+import fortigateconf
 import yaml
 
 
@@ -68,7 +68,7 @@ def main(argv=sys.argv[1:]):
         run_dir = os.path.join(os.environ['RIFT_INSTALL'], "var/run/rift")
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
-        log_file = "{}/ping_set_rate-{}.log".format(run_dir, time.strftime("%Y%m%d%H%M%S"))
+        log_file = "{}/fortigate-conf-{}.log".format(run_dir, time.strftime("%Y%m%d%H%M%S"))
         logging.basicConfig(filename=log_file, level=logging.DEBUG)
         logger = logging.getLogger()
 
@@ -98,7 +98,7 @@ def main(argv=sys.argv[1:]):
         yaml_cfg = yaml.load(yaml_str)
         logger.debug("Input YAML: {}".format(yaml_cfg))
 
-        ping_set_rate(yaml_cfg, logger)
+
 
     except Exception as e:
         logger.exception(e)
