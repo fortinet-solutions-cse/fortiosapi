@@ -27,6 +27,7 @@
 import paramiko
 import subprocess
 import requests
+from collections import namedtuple
 #Disable warnings about certificates.
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -46,7 +47,7 @@ LOG = logging.getLogger('fortinetconflib')
 
 from argparse import Namespace
 def json2obj(data):
-    return json.loads(data, object_hook=lambda d: Namespace(**d))
+    return json.loads(data.decode('utf-8'), object_hook=lambda d: Namespace(**d))
 
 class FortiOSConf(object):
     def __init__(self):
@@ -162,7 +163,7 @@ class FortiOSConf(object):
         url = self.url_prefix + url_postfix
         cmdbschema = self._session.get(url)
         self.logging(cmdbschema)
-        j = json.loads(cmdbschema.content)['results']
+        j = json.loads(cmdbschema.content.decode('utf-8'))['results']
         dict = [ ]
         for keys in j:
             if "__tree__" not in keys['path']:

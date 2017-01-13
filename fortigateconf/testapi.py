@@ -26,14 +26,31 @@ def json2obj(data):
 def main():
     # Login to the FGT ip
     fgt.debug('on')
-    fgt.login('192.168.40.8','admin','')
+    fgt.login('10.10.10.24','admin','')
+    pp = pprint.PrettyPrinter(indent=4)
+    fortiport = "port2"
+    cp = {
+        "ip_address": "10.10.11.254"
+    }
+    pp.pprint(cp)
+   
     data = {
-  #         "action" : "add",
-           "seq-num" :"8",
-           "dst": "10.10.30.0 255.255.255.0",
-           "device": "port2",
-           "gateway": "192.168.40.254",
-        }
+        "name": fortiport,
+        "interface": fortiport,
+        "mode": "static",
+        "ip": " "+cp['ip_address']+" 255.255.255.0",
+        "allowaccess":"ping",
+        "vdom":"root"
+    }
+    resp = fgt.set('system','interface', vdom="root", data=data)
+
+    data = {
+        #         "action" : "add",
+        "seq-num" :"8",
+        "dst": "10.10.30.0 255.255.255.0",
+        "device": "port2",
+        "gateway": "192.168.40.254",
+    }
     pp = pprint.PrettyPrinter(indent=4)
     d=json2obj(json.dumps(data))
     resp = fgt.get('router','static', vdom="root", mkey=8)
