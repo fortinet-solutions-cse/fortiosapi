@@ -1,6 +1,8 @@
 vnfd:vnfd-catalog:
     vnfd:vnfd:
     -   vnfd:connection-point:
+        -   vnfd:name: fortigate/cp10
+            vnfd:type: VPORT
         -   vnfd:name: fortigate/cp2
             vnfd:type: VPORT
         -   vnfd:name: fortigate/cp3
@@ -9,50 +11,91 @@ vnfd:vnfd-catalog:
             vnfd:type: VPORT
         -   vnfd:name: fortigate/cp5
             vnfd:type: VPORT
+        -   vnfd:name: fortigate/cp6
+            vnfd:type: VPORT
+        -   vnfd:name: fortigate/cp7
+            vnfd:type: VPORT
+        -   vnfd:name: fortigate/cp8
+            vnfd:type: VPORT
+        -   vnfd:name: fortigate/cp9
+            vnfd:type: VPORT
         vnfd:description: Fortigate vnfd
-        vnfd:id: cc532bfa-1042-4df6-b577-462a20ed3461
-        vnfd:logo:     FortiGateVMLogo.png
+        vnfd:id: cc532bfa-1042-4df6-b577-462a676d3461
+        vnfd:logo: FortiGateVMLogo.png
         vnfd:mgmt-interface:
             vnfd:dashboard-params:
                 vnfd:https: 'true'
-                vnfd:path: ng/page/system/status
+                vnfd:path: ng/page/system/status/status
             vnfd:vdu-id: fgtvdu
         vnfd:name: Fortigate Standalone
         vnfd:service-function-chain: UNAWARE
         vnfd:short-name: fortigate
         vnfd:vdu:
         -   vnfd:cloud-init-file: fgt-mtu1456-10.10.txt
-             vnfd:count: '1'
-             vnfd:external-interface:
-            -   vnfd:name: port0
+            vnfd:external-interface:
+            -   vnfd:name: port10
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: fortigate/cp10
+            -   vnfd:name: port2
                 vnfd:virtual-interface:
                     vnfd:type: VIRTIO
                 vnfd:vnfd-connection-point-ref: fortigate/cp2
-            -   vnfd:name: port1
+            -   vnfd:name: port3
                 vnfd:virtual-interface:
                     vnfd:type: VIRTIO
                 vnfd:vnfd-connection-point-ref: fortigate/cp3
+            -   vnfd:name: port4
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: fortigate/cp4
+            -   vnfd:name: port5
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: fortigate/cp5
+            -   vnfd:name: port6
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: fortigate/cp6
+            -   vnfd:name: port7
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: fortigate/cp7
+            -   vnfd:name: port8
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: fortigate/cp8
+            -   vnfd:name: port9
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: fortigate/cp9
             vnfd:guest-epa:
                 vnfd:cpu-pinning-policy: ANY
             vnfd:id: fgtvdu
             vnfd:image: FGTVM-auto.qcow2
             vnfd:image-checksum: 6cce81f3df666a6a41d269a843164947
-            vnfd:image: Fortigate
             vnfd:name: fgtvdu
             vnfd:vm-flavor:
                 vnfd:memory-mb: '2000'
-                vnfd:storage-gb: '10'
+                vnfd:storage-gb: '25'
                 vnfd:vcpu-count: '1'
-        vnfd:version: '5.4.2'
+        vnfd:version: 5.4.2
         vnfd:vnf-configuration:
+            vnfd:config-access:
+                vnfd:username: admin
             vnfd:config-attributes:
-                vnfd:config-delay: '0'
-                vnfd:config-priority: '2'
+                vnfd:config-delay: '45'
+                vnfd:config-priority: '1'
+            vnfd:config-template: '#!/bin/bash'
             vnfd:initial-config-primitive:
             -   vnfd:name: set interfaces and first rules
                 vnfd:parameter:
                 -   vnfd:name: hostname
-                    vnfd:value: 'orchestrated'
+                    vnfd:value: orchestrated
+                -   vnfd:name: user
+                    vnfd:value: admin
+                -   vnfd:name: vdom
+                    vnfd:value: root
                 vnfd:seq: '1'
                 vnfd:user-defined-script: fortigate_conf.py
             vnfd:script:

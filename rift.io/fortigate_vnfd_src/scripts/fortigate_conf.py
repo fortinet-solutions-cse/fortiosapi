@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 
-############################################################################
-# Copyright 2016 RIFT.IO Inc                                               #
-#                                                                          #
-# Licensed under the Apache License, Version 2.0 (the "License");          #
-# you may not use this file except in compliance with the License.         #
-# You may obtain a copy of the License at                                  #
-#                                                                          #
-#     http://www.apache.org/licenses/LICENSE-2.0                           #
-#                                                                          #
-# Unless required by applicable law or agreed to in writing, software      #
-# distributed under the License is distributed on an "AS IS" BASIS,        #
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. #
-# See the License for the specific language governing permissions and      #
-# limitations under the License.                                           #
-############################################################################
+# Copyright 2017 Fortinet, Inc.
+#
+# All Rights Reserved
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
 
 
 import argparse
@@ -23,40 +24,47 @@ import os
 import subprocess
 import sys
 import time
-import fortigateconf
+import re
+import json
+from fortigateconf import FortiOSConf
 import yaml
+fgt = FortiOSConf()
 
 
-def ping_set_rate(yaml_cfg, logger):
-    '''Use curl and set traffic rate on ping vnf'''
+def conf_interface_from_cps(yaml_cfg, logger):
 
-    def set_rate(mgmt_ip, port, rate):
-        curl_cmd = '''curl -D /dev/null \
-    -H "Accept: application/vnd.yang.data+xml" \
-    -H "Content-Type: application/vnd.yang.data+json" \
-    -X POST \
-    -d "{{ \\"rate\\":{ping_rate} }}" \
-    http://{ping_mgmt_ip}:{ping_mgmt_port}/api/v1/ping/rate
-'''.format(ping_mgmt_ip=mgmt_ip,
-           ping_mgmt_port=port,
-           ping_rate=rate)
-
-        logger.debug("Executing cmd: %s", curl_cmd)
-        subprocess.check_call(curl_cmd, shell=True)
-
-    # Get the ping rate
-    rate = yaml_cfg['parameter']['rate']
+#    user = yaml_cfg['parameter']['user']
+    user = "admin"
+    passwd = ""
 
     # Set ping rate
     for index, vnfr in yaml_cfg['vnfr'].items():
         logger.debug("VNFR {}: {}".format(index, vnfr))
 
-        # Check if it is pong vnf
-        if 'ping_vnfd' in vnfr['name']:
-            vnf_type = 'ping'
-            port = 18888
-            set_rate(vnfr['mgmt_ip_address'], port, rate)
-            break
+        # Check if it is a fortigate vnf
+        #
+        if 'fgtvdu' in  vnfr['vdur'][0]['name']:
+            host = vnfr['mgmt_ip_address']
+            fgt.login(host,user,passwd)
+            #todo check acces to API ok (license validation)
+            for cp in vnfr['connection_point']:
+                fortiport = "port"+str(int(re.sub("\D", "",cp['name'])))
+                ### get the number of connection port minus 1 to find fortigate por
+                
+                data = {
+                    "name": fortiport,
+                    "interface": fortiport,
+                    "mode": "static",
+                    "ip": cp['ip_address']+" 255.255.255.0",
+                    "allowaccess":"ping",
+                    "vdom":"root"
+                }
+                logger.debug("fgt.set data: {}".format(data))
+                resp = fgt.set('system','interface', vdom="root", data=data)
+                
+                logger.debug("fgt.set resp: {}".format(resp))
+                
+            fgt.logout()
 
 def main(argv=sys.argv[1:]):
     try:
@@ -98,7 +106,7 @@ def main(argv=sys.argv[1:]):
         yaml_cfg = yaml.load(yaml_str)
         logger.debug("Input YAML: {}".format(yaml_cfg))
 
-
+        conf_interface_from_cps(yaml_cfg, logger)
 
     except Exception as e:
         logger.exception(e)
