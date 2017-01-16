@@ -1,0 +1,2 @@
+includes: ['layer:basic']
+repo: 'https://osm.etsi.org/gerrit/osm/juju-charms'

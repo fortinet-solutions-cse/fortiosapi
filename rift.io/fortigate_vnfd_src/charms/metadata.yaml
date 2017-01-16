@@ -1,0 +1,12 @@
+name: fortios
+maintainers:
+  - Nicolas Thomas <nthomas@fortinet>
+summary: Configuration proxy for fortios fortigate products
+series:
+  - xenial
+description: | 
+  Proxy charm to configure through actions fortigate products
+  fortios or fortigate, others might be added
+tags:
+  - vnf
+  - network

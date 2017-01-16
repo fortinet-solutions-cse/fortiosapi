@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+import sys
+sys.path.append('lib')
+
+from charms.reactive import main
+from charms.reactive import set_state
+from charmhelpers.core.hookenv import action_fail
+
+"""
+`set_state` only works here because it's flushed to disk inside the `main()`
+loop. remove_state will need to be called inside the action method.
+"""
+set_state('fortios.configure-interface')
+
+try:
+    main()
+except Exception as e:
+    action_fail(repr(e))

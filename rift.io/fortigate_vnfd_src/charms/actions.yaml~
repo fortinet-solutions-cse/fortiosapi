@@ -1,0 +1,33 @@
+configure-interface:
+  description: Configure an ethernet interface.
+  params:
+    port:
+      type: string
+      description: Device name, e.g. port1
+    network:
+      type: string
+      description: Network range to assign to the interface
+    netmask:
+      type: string
+      description: Netmask on this port
+      default: 255.255.255.0
+    mtu:
+      type: integer
+      description: Override default mtu
+  required: [port,network]
+apiset:
+  description: set a rule using the RestAPI with https://<ip>/api/v2/cmdb/name/path
+  params:
+    name:
+      type: string
+    path:
+      type: string
+    parameters:
+      type: string
+      description: json formated string set of parameters  to be set on fortios
+sshcmd:
+  description: set a rule using ssh
+  params:
+    commands:
+      type: string
+      description: string with the list of cmd as on the cli off fortios

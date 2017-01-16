@@ -1,0 +1,17 @@
+options:
+  hostname:
+    default: ""
+    type: string
+    description: Hostname or IP of the fortios or fortigate to connect to
+  user:
+    type: string
+    default: admin
+    description: Username for fortios
+  password:
+    type: string
+    default: ""
+    description: Password for fortios
+  vdom:
+    type: string
+    default: root
+    description: Vdom if different than root

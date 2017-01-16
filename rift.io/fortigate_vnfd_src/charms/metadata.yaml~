@@ -1,0 +1,17 @@
+name: vpe-router
+maintainers:
+  - Marco Ceppi <marco.ceppi@canonical.com>
+  - Adam Israel <adam.israel@canonical.com>
+summary: setup a virtualized PE Router with GRE tunnels
+series:
+  - trusty
+  - xenial
+description: | 
+  this charm, when deployed and configured, will provide a secure virtualized
+  provider edge router.
+peers:
+  loadbalance:
+    interface: vpe-router
+tags:
+  - vnf
+  - network
