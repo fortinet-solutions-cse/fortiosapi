@@ -81,7 +81,8 @@ def apiset():
         else:
             action_fail('API call on fortios failed reason:'+resp)
     remove_state('actions.apiset')
-
+    status_set('active','alive')
+   
 
 
 @when('fortios.configured')
@@ -107,6 +108,7 @@ def sshcmd():
         log('sshcmd resp %s' % stdout)
         action_set({'output': stdout})
     remove_state('actions.sshcmd')
+    status_set('active','alive')
 
 
 @when('fortios.configured')

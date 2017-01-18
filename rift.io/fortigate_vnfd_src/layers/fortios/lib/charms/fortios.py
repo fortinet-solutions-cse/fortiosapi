@@ -58,7 +58,10 @@ def connectionisok( vdom=None):
 def sshcmd( cmds):
     try:
         login()
-        out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password=cfg['password'])
+        # Rift force None as a value by default need to be caught
+        if cfg['password'] and cfg['password'].strip():
+            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'])
+            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password=cfg['password'].strip())
         fgt.logout()
         return out, err
     except Exception as e:
