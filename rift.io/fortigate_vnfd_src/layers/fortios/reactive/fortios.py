@@ -29,6 +29,20 @@ logger.setLevel(logging.DEBUG)
 
 cfg = config()
 
+@when_not('fortios.configured')
+@when('config.changed')
+def config_changed():
+    status_set('maintenance', 'trying to connect')
+    try:
+        log("trying to get system status")
+        stdout,stderr = fortios.sshcmd("get system status")
+    except Exception as e:
+        status_set('blocked', str(e)) 
+        remove_state('fortios.configured')
+    else:
+        log('sshcmd resp %s' % stdout)
+        set_state('fortios.configured')
+        status_set('active','alive')
             
 @when_not('fortios.configured')
 def not_ready_add():
