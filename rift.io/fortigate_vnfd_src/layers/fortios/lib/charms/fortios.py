@@ -59,9 +59,9 @@ def sshcmd( cmds):
     try:
         # Rift force None as a value by default need to be caught
         if cfg['password'] and cfg['password'].strip():
-            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password="")
-        else:
             out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password=cfg['password'])
+        else:
+            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password="")
         return out, err
     except Exception as e:
         log(repr(e))

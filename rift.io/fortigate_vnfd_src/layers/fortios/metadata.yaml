@@ -3,6 +3,7 @@ maintainers:
   - Nicolas Thomas <nthomas@fortinet>
 summary: Configuration proxy for fortios fortigate products
 series:
+  - trusty
   - xenial
 description: | 
   Proxy charm to configure through actions fortigate products

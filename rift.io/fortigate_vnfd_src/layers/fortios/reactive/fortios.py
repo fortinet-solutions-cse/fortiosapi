@@ -29,21 +29,48 @@ logger.setLevel(logging.DEBUG)
 
 cfg = config()
 
+
+@when('fortios.configured')
+@when('config.changed')
+def config_changed():
+    status_set('maintenance', 'trying to connect validate config')
+    try:
+        log("trying to get system status")
+        if fortios.connectionisok(vdom="root"):
+            log('API call successfull response')
+            set_state('fortios.configured')
+            status_set('active','alive')
+            remove_state('config.changed')
+        else:
+            status_set('blocked', fortios+' can not be reached')
+            raise Exception(fortios+' unreachable')
+    except Exception as e:
+        log(repr(e))
+        status_set('blocked', 'validation failed: %s' % e)
+        remove_state('fortios.configured')
+        log("can not rest log to fortios")
+
 @when_not('fortios.configured')
 @when('config.changed')
 def config_changed():
-    status_set('maintenance', 'trying to connect')
+    status_set('maintenance', 'trying to connect validate config')
     try:
         log("trying to get system status")
-        stdout,stderr = fortios.sshcmd("get system status")
+        if fortios.connectionisok(vdom="root"):
+            log('API call successfull response')
+            set_state('fortios.configured')
+            status_set('active','alive')
+            remove_state('config.changed')
+        else:
+            status_set('blocked', fortios+' can not be reached')
+            raise Exception(fortios+' unreachable')
     except Exception as e:
-        status_set('blocked', str(e)) 
+        log(repr(e))
+        status_set('blocked', 'validation failed: %s' % e)
         remove_state('fortios.configured')
-    else:
-        log('sshcmd resp %s' % stdout)
-        set_state('fortios.configured')
-        status_set('active','alive')
-            
+        log("can not rest log to fortios")
+
+
 @when_not('fortios.configured')
 def not_ready_add():
     actions = [
