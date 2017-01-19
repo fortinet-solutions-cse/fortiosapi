@@ -1,5 +1,5 @@
 vnfd:vnfd-catalog:
-    vnfd:vnfd:
+    vnfd:
     -   connection-point:
         -   name: fortigate/cp2
             type: VPORT
