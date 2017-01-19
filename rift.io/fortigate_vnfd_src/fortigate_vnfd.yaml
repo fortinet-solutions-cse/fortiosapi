@@ -1,5 +1,5 @@
 vnfd:vnfd-catalog:
-    vnfd:
+    vnfd:vnfd:
     -   connection-point:
         -   name: fortigate/cp2
             type: VPORT
@@ -29,7 +29,7 @@ vnfd:vnfd-catalog:
         service-function-chain: UNAWARE
         short-name: fortigate
         vdu:
-        -   cloud-init-file: fgt-mtu1456-10.10.txt
+        -   count: '1'
             external-interface:
             -   name: port2
                 virtual-interface:
@@ -66,8 +66,7 @@ vnfd:vnfd-catalog:
             guest-epa:
                 cpu-pinning-policy: ANY
             id: fgtvdu
-            image: FGTVM-auto.qcow2
-            image-checksum: 6cce81f3df666a6a41d269a843164947
+            image: Fortigate
             name: fgtvdu
             vm-flavor:
                 memory-mb: '2000'
@@ -76,37 +75,46 @@ vnfd:vnfd-catalog:
         version: 5.4.2
         vnf-configuration:
             config-attributes:
-                config-delay: '10'
+                config-delay: '3'
                 config-priority: '1'
-            service-primitive:
-            -   name: config
-                parameter:
-                -   name: hostname
-                    data-type: STRING
-                    mandatory: 'true'
-                    default-value: 10.10.10.24
-                -   name: password
-                    data-type: STRING
-                    mandatory: 'false'
-                -   name: user
-                    data-type: STRING
-                    mandatory: 'true'
-                    default-value: admin
-                -   name: vdom
-                    data-type: STRING
-                    mandatory: 'false'
-                    default-value: root
-            -   name: config
-                parameter:
-                -   name: commands
-                    data-type: STRING
-                    mandatory: 'true'
+            config-template: '#!/bin/bash'
             initial-config-primitive:
             -   name: config
                 parameter:
                 -   name: hostname
                     value: <rw_mgmt_ip>
-                seq: '1'
+                -   name: user
+                    value: admin
+                seq: '2'
+            -   seq: '1'
             juju:
                 charm: fortios
-
+            service-primitive:
+            -   name: cmds
+                parameter:
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: commands
+            -   name: config
+                parameter:
+                -   data-type: STRING
+                    default-value: <rw_mgmt_ip>
+                    mandatory: 'true'
+                    name: hostname
+                -   data-type: STRING
+                    default-value: 
+                    mandatory: 'true'
+                    name: password
+                -   data-type: STRING
+                    default-value: admin
+                    mandatory: 'true'
+                    name: user
+                -   data-type: STRING
+                    default-value: root
+                    mandatory: 'false'
+                    name: vdom
+            -   name: sshcmd
+                parameter:
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: commands

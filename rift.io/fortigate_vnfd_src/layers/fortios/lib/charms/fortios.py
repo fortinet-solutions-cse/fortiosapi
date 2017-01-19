@@ -57,15 +57,15 @@ def connectionisok( vdom=None):
     
 def sshcmd( cmds):
     try:
-        login()
         # Rift force None as a value by default need to be caught
         if cfg['password'] and cfg['password'].strip():
-            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'])
-            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password=cfg['password'].strip())
-        fgt.logout()
+            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password="")
+        else:
+            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password=cfg['password'])
         return out, err
     except Exception as e:
         log(repr(e))
+
         
 
 
