@@ -57,8 +57,16 @@ def apiset():
     params = action_get('parameters')
     
     status_set('maintenance', 'running cmd on fortios')
+    commands = params.split("\\n")
+    # multi line is accepted with \n to separate then converted because juju does not allow advanced types like list or json :(
+    mydata={}
+    for line in commands:
+        key=line.split(":")[0].strip()
+        value=line.split(":")[1].strip()
+        mydata[key]=value
+
     try:
-        is_set, resp = fortios.apiset(name,path,data=params)
+        is_set, resp = fortios.set(name,path,data=mydata)
     except Exception as e:
          action_fail('API call on fortios failed reason:'+repr(e))
     else:
