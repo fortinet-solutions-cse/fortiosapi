@@ -85,8 +85,7 @@ vnfd:vnfd-catalog:
                     value: <rw_mgmt_ip>
                 -   name: user
                     value: admin
-                seq: '2'
-            -   seq: '1'
+                seq: '1'
             juju:
                 charm: fortios
             service-primitive:

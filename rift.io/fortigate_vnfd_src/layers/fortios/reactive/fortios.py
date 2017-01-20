@@ -29,56 +29,16 @@ logger.setLevel(logging.DEBUG)
 
 cfg = config()
 
-
-@when('fortios.configured')
-@when('config.changed')
-def config_changed():
-    status_set('maintenance', 'trying to connect validate config')
-    try:
-        log("trying to get system status")
-        if fortios.connectionisok(vdom="root"):
-            log('API call successfull response')
-            set_state('fortios.configured')
-            status_set('active','alive')
-            remove_state('config.changed')
-        else:
-            status_set('blocked', fortios+' can not be reached')
-            raise Exception(fortios+' unreachable')
-    except Exception as e:
-        log(repr(e))
-        status_set('blocked', 'validation failed: %s' % e)
-        remove_state('fortios.configured')
-        log("can not rest log to fortios")
-
-@when_not('fortios.configured')
-@when('config.changed')
-def config_changed():
-    status_set('maintenance', 'trying to connect validate config')
-    try:
-        log("trying to get system status")
-        if fortios.connectionisok(vdom="root"):
-            log('API call successfull response')
-            set_state('fortios.configured')
-            status_set('active','alive')
-            remove_state('config.changed')
-        else:
-            status_set('blocked', fortios+' can not be reached')
-            raise Exception(fortios+' unreachable')
-    except Exception as e:
-        log(repr(e))
-        status_set('blocked', 'validation failed: %s' % e)
-        remove_state('fortios.configured')
-        log("can not rest log to fortios")
-
-
 @when_not('fortios.configured')
 def not_ready_add():
     actions = [
-        'actions.configure-interface',
+        'actions.conf-port',
         'actions.apiset'
         'actions.sshcmd'
     ]
-
+    for action in actions:
+        remove_state(action)
+        #clean all action state to avoid collapse with config when action is stated
     if helpers.any_states(*actions):
         action_fail('FORTIOS is not configured')
 
@@ -118,7 +78,6 @@ def sshcmd():
     '''
     Create and Activate the network corporation
     '''
-    set_state('actions.sshcmd')
     commands = action_get('commands').split("\\n")
     # multi line is accepted with \n to separate then converted because juju does not allow advanced types like list or json :(
     cmdsMultiLines="""
@@ -153,3 +112,64 @@ def update_status():
     except Exception as e:
         log(repr(e))
         status_set('blocked', 'validation failed: %s' % e)
+
+@when('fortios.configured')
+@when('actions.conf-port')
+def conf_port():
+    """
+    Configure an ethernet interface
+    """
+    port = action_get('port')
+    ip = action_get('ip')
+    mtu = action_get('mtu')
+    netmask = action_get('netmask')
+    if mtu:
+        params = {
+            "name": port,
+            "mode": "static",
+            "ip": ip+" "+netmask,
+            "allowaccess":"ping",
+            "mtu-override":"enable",
+            "mtu":mtu
+        }  
+    else:
+        params = {
+            "name": port,
+            "mode": "static",
+            "ip": ip+" "+netmask,
+            "allowaccess":"ping",
+            "vdom":"root"
+        }
+    status_set('maintenance', 'running cmd on fortios')
+    try:
+        is_set, resp = fortios.set("system","interface",data=params)
+    except Exception as e:
+         action_fail('API call on fortios failed reason:'+repr(e))
+    else:
+        if is_set is True:
+            log('API call successfull response %s' % resp)
+            action_set({'output': resp})
+        else:
+            action_fail('API call on fortios failed reason:'+resp)
+    remove_state('actions.conf-port')
+    status_set('active','alive')
+
+@when('config.changed')
+def config_changed():
+    status_set('maintenance', 'trying to connect validate config')
+    try:
+        log("trying to get system status")
+        if fortios.connectionisok(vdom="root"):
+            log('API call successfull response')
+            remove_state('config.changed')
+            set_state('fortios.configured')
+            status_set('active','alive')
+        else:
+            status_set('blocked', fortios+' can not be reached')
+            raise Exception(fortios+' unreachable')
+    except Exception as e:
+        log(repr(e))
+        status_set('blocked', 'validation failed: %s' % e)
+        remove_state('fortios.configured')
+        log("can not rest log to fortios")
+
