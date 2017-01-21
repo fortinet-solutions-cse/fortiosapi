@@ -1,0 +1,78 @@
+nsd:nsd-catalog:
+    nsd:nsd:
+    -   nsd:constituent-vnfd:
+        -   nsd:member-vnf-index: '2'
+            nsd:start-by-default: 'true'
+            nsd:vnfd-id-ref: 0ff939dc-97ca-11e6-be38-0250bd176e03
+        -   nsd:member-vnf-index: '3'
+            nsd:start-by-default: 'true'
+            nsd:vnfd-id-ref: 0ff9bef2-97ca-11e6-be38-0250bd176e03
+        -   nsd:member-vnf-index: '4'
+            nsd:start-by-default: 'true'
+            nsd:vnfd-id-ref: cc532bfa-1042-4df6-b577-462a676d3461
+        nsd:id: 5f3b61f9-6182-4fb9-a796-b2ea80745d9e
+        nsd:initial-config-primitive:
+        -   nsd:name: initial-config-primitive-1
+            nsd:seq: '1'
+        nsd:input-parameter-xpath:
+        -   nsd:xpath: /nsd:nsd-catalog/nsd:nsd/nsd:vendor
+        nsd:ip-profiles:
+        -   nsd:description: external
+            nsd:ip-profile-params:
+                nsd:dhcp-params:
+                    nsd:enabled: 'true'
+                nsd:dns-server:
+                -   nsd:address: 8.8.8.8
+                nsd:gateway-address: 10.10.40.254
+                nsd:ip-version: ipv4
+                nsd:subnet-address: 10.10.40.0/24
+            nsd:name: ext
+        -   nsd:description: internal
+            nsd:ip-profile-params:
+                nsd:dhcp-params:
+                    nsd:enabled: 'true'
+                nsd:gateway-address: 10.10.42.1
+                nsd:ip-version: ipv4
+                nsd:subnet-address: 10.10.42.0/24
+            nsd:name: int
+        nsd:name: 'Full test '
+        nsd:service-primitive:
+        -   nsd:name: fortigateconf
+            nsd:parameter:
+            -   nsd:data-type: STRING
+                nsd:mandatory: 'false'
+                nsd:name: hostname
+            nsd:vnf-primitive-group:
+            -   nsd:member-vnf-index-ref: '1'
+                nsd:primitive:
+                -   nsd:index: '1'
+                    nsd:name: primitive-1
+                nsd:vnfd-name: fortigate
+        nsd:vendor: Fortinet
+        nsd:vld:
+        -   nsd:id: 1ec9b
+            nsd:ip-profile-ref: int
+            nsd:name: vld-1
+            nsd:provider-network:
+                nsd:overlay-type: GRE
+            nsd:type: ELAN
+            nsd:vnfd-connection-point-ref:
+            -   nsd:member-vnf-index-ref: '3'
+                nsd:vnfd-connection-point-ref: pong_vnfd/cp0
+                nsd:vnfd-id-ref: 0ff9bef2-97ca-11e6-be38-0250bd176e03
+            -   nsd:member-vnf-index-ref: '4'
+                nsd:vnfd-connection-point-ref: fortigate/cp3
+                nsd:vnfd-id-ref: cc532bfa-1042-4df6-b577-462a676d3461
+        -   nsd:id: c3e94
+            nsd:ip-profile-ref: ext
+            nsd:name: vld-2
+            nsd:provider-network:
+                nsd:overlay-type: GRE
+            nsd:type: ELAN
+            nsd:vnfd-connection-point-ref:
+            -   nsd:member-vnf-index-ref: '2'
+                nsd:vnfd-connection-point-ref: ping_vnfd/cp0
+                nsd:vnfd-id-ref: 0ff939dc-97ca-11e6-be38-0250bd176e03
+            -   nsd:member-vnf-index-ref: '4'
+                nsd:vnfd-connection-point-ref: fortigate/cp2
+                nsd:vnfd-id-ref: cc532bfa-1042-4df6-b577-462a676d3461

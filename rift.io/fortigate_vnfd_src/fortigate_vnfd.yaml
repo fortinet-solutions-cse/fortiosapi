@@ -117,3 +117,4 @@ vnfd:vnfd-catalog:
                 -   data-type: STRING
                     mandatory: 'true'
                     name: commands
+
