@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # Copyright 2015 Fortinet, Inc.
 #
@@ -16,7 +15,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-from charmhelpers.core.hookenv import config
+from charmhelpers.core.hookenv import (
+    config,
+    log,
+)
 
 from fortigateconf import FortiOSConf
 
@@ -38,7 +40,7 @@ def set( name, path, vdom=None,data=None):
     resp = fgt.set(name,path,vdom=vdom,data=data)
     fgt.logout()
     if resp['status'] == "success":
-        return True
+        return True, resp
     else:
         return False,  resp['reason']
 
@@ -54,13 +56,18 @@ def connectionisok( vdom=None):
         return False,  resp['reason']
     
 def sshcmd( cmds):
-    login()
-    resp = fgt.ssh(cmds)
-    fgt.logout()
-    if resp['status'] == "success":
-        return resp , True
-    else:
-        return resp,  False
+    try:
+        # Rift force None as a value by default need to be caught
+        if cfg['password'] and cfg['password'].strip():
+            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password=cfg['password'])
+        else:
+            out,err = fgt.ssh(cmds, cfg['hostname'],cfg['user'],password="")
+        return out, err
+    except Exception as e:
+        log(repr(e))
+
+        
+
 
 def login():
     if all(k in cfg for k in ['password', 'hostname', 'user']):

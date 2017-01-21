@@ -1,10 +1,10 @@
-configure-interface:
+conf-port:
   description: Configure an ethernet interface.
   params:
     port:
       type: string
       description: Device name, e.g. port1
-    network:
+    ip:
       type: string
       description: Network range to assign to the interface
     netmask:
@@ -14,7 +14,7 @@ configure-interface:
     mtu:
       type: integer
       description: Override default mtu
-  required: [port,network]
+  required: [port,ip]
 apiset:
   description: set a rule using the RestAPI with https://<ip>/api/v2/cmdb/name/path
   params:
@@ -30,4 +30,4 @@ sshcmd:
   params:
     commands:
       type: string
-      description: string with the list of cmd as on the cli off fortios
+      description: string with the list of cmd as on the cli off fortios lines can be separated by \n

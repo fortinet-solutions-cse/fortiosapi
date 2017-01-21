@@ -4,6 +4,7 @@ maintainers:
 summary: Configuration proxy for fortios fortigate products
 series:
   - xenial
+  - trusty
 description: | 
   Proxy charm to configure through actions fortigate products
   fortios or fortigate, others might be added
