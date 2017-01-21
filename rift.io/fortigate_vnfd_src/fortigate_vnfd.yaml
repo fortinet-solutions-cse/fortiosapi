@@ -29,8 +29,7 @@ vnfd:vnfd-catalog:
         service-function-chain: UNAWARE
         short-name: fortigate
         vdu:
-        -   count: '1'
-            external-interface:
+        -   external-interface:
             -   name: port2
                 virtual-interface:
                     type: VIRTIO
@@ -75,8 +74,8 @@ vnfd:vnfd-catalog:
         version: 5.4.2
         vnf-configuration:
             config-attributes:
-                config-delay: '3'
-                config-priority: '1'
+                config-delay: '12'
+                config-priority: '2'
             config-template: '#!/bin/bash'
             initial-config-primitive:
             -   name: config
@@ -86,43 +85,28 @@ vnfd:vnfd-catalog:
                 -   name: user
                     value: admin
                 seq: '1'
-             -   name: confport
-                 parameter:
+            -   name: confport
+                parameter:
                 -   name: ip
                     value: <rw_connection_point_name fortigate/cp2>
                 -   name: port
                     value: port2
-               seq: '2'
-           juju:
+                seq: '2'
+            juju:
                 charm: fortios
             service-primitive:
-            -   name: confport
-                parameter:
-                -   data-type: STRING
-                    mandatory: 'true'
-                    name: port
-                -   data-type: STRING
-                    mandatory: 'true'
-                    name: ip
-                -   data-type: STRING
-                    mandatory: 'false'
-                    name: mtu
-                -   data-type: STRING
-                    mandatory: 'false'
-                    name: netmask
             -   name: config
                 parameter:
                 -   data-type: STRING
                     default-value: <rw_mgmt_ip>
-                    mandatory: 'true'
+                    mandatory: 'false'
                     name: hostname
                 -   data-type: STRING
-                    default-value: 
-                    mandatory: 'true'
+                    mandatory: 'false'
                     name: password
                 -   data-type: STRING
                     default-value: admin
-                    mandatory: 'true'
+                    mandatory: 'false'
                     name: user
                 -   data-type: STRING
                     default-value: root
@@ -133,6 +117,20 @@ vnfd:vnfd-catalog:
                 -   data-type: STRING
                     mandatory: 'true'
                     name: commands
+            -   name: confport
+                parameter:
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: port
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: ip
+                -   data-type: INTEGER
+                    mandatory: 'false'
+                    name: mtu
+                -   data-type: STRING
+                    mandatory: 'false'
+                    name: netmask
             -   name: apiset
                 parameter:
                 -   data-type: STRING
