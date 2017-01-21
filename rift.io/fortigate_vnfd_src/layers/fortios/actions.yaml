@@ -23,7 +23,7 @@ apiset:
     path:
       type: string
     parameters:
-      type: object
+      type: string
       description: json formated string set of parameters  to be set on fortios
 sshcmd:
   description: set a rule using ssh
