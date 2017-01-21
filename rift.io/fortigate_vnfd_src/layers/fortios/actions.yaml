@@ -1,4 +1,4 @@
-conf-port:
+confport:
   description: Configure an ethernet interface.
   params:
     port:
