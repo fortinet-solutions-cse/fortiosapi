@@ -101,15 +101,12 @@ vnfd:vnfd-catalog:
                 -   data-type: STRING
                     mandatory: 'true'
                     name: port
-                parameter:
                 -   data-type: STRING
                     mandatory: 'true'
                     name: ip
-                parameter:
                 -   data-type: STRING
                     mandatory: 'false'
                     name: mtu
-                parameter:
                 -   data-type: STRING
                     mandatory: 'false'
                     name: netmask
