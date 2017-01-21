@@ -86,14 +86,33 @@ vnfd:vnfd-catalog:
                 -   name: user
                     value: admin
                 seq: '1'
-            juju:
+             -   name: confport
+                 parameter:
+                -   name: ip
+                    value: <rw_connection_point_name fortigate/cp2>
+                -   name: port
+                    value: port2
+               seq: '2'
+           juju:
                 charm: fortios
             service-primitive:
-            -   name: cmds
+            -   name: confport
                 parameter:
                 -   data-type: STRING
                     mandatory: 'true'
-                    name: commands
+                    name: port
+                parameter:
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: ip
+                parameter:
+                -   data-type: STRING
+                    mandatory: 'false'
+                    name: mtu
+                parameter:
+                -   data-type: STRING
+                    mandatory: 'false'
+                    name: netmask
             -   name: config
                 parameter:
                 -   data-type: STRING
@@ -117,4 +136,14 @@ vnfd:vnfd-catalog:
                 -   data-type: STRING
                     mandatory: 'true'
                     name: commands
-
+            -   name: apiset
+                parameter:
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: name
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: path
+                -   data-type: STRING
+                    mandatory: 'true'
+                    name: parameters
