@@ -84,12 +84,12 @@ vnfd:vnfd-catalog:
                     value: <rw_mgmt_ip>
                 -   name: user
                     value: admin
-                seq: '1'
+                seq: 1
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "execute update-now"
-                seq: '2'
+                seq: 2
             -   name: confport
                 parameter:
                 -   name: mtu
@@ -98,7 +98,7 @@ vnfd:vnfd-catalog:
                     value: port2
                 -   name: ip
                     value: 172.27.1.254
-                seq: '3'
+                seq: 3
             -   name: confport
                 parameter:
                 -   name: mtu
@@ -107,52 +107,47 @@ vnfd:vnfd-catalog:
                     value: port3
                 -   name: ip
                     value: 10.40.10.254
-                seq: '4'
+                seq: 4
             -   name: sshcmd
                 parameter:
                 -   name: commands
-                    value: "config firewall policy  \\n  edit 1  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service HTTP \\n  set logtraffic all \\n  next \\n  end "
-                seq: '5'
-            -   name: sshcmd
-                parameter:
-                -   name: commands
-                    value: "config firewall policy  \\n  edit 2  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service HTTPS \\n  set logtraffic all \\n  next \\n  end "
-                seq: '6'
+                    value: "config firewall policy  \\n  edit 1  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service HTTP \\n  set logtraffic all \\n  next \\n  edit 2  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service HTTPS \\n  set logtraffic all \\n  next \\n  end "
+                seq: 6
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "config firewall policy  \\n  edit 3  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service DNS \\n  set logtraffic all \\n  next \\n  end "
-                seq: '7'
+                seq: 7
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "config firewall policy  \\n  edit 4  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service PING \\n  set logtraffic all \\n  next \\n  end "
-                seq: '8'
+                seq: 8
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "config firewall policy  \\n  edit 5  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service IMAP POP3 \\n  set logtraffic all \\n  next \\n  end "
-                seq: '9'
+                seq: 9
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "config firewall policy  \\n  edit 6  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service SMTP\\n  set logtraffic all \\n  next \\n  end "
-                seq: '10'
+                seq: 10
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "config firewall policy  \\n  edit 7 \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service FTP \\n  set logtraffic all \\n  next \\n  end "
-                seq: '11'
+                seq: 11
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "config firewall policy  \\n  edit 8\\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service IMAPS POP3S \\n  set logtraffic all \\n  next \\n  end "
-                seq: '12'
+                seq: 12
             -   name: sshcmd
                 parameter:
                 -   name: commands
                     value: "config firewall policy  \\n  edit 9  \\n set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all \\n  set dstaddr all \\n  set action accept \\n  set schedule  always \\n  set service ALL \\n  set logtraffic all \\n  next \\n  end "
-                seq: '17'
+                seq: 17
             juju:
                 charm: fortios
             service-primitive:
