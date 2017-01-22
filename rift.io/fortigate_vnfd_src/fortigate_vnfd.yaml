@@ -85,6 +85,11 @@ vnfd:vnfd-catalog:
                 -   name: user
                     value: admin
                 seq: '1'
+            -   name: sshcmd
+                parameter:
+                -   name: commands
+                    value: "execute update-now"
+                seq: '2'
             -   name: confport
                 parameter:
                 -   name: mtu
@@ -93,7 +98,7 @@ vnfd:vnfd-catalog:
                     value: port2
                 -   name: ip
                     value: 172.27.1.254
-                seq: '2'
+                seq: '3'
             -   name: confport
                 parameter:
                 -   name: mtu
@@ -102,12 +107,12 @@ vnfd:vnfd-catalog:
                     value: port3
                 -   name: ip
                     value: 10.40.10.254
-                seq: '3'
+                seq: '4'
             -   name: sshcmd
                 parameter:
                 -   name: commands
-                    value: "config firewall policy  \n edit 1  \n set srcintf port2  \n  set dstintf port3  \n set srcaddr all  \n set dstaddr all \n set action accept \n set schedule always \n set service HTTP \n set logtraffic all \n next \n end "
-                seq: '4'
+                    value: "config firewall policy  \\n  edit 1  \\n  set srcintf port2  \\n   set dstintf port3  \\n  set srcaddr all  \\n  set dstaddr all \\n  set action accept \\n  set schedule always \\n  set service HTTP \\n  set logtraffic all \\n  next \\n  end "
+                seq: '5'
             juju:
                 charm: fortios
             service-primitive:
