@@ -87,11 +87,27 @@ vnfd:vnfd-catalog:
                 seq: '1'
             -   name: confport
                 parameter:
-                -   name: ip
-                    value: <rw_connection_point_name fortigate/cp2>
+                -   name: mtu
+                    value: 1458
                 -   name: port
                     value: port2
+                -   name: ip
+                    value: 172.27.1.254
                 seq: '2'
+            -   name: confport
+                parameter:
+                -   name: mtu
+                    value: 1458
+                -   name: port
+                    value: port3
+                -   name: ip
+                    value: 10.40.10.254
+                seq: '3'
+            -   name: sshcmd
+                parameter:
+                -   name: commands
+                    value: "config firewall policy  \n edit 1  \n set srcintf port2  \n  set dstintf port3  \n set srcaddr all  \n set dstaddr all \n set action accept \n set schedule always \n set service HTTP \n set logtraffic all \n next \n end "
+                seq: '4'
             juju:
                 charm: fortios
             service-primitive:
@@ -125,7 +141,7 @@ vnfd:vnfd-catalog:
                 -   data-type: STRING
                     mandatory: 'true'
                     name: ip
-                -   data-type: INTEGER
+                -   data-type: STRING
                     mandatory: 'false'
                     name: mtu
                 -   data-type: STRING
