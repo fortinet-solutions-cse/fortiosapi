@@ -44,7 +44,7 @@ usage()
 {
 cat << EOF
     
-setup-playground - This script aims to setup you host to be fully ready for playground usage LXD/Docker perso lab
+setup-fortidemos - This script aims to setup you host to be fully ready for fortidemos usage LXD/Docker perso lab
 
 USAGE: -p /dev/sdaX install sudoers desktop
 
@@ -139,7 +139,7 @@ lxd-init()
 
 sudoers()
 {
-   #  Go passwordless for sudo this is a dev playground DO NOT DO in Prod
+   #  Go passwordless for sudo this is a dev fortidemos DO NOT DO in Prod
 
     echo "$USER ALL=(ALL) NOPASSWD:ALL" |  sudo tee /etc/sudoers.d/99-nopasswd
 }
@@ -205,7 +205,7 @@ install()
 
 
 OPTS=$(getopt -o hdp: --long help,debug,partition: \
-     -n 'playground' -- "$@")
+     -n 'fortidemos' -- "$@")
 
 
 
