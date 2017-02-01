@@ -1,8 +1,25 @@
-# playground #
+# fortidemos #
 
-Scripts to setup ubuntu based LXD/Docker to experiment with complex Cloud environements
+Is a collection of scripts and pre defined setups for running full
+stack of software (multi openstack, docker, kubernetes, etc..)
+orchestrators or even bigdata stacks.
 
-Install a fresh ubuntu 16.04, go in advance mode for disk to ensure
+It is based on LXC containers (LXD) on ubuntu 16.04 minimum that
+provides a way to simulate 20+ machines in a beefy vm, a small machine
+like intel nuc or others.
+
+The goal is to provide an open environment for experimenting, making
+functionnal demos on the road. Develop share Fortinet based demos.
+
+This project is opensource and based under Apachev2 license. Every
+contribution is supposed to respect that. Don't put your company IP in
+here .. it is bad.
+
+## Requirement ##
+
+Install a fresh ubuntu 16.04 with a 100G available free linux
+partition or disk.
+On a single disk machine go in advance mode for disk to ensure
 you create a 100G minimum free partition. (Can be done after install
 for power users).
 
@@ -10,11 +27,29 @@ for power users).
 
 on your newly installed Ubuntu:
 
-`git clone https://github.com/thomnico/playground.git`
+`git clone https://github.com/thomnico/fortidemos.git`
 
-`cd playground`
+`cd fortidemos`
 
-`./playground -p /dev/sdaX sudoers install desktop`
+`./fortidemos -p /dev/sdaX sudoers install desktop`
 
 Be sure to replace /dev/sdaX with a free to use partition.
 
+## What's now ##
+
+Now you have a lxd ready ubuntu, sudo without passwd and access it
+from MacOSX and windows vnc://<IP of fortidemos>
+
+The first instance of this project contains a openstack mitaka on
+ubuntu you can use:
+
+
+`cd ubuntu-openstack`
+`./deploy.sh`
+will take some time (like 40mins) monitor with
+`watch -c juju status --color`
+
+Check the README in this folder.
+
+The fortigate folder shows how to use cloud-init, heat-template (even
+from horizon).

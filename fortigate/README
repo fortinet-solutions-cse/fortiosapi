@@ -1,4 +1,19 @@
 
+# Openstack specifics:
+
+MTU is 1500 by default no autoadapt
+
+Config-drive mandatory even if no license file is passed. If not available can start one configure, create a snapshot and use that as the "golden" image.
+
+Provided port on overlay network must have anti-spoofing disabled.
+neutron port-update 02f54ebf-57ce-45d2-b690-0526ee7e7429 --no-security-groups --port_security_enabled=False
+(prior to mitaka needs to be adapted and find ways to know if Openstack supports it)
+
+
+Cloud-init can be configured per Openstack and point to fortimanager for licensing (Fortios+PAYG) or localy deployed (license files + fortigate)
+
+First interface is mgmt be sur to start/connect with the management netwrok as the first on the image (to be checked)
+
 . /nova.rc
 
 #Push image
