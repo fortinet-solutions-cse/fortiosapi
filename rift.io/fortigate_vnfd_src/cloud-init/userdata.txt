@@ -1,0 +1,44 @@
+#FOS VM Config File
+
+config sys global
+set hostname fos-vm
+end
+config system interface
+edit port1
+set mode dhcp
+set mtu-override enable
+set mtu 1456
+next
+edit port2
+set mode dhcp
+next
+edit port3
+set mode dhcp
+next
+end
+config system dns
+set primary 8.8.8.8
+end
+config firewall policy
+edit 1
+set name "Allow any any"
+set srcintf "any"
+set dstintf "any"
+set srcaddr "all"
+set dstaddr "all"
+set action accept
+set schedule "always"
+set service "ALL"
+set nat enable
+next
+end
+config system central-management
+set include-default-servers disable
+set type fortimanager
+set fmg 10.210.10.25
+config server-list
+edit 1
+set server-type update rating
+set server-address 10.210.10.25
+end
+end
