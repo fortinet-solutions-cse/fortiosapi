@@ -15,7 +15,7 @@ vnfd:vnfd-catalog:
             type: VPORT
         -   name: fortigate/cp8
             type: VPORT
-        -   name: fortigate/cp9
+        -   name: fortigate/mgmt
             type: VPORT
         description: Fortigate vnfd
         id: fortigate
@@ -58,19 +58,22 @@ vnfd:vnfd-catalog:
                 virtual-interface:
                     type: VIRTIO
                 vnfd-connection-point-ref: fortigate/cp8
-            -   name: port9
+            -   name: mgmt
                 virtual-interface:
-                    type: VIRTIO
-                vnfd-connection-point-ref: fortigate/cp9
+                    type: OM-MGMT
+                vnfd-connection-point-ref: fortigate/mgmt
             guest-epa:
                 cpu-pinning-policy: ANY
             id: fgtvdu
             image: Fortigate
             name: fgtvdu
+            supplemental-boot-data:
+                boot-data-drive: 'true'
             vm-flavor:
                 memory-mb: '2000'
                 storage-gb: '25'
                 vcpu-count: '1'
+        vendor: fortinet
         version: 5.4.2
         vnf-configuration:
             config-attributes:
