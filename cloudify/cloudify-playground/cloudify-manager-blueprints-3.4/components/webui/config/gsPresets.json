@@ -1,0 +1,23 @@
+{
+    "localhost": {
+        "bindIp" : "0.0.0.0",
+        "bindPort" : 9001,
+        "cosmoServer": "localhost",
+        "cosmoPort": 80,
+        "log4js": {
+            "appenders": [
+                { "type":"console" },
+                {
+                    "type": "file",
+                    "filename": "/var/log/cloudify/webui/backend.log"
+                }
+            ]
+        },
+        "influx": {
+            "host": "{{ ctx.instance.runtime_properties.influxdb_endpoint_ip }}",
+            "user": "root",
+            "pass": "root",
+            "dbname": "cloudify"
+        }
+    }
+}

@@ -1,0 +1,17 @@
+# REST and UI server.
+server {
+  # server listening
+  listen              *:80;
+  server_name         _;
+
+  include "/etc/nginx/conf.d/logs-conf.cloudify";
+
+  # serve the UI
+  include "/etc/nginx/conf.d/ui-locations.cloudify";
+
+  # Serves the Rest Service (backed by the cloudify-rest upstream).
+  include "/etc/nginx/conf.d/rest-location.cloudify";
+
+  # Serves the File Server (backed by the cloudify-resources upstream).
+  include "/etc/nginx/conf.d/fileserver-location.cloudify";
+}

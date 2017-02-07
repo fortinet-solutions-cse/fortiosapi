@@ -1,0 +1,20 @@
+[Unit]
+Description=Cloudify REST Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+PIDFile=/var/run/gunicorn.pid
+TimeoutStartSec=0
+Restart=on-failure
+EnvironmentFile=-/etc/sysconfig/cloudify-restservice
+ExecStart=/bin/sh -c '/opt/manager/env/bin/gunicorn \
+    --pid /var/run/gunicorn.pid \
+    -w $(($(nproc)*2+1)) \
+    -b 0.0.0.0:${REST_SERVICE_PORT} \
+    --timeout 300 manager_rest.server:app \
+    --log-file /var/log/cloudify/rest/gunicorn.log \
+    --access-logfile /var/log/cloudify/rest/gunicorn-access.log'
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1059 @@
+######################################################################
+# By default, the types are using the Fabric plugin to create
+# and start the nodes so that you can choose a machine and run this
+# blueprint on it.
+######################################################################
+
+node_types:
+
+  cloudify.nodes.ManagerResources:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      manager_resources_package:
+        default: { get_input: manager_resources_package }
+      manager_resources_package_checksum_file:
+        default: { get_input: manager_resources_package_checksum_file }
+      skip_checksum_validation:
+        default: { get_input: skip_checksum_validation }
+      ignore_bootstrap_validations:
+        default: { get_input: ignore_bootstrap_validations }
+      es_heap_size:
+        default: { get_input: elasticsearch_heap_size }
+      minimum_required_total_physical_memory_in_mb:
+        default: { get_input: minimum_required_total_physical_memory_in_mb }
+      minimum_required_available_disk_space_in_gb:
+        default: { get_input: minimum_required_available_disk_space_in_gb }
+      allowed_heap_size_gap_in_mb:
+        default: { get_input: allowed_heap_size_gap_in_mb }
+      manager_version:
+        default: 3.4.0
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/manager/scripts/validate.py
+            hide_output: &hide_output
+              default:
+                - running
+            fabric_env: &simple_fabric_env
+              default:
+                user: { get_input: ssh_user }
+                key_filename: { get_input: ssh_key_filename }
+                host_string: { get_attribute: [manager_host, public_ip] }
+                always_use_pty: true
+        configure:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/manager/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  cloudify.nodes.MyCloudifyManager:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      ssh_user:
+        default: centos
+      ssh_key_filename:
+        default: ''
+      agent_local_key_path:
+        default: ''
+      agent_remote_key_path:
+        default: /root/.ssh/agent_key.pem
+      public_ip:
+        default: ''
+      cloudify:
+        description: >
+          Configuration for Cloudify Manager
+        default:
+          resources_prefix: ''
+          cloudify_agent:
+            min_workers: 2
+            max_workers: 5
+            remote_execution_port: 22
+            user: centos
+          workflows:
+            task_retries: -1  # this means forever
+            task_retry_interval: 30
+          policy_engine:
+            start_timeout: 30
+      #########################################################################
+      # Setting 'enabled' to true will activate security on the REST service,
+      # according to the below configuration. Each request received by the
+      # REST service will be authenticated.
+      #########################################################################
+      security:
+        description: >
+          Security Configuration for Cloudify Manager
+        default:
+          enabled: { get_input: security_enabled }
+          admin_username: { get_input: admin_username }
+          admin_password: { get_input: admin_password }
+          #########################################################################
+          # A list of one or more authentication providers. Cloudify will use
+          # these providers in the order specified in the list (Mandatory).
+          # The list below utilizes Flask-secuREST's password-based and token-based
+          # authentication providers.
+          # ** Note: Passwords are usually not store as plaintext. Set passowrd_hash
+          #          to match the hash scheme used in the selected datastore.
+          #          Acceptable values: 'bcrypt', 'des_crypt', 'pbkdf2_sha256',
+          #          pbkdf2_sha512', 'sha256_crypt' and 'sha512_crypt'.
+          #########################################################################
+          authentication_providers:
+            - name: password
+              implementation: flask_securest.authentication_providers.password:PasswordAuthenticator
+              properties:
+                password_hash: plaintext
+            - name: token
+              implementation: flask_securest.authentication_providers.token:TokenAuthenticator
+              properties:
+                secret_key: my_secret
+          authorization_provider:
+            implementation: flask_securest.authorization_providers.role_based_authorization_provider:RoleBasedAuthorizationProvider
+            properties:
+              roles_config_file_path: '/opt/manager/roles_config.yaml'
+              role_loader:
+                implementation: flask_securest.authorization_providers.role_loaders.simple_role_loader:SimpleRoleLoader
+
+          #########################################################################
+          # A user-store implementation is used to find a matching user
+          # and load its details (Mandatory unless you specified a custom
+          # authentication provider that does not require it).
+          # The configuration below will use Flask-secuREST's "simple userstore"
+          # implementation, with the users listed inline.
+          #########################################################################
+          userstore_driver:
+            implementation: flask_securest.userstores.simple:SimpleUserstore
+            properties:
+              userstore:
+                users:
+                  - username: { get_input: admin_username }
+                    password: { get_input: admin_password }
+                    groups:
+                      - cfy_admins
+                groups:
+                  - name: cfy_admins
+                    roles:
+                      - administrator
+          #########################################################################
+          # REST calls to "MANAGER_IP/tokens" will generate and return
+          # authentication tokens if an auth_token_generator is set (Optional).
+          # The below configuration sets Flask_secuREST's token module as the
+          # token generator.
+          # ** Note: Set the same secret key as used by your token authenticator
+          #########################################################################
+          auth_token_generator:
+            implementation: flask_securest.authentication_providers.token:TokenAuthenticator
+            properties:
+              secret_key: my_secret
+              expires_in_seconds: 600
+          #########################################################################
+          # Enabling SSL limits communication with the server to SSL only.
+          # If enabled, the certificate and private key files must be found in
+          # resources/ssl.
+          # Disabled by default.
+          #########################################################################
+          ssl:
+            enabled: { get_input: ssl_enabled }
+          #########################################################################
+          # Security log file properties (Optional, the default values are as
+          # shown below).
+          # ** Note: The log file is located on the rest-service container
+          #########################################################################
+          audit_log_file: /var/log/cloudify/rest/rest-security-audit.log
+          audit_log_level: INFO # values: CRITICAL, ERROR, WARNING, INFO, DEBUG
+          audit_log_file_size_MB: 100
+          audit_log_files_backup_count: 20
+      use_existing_on_upgrade:
+        description: Use existing manager configuration on upgrade
+        type: string
+        default: true
+
+  manager.nodes.PythonRuntime:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      install_python_compilers:
+        type: boolean
+        default: { get_input: install_python_compilers }
+      pip_source_rpm_url:
+        type: string
+        default: { get_input: pip_source_rpm_url }
+      use_existing_on_upgrade:
+        description: Use existing python configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              # Note that this also sets SELinux to Permissive
+              # mode until we find a better position for it.
+              default: components/python/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/python/scripts/validate.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.JavaRuntime:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      java_rpm_source_url:
+        description: Java RPM Source URL
+        default: { get_input: java_source_url }
+      use_existing_on_upgrade:
+        description: Use existing java configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/java/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/java/scripts/validate.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.RabbitMQ:
+    derived_from: cloudify.nodes.MessageBusServer
+    properties:
+      rabbitmq_endpoint_ip:
+        description: Location of the endpoint.
+        type: string
+        default: { get_input: rabbitmq_endpoint_ip }
+      erlang_rpm_source_url:
+        description: Erlang RPM to install.
+        type: string
+        default: { get_input: erlang_source_url }
+      rabbitmq_rpm_source_url:
+        description: RabbitMQ RPM Source URL
+        type: string
+        default: { get_input: rabbitmq_source_url }
+      rabbitmq_events_queue_message_ttl:
+        type: integer
+        default: { get_input: rabbitmq_events_queue_message_ttl }
+      rabbitmq_logs_queue_message_ttl:
+        type: integer
+        default: { get_input: rabbitmq_logs_queue_message_ttl }
+      rabbitmq_metrics_queue_message_ttl:
+        type: integer
+        default: { get_input: rabbitmq_metrics_queue_message_ttl }
+      rabbitmq_events_queue_length_limit:
+        type: integer
+        default: { get_input: rabbitmq_events_queue_length_limit }
+      rabbitmq_logs_queue_length_limit:
+        type: integer
+        default: { get_input: rabbitmq_logs_queue_length_limit }
+      rabbitmq_metrics_queue_length_limit:
+        type: integer
+        default: { get_input: rabbitmq_metrics_queue_length_limit }
+      rabbitmq_fd_limit:
+        description: RabbitMQ File Descriptors Limit
+        type: integer
+        default: { get_input: rabbitmq_fd_limit }
+      rabbitmq_username:
+        description: RabbitMQ username for access to queues.
+        type: string
+        default: { get_input: rabbitmq_username }
+      rabbitmq_password:
+        description: RabbitMQ password for access to queues.
+        type: string
+        default: { get_input: rabbitmq_password }
+      rabbitmq_ssl_enabled:
+        description: Set whether SSL should be enabled for Rabbit.
+        type: boolean
+        default: { get_input: rabbitmq_ssl_enabled }
+      rabbitmq_cert_private:
+        description: PEM formatted private cert for rabbit SSL.
+        type: string
+        default: { get_input: rabbitmq_cert_private }
+      rabbitmq_cert_public:
+        description: PEM formatted public cert for rabbit SSL.
+        type: string
+        default: { get_input: rabbitmq_cert_public }
+      use_existing_on_upgrade:
+        description: Use existing rabbit configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/rabbitmq/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/rabbitmq/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/rabbitmq/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.Elasticsearch:
+    derived_from: cloudify.nodes.DBMS
+    properties:
+      es_rpm_source_url:
+        description: Elasticsearch RPM Source URL
+        type: string
+        default: { get_input: elasticsearch_source_url }
+      es_curator_rpm_source_url:
+        description: Elasticsearch Curator RPM Source URL
+        default: { get_input: elasticsearch_curator_rpm_source_url}
+      es_heap_size:
+        description: >
+          This is crucial when scaling up as it
+          allows to set the amount of memory allocated and affects
+          indexing and searching performance. See
+          https://www.elastic.co/guide/en/elasticsearch/guide/current/heap-sizing.html
+          for more info.
+        type: string
+        default: { get_input: elasticsearch_heap_size }
+      es_java_opts:
+        description: >
+          ES_JAVA_OPTS Env Var. Allows to provide arguments
+          to Elasticsearch.
+        type: string
+        default: { get_input: elasticsearch_java_opts }
+      es_index_rotation_interval:
+        description: >
+          Defines how many days of indices you want to keep in Elasticsearch.
+          This is only relevant to the Events/Logs indices and does not
+          interfere with the data model.
+        type: integer
+        default: { get_input: elasticsearch_index_rotation_interval }
+      es_endpoint_ip:
+        type: string
+        default: { get_input: elasticsearch_endpoint_ip }
+      es_endpoint_port:
+        type: integer
+        default: { get_input: elasticsearch_endpoint_port }
+      use_existing_on_upgrade:
+        description: Use existing elasticsearch configuration
+        type: string
+        default: true
+      es_clustering_enabled:
+        type: string
+        default: { get_input: elasticsearch_clustering_enabled }
+      es_clustering_discovery_port:
+        type: integer
+        default: { get_input: elasticsearch_clustering_discovery_port }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/elasticsearch/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/elasticsearch/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/elasticsearch/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.Logstash:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      logstash_rpm_source_url:
+        description: Logstash tar.gz Source URL
+        type: string
+        default: { get_input: logstash_source_url }
+      es_endpoint_port:
+        type: integer
+        default: { get_input: elasticsearch_endpoint_port }
+      rabbitmq_endpoint_ip:
+        description: Location of the endpoint. If blank, rabbit will be installed and configured on the manager.
+        type: string
+        default: { get_input: rabbitmq_endpoint_ip }
+      rabbitmq_username:
+        description: RabbitMQ username for access to queues.
+        type: string
+        default: { get_input: rabbitmq_username }
+      rabbitmq_password:
+        description: RabbitMQ password for access to queues.
+        type: string
+        default: { get_input: rabbitmq_password }
+      use_existing_on_upgrade:
+        description: Use existing logstash configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/logstash/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+            ES_ENDPOINT_IP:
+              default: { get_attribute: [elasticsearch, es_endpoint_ip] }
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/logstash/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/logstash/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.InfluxDB:
+    derived_from: cloudify.nodes.DBMS
+    properties:
+      influxdb_rpm_source_url:
+        description: InfluxDB RPM Source URL
+        type: string
+        default: { get_input: influxdb_source_url }
+      influxdb_endpoint_ip:
+        type: string
+        default: { get_input: influxdb_endpoint_ip }
+      use_existing_on_upgrade:
+        description: Use existing influxdb configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/influxdb/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/influxdb/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/influxdb/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.Nginx:
+    derived_from: cloudify.nodes.WebServer
+    properties:
+      nginx_rpm_source_url:
+        description: Nginx RPM Source URL
+        type: string
+        default: { get_input: nginx_source_url }
+      rest_service_module_source_url:
+        description: REST Service repo tar URL for resources
+        type: string
+        default: { get_input: rest_service_source_url }
+      use_existing_on_upgrade:
+        description: Use existing nginx configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/nginx/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+            REST_PROTOCOL:
+              default: { get_attribute: [manager_configuration, rest_protocol] }
+        configure:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: components/nginx/scripts/retrieve_agents.py
+            task_name:
+              default: retrieve
+            task_properties:
+              default:
+                agent_packages: { get_input: agent_package_urls }
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/nginx/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/nginx/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.Riemann:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      langohr_jar_source_url:
+        description: Langohr JAR Source URL
+        type: string
+        default: { get_input: langohr_source_url }
+      daemonize_rpm_source_url:
+        description: Daemonize RPM Source URL
+        type: string
+        default: { get_input: daemonize_source_url }
+      riemann_rpm_source_url:
+        description: Riemann RPM Source URL
+        type: string
+        default: { get_input: riemann_source_url }
+      cloudify_resources_url:
+        description: REST Service module Source URL
+        type: string
+        default: { get_input: cloudify_resources_url }
+      rabbitmq_endpoint_ip:
+        description: Location of the endpoint. If blank, rabbit will be installed and configured on the manager.
+        type: string
+        default: { get_input: rabbitmq_endpoint_ip }
+      rabbitmq_username:
+        description: RabbitMQ username for access to queues.
+        type: string
+        default: { get_input: rabbitmq_username }
+      rabbitmq_password:
+        description: RabbitMQ password for access to queues.
+        type: string
+        default: { get_input: rabbitmq_password }
+      use_existing_on_upgrade:
+        description: Use existing riemann configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/riemann/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/riemann/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/riemann/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.RestService:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      rest_service_rpm_source_url:
+        type: string
+        default: { get_input: rest_service_rpm_source_url }
+      dsl_parser_module_source_url:
+        description: DSL Parser module Source URL
+        type: string
+        default: { get_input: dsl_parser_source_url }
+      rest_client_module_source_url:
+        description: REST Client module Source URL
+        type: string
+        default: { get_input: rest_client_source_url }
+      securest_module_source_url:
+        description: Flask SecuREST module Source URL
+        type: string
+        default: { get_input: securest_source_url }
+      rest_service_module_source_url:
+        description: REST Service module Source URL
+        type: string
+        default: { get_input: rest_service_source_url }
+      rabbitmq_endpoint_ip:
+        description: Location of the endpoint. If blank, rabbit will be installed and configured on the manager.
+        type: string
+        default: { get_input: rabbitmq_endpoint_ip }
+      rabbitmq_ssl_enabled:
+        description: Set whether SSL should be enabled for Rabbit.
+        type: boolean
+        default: { get_input: rabbitmq_ssl_enabled }
+      rabbitmq_cert_public:
+        description: PEM formatted public cert for rabbit SSL.
+        type: string
+        default: { get_input: rabbitmq_cert_public }
+      rabbitmq_username:
+        description: RabbitMQ username for access to queues.
+        type: string
+        default: { get_input: rabbitmq_username }
+      rabbitmq_password:
+        description: RabbitMQ password for access to queues.
+        type: string
+        default: { get_input: rabbitmq_password }
+      plugins_common_module_source_url:
+        description: Plugins Common module Source URL
+        type: string
+        default: { get_input: plugins_common_source_url }
+      script_plugin_module_source_url:
+        description: Script Plugin module Source URL
+        type: string
+        default: { get_input: script_plugin_source_url }
+      agent_module_source_url:
+        description: Agent module Source URL
+        type: string
+        default: { get_input: agent_source_url }
+      plugins:
+        description: Enables installing custom plugins on the rest service
+        default: {}
+      # what we would really like is to have the ref to cloudify security here (in the type) and not in the template
+      # defined in each manager blueprint
+      # and we also need just the security section...
+      cloudify:
+        description: Security settings from the manager configuration
+        default: {}
+      es_endpoint_port:
+        type: integer
+        default: { get_input: elasticsearch_endpoint_port }
+      insecure_endpoints_disabled:
+        description: Disables insecure REST endpoints
+        type: boolean
+        default: { get_input: insecure_endpoints_disabled }
+      use_existing_on_upgrade:
+        description: Use existing elasticsearch configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/restservice/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+            ES_ENDPOINT_IP:
+              default: { get_attribute: [elasticsearch, es_endpoint_ip] }
+        configure:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: components/restservice/scripts/install_plugins.py
+            task_name:
+              default: install_plugins
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/restservice/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/restservice/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.ManagementWorker:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      management_worker_rpm_source_url:
+        description: Management Worker RPM Source URL
+        type: string
+        default: { get_input: management_worker_rpm_source_url }
+      rest_client_module_source_url:
+        description: REST Client module Source URL
+        type: string
+        default: { get_input: rest_client_source_url }
+      plugins_common_module_source_url:
+        description: Plugins Common module Source URL
+        type: string
+        default: { get_input: plugins_common_source_url }
+      script_plugin_module_source_url:
+        description: Script Plugin module Source URL
+        type: string
+        default: { get_input: script_plugin_source_url }
+      rest_service_module_source_url:
+        description: REST Service module Source URL
+        type: string
+        default: { get_input: rest_service_source_url }
+      agent_module_source_url:
+        description: Agent module Source URL
+        type: string
+        default: { get_input: agent_source_url }
+      rabbitmq_endpoint_ip:
+        description: Location of the endpoint. If blank, rabbit will be installed and configured on the manager.
+        type: string
+        default: { get_input: rabbitmq_endpoint_ip }
+      rabbitmq_username:
+        description: RabbitMQ username for access to queues.
+        type: string
+        default: { get_input: rabbitmq_username }
+      rabbitmq_password:
+        description: RabbitMQ password for access to queues.
+        type: string
+        default: { get_input: rabbitmq_password }
+      rabbitmq_ssl_enabled:
+        description: Set whether SSL should be enabled for Rabbit.
+        type: boolean
+        default: { get_input: rabbitmq_ssl_enabled }
+      rabbitmq_cert_public:
+        description: PEM formatted public cert for rabbit SSL.
+        type: string
+        default: { get_input: rabbitmq_cert_public }
+      log_level:
+        description: Logging level for Celery worker.
+        type: string
+        default: { get_input: management_worker_log_level }
+      max_workers:
+        description: Max number of celery workers.
+        type: integer
+        default: { get_input: management_worker_max_workers }
+      min_workers:
+        description: Min number of celery workers.
+        type: integer
+        default: { get_input: management_worker_min_workers }
+      gate_keeper_bucket_size:
+        description: >
+          Maximum number of concurrent operations/workflows for any deployment. The limit is for concurrent
+          operations and concurrent workflows, separately. It cannot be bigger than the management worker
+          max workers property, as that property sets the global max number of running processes.
+        type: integer
+        default: { get_property: [manager_configuration, cloudify, cloudify_agent, max_workers] }
+      use_existing_on_upgrade:
+        description: Use existing mgmt worker configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/mgmtworker/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/mgmtworker/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/mgmtworker/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.AmqpInfluxBroker:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      amqpinflux_rpm_source_url:
+        description: AMQP to InfluxDB Broker RPM Source URL
+        type: string
+        default: { get_input: amqpinflux_rpm_source_url }
+      amqpinflux_module_source_url:
+        description: AMQP to InfluxDB Broker Source URL
+        type: string
+        default: { get_input: amqpinflux_source_url }
+      rabbitmq_endpoint_ip:
+        description: Location of the endpoint. If blank, rabbit will be installed and configured on the manager.
+        type: string
+        default: { get_input: rabbitmq_endpoint_ip }
+      rabbitmq_username:
+        description: RabbitMQ username for access to queues.
+        type: string
+        default: { get_input: rabbitmq_username }
+      rabbitmq_password:
+        description: RabbitMQ password for access to queues.
+        type: string
+        default: { get_input: rabbitmq_password }
+      rabbitmq_ssl_enabled:
+        description: Set whether SSL should be enabled for Rabbit.
+        type: boolean
+        default: { get_input: rabbitmq_ssl_enabled }
+      rabbitmq_cert_public:
+        description: RabbitMQ public certificate for SSL. SSL not used if this is an empty string.
+        type: string
+        default: { get_input: rabbitmq_cert_public }
+      use_existing_on_upgrade:
+        description: Use existing amqp influx configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/amqpinflux/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+            INFLUXDB_ENDPOINT_IP:
+              default: { get_attribute: [influxdb, influxdb_endpoint_ip] }
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/amqpinflux/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/amqpinflux/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.WebUI:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      webui_tar_source_url:
+        description: Cloudify's WebUI Source URL
+        type: string
+        default: { get_input: webui_source_url }
+      grafana_tar_source_url:
+        description: Cloudify's Grafana Source URL
+        type: string
+        default: { get_input: grafana_source_url }
+      nodejs_tar_source_url:
+        description: NodeJS tgz Source URL
+        type: string
+        default: { get_input: nodejs_source_url }
+      use_existing_on_upgrade:
+        description: Use existing webui configuration
+        type: string
+        default: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/webui/scripts/create.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+            INFLUXDB_ENDPOINT_IP:
+              default: { get_attribute: [influxdb, influxdb_endpoint_ip] }
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/webui/scripts/start.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/webui/scripts/stop.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.CLI:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      rest_client_module_source_url:
+        description: REST Client module Source URL
+        type: string
+        default: { get_input: rest_client_source_url }
+      dsl_parser_module_source_url:
+        description: DSL Parser module Source URL
+        type: string
+        default: { get_input: dsl_parser_source_url }
+      plugins_common_module_source_url:
+        description: Plugins Common module Source URL
+        type: string
+        default: { get_input: plugins_common_source_url }
+      script_plugin_module_source_url:
+        description: Script Plugin module Source URL
+        type: string
+        default: { get_input: script_plugin_source_url }
+      cli_module_source_url:
+        description: Cloudify's CLI module Source URL
+        type: string
+        default: { get_input: cli_source_url }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/cli/scripts/create.sh
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/cli/scripts/start.sh
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+  manager.nodes.Sanity:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      sanity_app_source_url:
+        description: Sanity app Source URL
+        type: string
+        default: { get_input: sanity_app_source_url }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: components/manager/scripts/sanity/create_sanity.py
+            task_name:
+              default: upload_keypair
+            task_properties:
+              default:
+                local_key_path: { get_input: ssh_key_filename }
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/manager/scripts/sanity/sanity.py
+            manager_user:
+              default: { get_input: ssh_user }
+            manager_ip:
+              default: { get_attribute: [manager_host, public_ip] }
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+
+######################################################################
+# most relationship declarations here do not provide any functionality
+# aside from to allow to build the dependency graph.
+# They can be used to implement a different relationship between
+# each of the services.
+######################################################################
+relationships:
+
+  logstash_to_elasticsearch:
+    derived_from: cloudify.relationships.connected_to
+
+  logstash_to_rabbitmq:
+    derived_from: cloudify.relationships.connected_to
+
+  restservice_to_elasticsearch:
+    derived_from: cloudify.relationships.connected_to
+
+  nginx_to_restservice:
+    derived_from: cloudify.relationships.connected_to
+
+  nginx_to_webui:
+    derived_from: cloudify.relationships.connected_to
+
+  riemann_to_rabbitmq:
+    derived_from: cloudify.relationships.connected_to
+
+  riemann_to_nginx:
+    derived_from: cloudify.relationships.connected_to
+
+  mgmtworker_to_rabbitmq:
+    derived_from: cloudify.relationships.connected_to
+
+  mgmtworker_to_nginx:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        postconfigure: components/manager/scripts/set_manager_private_ip.py
+
+  nginx_to_manager_configuration:
+    derived_from: cloudify.relationships.depends_on
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/nginx/scripts/preconfigure.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        postconfigure: components/manager/scripts/set_manager_private_ip.py
+
+  rest_to_mgr_config:
+      derived_from: cloudify.relationships.depends_on
+      target_interfaces:
+        cloudify.interfaces.relationship_lifecycle:
+          preconfigure:
+            implementation: fabric.fabric_plugin.tasks.run_script
+            inputs:
+              script_path:
+                default: components/restservice/scripts/preconfigure.py
+              hide_output: *hide_output
+              fabric_env: *simple_fabric_env
+
+  sanity_to_mgr_config:
+    derived_from: cloudify.relationships.depends_on
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        postconfigure:
+         implementation: components/manager/scripts/sanity/get_rest_protocol.py
+
+  amqpinflux_to_rabbitmq:
+    derived_from: cloudify.relationships.connected_to
+
+  amqpinflux_to_influxdb:
+    derived_from: cloudify.relationships.connected_to
+
+  restservice_to_rabbitmq:
+    derived_from: cloudify.relationships.connected_to
+
+  webui_to_influxdb:
+    derived_from: cloudify.relationships.connected_to
+
+  webui_to_restservice:
+    derived_from: cloudify.relationships.connected_to

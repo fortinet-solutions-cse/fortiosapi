@@ -1,0 +1,1001 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - http://www.getcloudify.org/spec/fabric-plugin/1.4.1/plugin.yaml
+  - http://www.getcloudify.org/spec/vsphere-plugin/2.0/plugin.yaml
+  - types/manager-types.yaml
+
+
+
+
+inputs:
+
+  #############################
+  # Provider specific Inputs
+  #############################
+
+  # Network settings Inputs
+  dns_servers:
+    type: string
+    description: >
+        DNS servers ip list(used in both networks)
+    default:
+      - '8.8.8.8'
+
+  management_network_name:
+    type: string
+    description: >
+      Name of common network that will be used for connect nodes and
+      manager node
+    default: Management
+
+  server_name:
+    type: string
+    default: cloudify-manager-server
+    description: >
+      Human readible name for server
+
+  management_network_use_dhcp:
+    description: >
+      use DHCP to obtain an ip address for managment network
+    default: true
+    type: boolean
+
+  management_network_cidr:
+    description: >
+      managment network cidr (for example, 10.0.0.0/24). It will be used
+      by the plugin only when `use_dhcp` is false
+    default: ''
+    type: string
+
+  management_network_gateway:
+    description: >
+      management network gateway ip. It will be used by the plugin only
+      when `use_dhcp` is false
+    default: ''
+    type: string
+
+  management_network_ip:
+    description: >
+      server ip address in managment network. It will be used by the
+      plugin only when `use_dhcp` is false
+    default: ''
+    type: string
+
+  management_network_switch_distributed:
+    description: >
+       signifies if management network is connected to a distributed
+       switch
+    default: false
+    type: boolean
+
+  manager_server_domain:
+    description: >
+      the fully qualified domain name for manager node
+    default: ''
+    type: string
+
+  external_network_name:
+    description: >
+      external network name that will be used outside connection
+    default: DMZ
+    type: string
+
+  external_network_use_dhcp:
+    description: >
+      use DHCP to obtain an ip address in network with external connectivity
+    default: true
+    type: boolean
+
+  external_network_cidr:
+    description: >
+      external network cidr (for example, 10.0.0.0/24).
+      It will be used by the plugin only when `use_dhcp` is false
+    default: ''
+    type: string
+
+  external_network_gateway:
+    description: >
+      external network gateway ip. It will be used by the plugin only when
+      `use_dhcp` is false
+    default: ''
+    type: string
+
+  external_network_ip:
+    description: >
+      server ip address in external network. It will be used by the plugin only when
+      `use_dhcp` is false
+    default: ''
+    type: string
+
+  external_network_switch_distributed:
+    description: >
+      signifies if exteranal network is connected to a distributed switch
+    default: false
+    type: boolean
+
+  manager_server_cpus:
+    type: string
+    default: 2
+    description: >
+      Count cpu on manager node
+
+  manager_server_memory:
+    type: string
+    default: 4096
+    description: >
+      Manager host memory allocation
+
+  # vsphere credentials
+
+  vsphere_username:
+    type: string
+    description: >
+      User login for vsphere
+
+  vsphere_password:
+    type: string
+    default: ''
+    description: >
+      User password for vsphere
+
+  vsphere_host:
+    description: >
+      vSphere REST api host
+    type: string
+
+  vsphere_port:
+    description: >
+      port which vCenter Server system uses to monitor data transfer
+      from SDK clients
+    default: 443
+    type: string
+
+  vsphere_datacenter_name:
+    description: >
+      datacenter name in vsphere
+    default: Datacenter
+    type: string
+
+  vsphere_resource_pool_name:
+    description: >
+      Resource pool name. Represents a set of physical resources:
+      a single host, a subset of a host's resources, or resources
+      spanning multiple hosts
+    default: Resources
+    type: string
+
+  vsphere_auto_placement:
+    description: >
+      signifies if server is to be automatically placed on a host
+    default: false
+    type: boolean
+
+  template:
+    type: string
+    default: CentOS-7-x86_64-1406
+    description: >
+      Name of template,
+      can be 'CentOS-7.0-1406-x86_64-tmpl'
+
+  ssh_user:
+    type: string
+    default: root
+    description: >
+        admin user in vm template
+
+  ssh_key_filename:
+    type: string
+    description: >
+        SSH key path used to connect to the manager by ssh_user
+
+  agent_private_key_path:
+    type: string
+    description: >
+        SSH key path used to connect from the manager to nodes
+
+  agents_user:
+    default: ubuntu
+    type: string
+    description: >
+        agent username used with agent_private_key_path
+
+  resources_prefix:
+    default: ''
+    type: string
+    description: >
+        prefix for all nodes
+
+  #############################
+  # Security Settings
+  #############################
+  security_enabled:
+    default: false
+
+  ssl_enabled:
+    default: false
+
+  admin_username:
+    default: admin
+
+  admin_password:
+    default: admin
+
+  insecure_endpoints_disabled:
+    description: Disables insecure REST endpoints
+    type: boolean
+    default: false
+
+  #############################
+  # Bootstrap Validations
+  #############################
+  ignore_bootstrap_validations:
+    description: >
+      While validations will be performed, they will be ignored.
+    type: string
+    default: false
+
+  minimum_required_total_physical_memory_in_mb:
+    description: Minimum required physical memory on Manager host in MB.
+    type: integer
+    default: 3792
+
+  minimum_required_available_disk_space_in_gb:
+    description: Minimum required disk space on Manager host in GB.
+    type: integer
+    default: 5
+
+  allowed_heap_size_gap_in_mb:
+    description: Gap between heap size and total Manager host's memory in MB.
+    type: integer
+    default: 1000
+
+  #############################
+  # Manager Resources Package
+  #############################
+  manager_resources_package:
+    description: A URL to a tar files containing all of the manager's resources
+    type: string
+    default: http://repository.cloudifysource.org/org/cloudify3/3.4.0/ga-RELEASE/cloudify-manager-resources_3.4.0-ga-b400.tar.gz
+
+  manager_resources_package_checksum_file:
+    description: >
+      A URL to the Manager Resources Package md5 checksum file.
+      This defaults to an empty string, meaning that
+    type: string
+    default: ''
+
+  skip_checksum_validation:
+    description: Whether to skip md5 checksum validation or not
+    type: boolean
+    default: true
+
+  #############################
+  # Agent Packages
+  #############################
+
+  # Nginx, being the fileserver, also serves agent packages.
+  # The key names of the agents must be in the format: distro_release_agent
+  # as the key is what's used to name the file, which later allows our
+  # agent installer to identify it for your distro and release automatically.
+  agent_package_urls:
+    default:
+      ubuntu_trusty_agent: Ubuntu-trusty-agent_3.4.0-ga-b400.tar.gz
+      ubuntu_precise_agent: Ubuntu-precise-agent_3.4.0-ga-b400.tar.gz
+      centos_7x_agent: centos-Core-agent_3.4.0-ga-b400.tar.gz
+      centos_6x_agent: centos-Final-agent_3.4.0-ga-b400.tar.gz
+      redhat_7x_agent: redhat-Maipo-agent_3.4.0-ga-b400.tar.gz
+      redhat_6x_agent: redhat-Santiago-agent_3.4.0-ga-b400.tar.gz
+      cloudify_windows_agent: cloudify-windows-agent_3.4.0-ga-b400.exe
+
+  #############################
+  # Cloudify Modules
+  #############################
+  rest_service_rpm_source_url:
+    type: string
+    default: cloudify-rest-service-3.4.0-ga_b400.x86_64.rpm
+
+  management_worker_rpm_source_url:
+    type: string
+    default: cloudify-management-worker-3.4.0-ga_b400.x86_64.rpm
+
+  amqpinflux_rpm_source_url:
+    type: string
+    default: cloudify-amqp-influx-3.4.0-ga_b400.x86_64.rpm
+
+  cloudify_resources_url:
+    type: string
+    default: cloudify-manager-3.4.tar.gz
+
+  webui_source_url:
+    type: string
+    default: cloudify-ui-3.4.0-ga-b400.tgz
+
+  # This is a Cloudify specific redistribution of Grafana.
+  grafana_source_url:
+    type: string
+    default: grafana-1.9.0.tgz
+
+  #############################
+  # External Components
+  #############################
+  pip_source_rpm_url:
+    type: string
+    default: python-pip-7.1.0-1.el7.noarch.rpm
+
+  java_source_url:
+    type: string
+    default: jre1.8.0_45-1.8.0_45-fcs.x86_64.rpm
+
+  erlang_source_url:
+    type: string
+    default: erlang-17.4-1.el6.x86_64.rpm
+
+  rabbitmq_source_url:
+    type: string
+    default: rabbitmq-server-3.5.3-1.noarch.rpm
+
+  elasticsearch_source_url:
+    type: string
+    default: elasticsearch-1.6.0.noarch.rpm
+
+  elasticsearch_curator_rpm_source_url:
+    type: string
+    default: elasticsearch-curator-3.2.3-1.x86_64.rpm
+
+  logstash_source_url:
+    type: string
+    default: logstash-1.5.0-1.noarch.rpm
+
+  nginx_source_url:
+    type: string
+    default: nginx-1.8.0-1.el7.ngx.x86_64.rpm
+
+  influxdb_source_url:
+    type: string
+    default: influxdb-0.8.8-1.x86_64.rpm
+
+  langohr_source_url:
+    type: string
+    default: langohr.jar
+
+  daemonize_source_url:
+    type: string
+    default: daemonize-1.7.3-7.el7.x86_64.rpm
+
+  riemann_source_url:
+    type: string
+    default: riemann-0.2.6-1.noarch.rpm
+
+  nodejs_source_url:
+    type: string
+    default: node-v0.10.35-linux-x64.tar.gz
+
+  sanity_app_source_url:
+      type: string
+      default: cloudify-hello-world-example-3.4.tar.gz
+
+  #############################
+  # RabbitMQ Inputs
+  #############################
+
+  rabbitmq_endpoint_ip:
+    description: >
+      Location of the rabbit server. If blank, the manager IP will be used.
+      Note that if this is set, the external rabbit service must already exist with the appropriate
+      credentials and configuration.
+      If this is set, rabbit will not be installed on the manager. This may have security implications
+      if you are using SSL for rabbit as some normally internal (to the manager) traffic is not currently
+      encrypted.
+    type: string
+    default: ''
+
+  rabbitmq_events_queue_message_ttl:
+    description: >
+      Sets the number of milliseconds to wait before a message expires
+      in the events queue.
+      Not used if an external endpoint is used.
+    type: integer
+    default: 60000
+
+  rabbitmq_logs_queue_message_ttl:
+    description: >
+      Sets the number of milliseconds to wait before a message expires
+      in the logs queue.
+      Not used if an external endpoint is used.
+    type: integer
+    default: 60000
+
+  rabbitmq_metrics_queue_message_ttl:
+    description: >
+      Sets the number of milliseconds to wait before a message expires
+      in the metrics queues.
+      Not used if an external endpoint is used.
+    type: integer
+    default: 60000
+
+  rabbitmq_username:
+    description: >
+      Sets the username to use for clients such as celery to connect to the rabbitmq broker.
+      It is recommended that you set both the username and password to something reasonably secure.
+    type: string
+    default: cloudify
+
+  rabbitmq_password:
+    description: >
+      Sets the password to use for clients such as celery to connect to the rabbitmq broker.
+      It is recommended that you set both the username and password to something reasonably secure.
+    type: string
+    default: c10udify
+
+  rabbitmq_ssl_enabled:
+    description: >
+      Whether SSL should be enabled for RabbitMQ. If this is set to true then the public and private
+      certs must be supplied (rabbitmq_cert_private, rabbitmq_cert_public inputs).
+    type: boolean
+    default: false
+
+  rabbitmq_cert_private:
+    description: >
+      The private certificate for RabbitMQ to use for SSL. This must be PEM formatted.
+      It is expected to begin with a line containing 'PRIVATE KEY' in the middle.
+      Not used if an external endpoint is used.
+    type: string
+    default: ''
+
+  rabbitmq_cert_public:
+    description: >
+      The public certificate for RabbitMQ to use for SSL. This does not need to be signed by any CA,
+      as it will be deployed and explicitly used for all other components.
+      It may be self-signed. It must be PEM formatted.
+      It is expected to begin with a line of dashes with 'BEGIN CERTIFICATE' in the middle.
+      If an external endpoint is used, this must be the public certificate associated with the private
+      certificate that has already been configured for use by that rabbit endpoint.
+    type: string
+    default: ''
+
+  # note that for each of the queue length limit properties, new messages
+  # will be queued in RabbitMQ and old messages will be deleted once the
+  # limit is reached!
+  # https://www.rabbitmq.com/maxlength.html
+  rabbitmq_events_queue_length_limit:
+    description: >
+      Sets the number of messages the events queue can hold.
+      Note this is NOT the message byte length!
+      Not used if an external endpoint is used.
+    type: integer
+    default: 1000000
+
+  rabbitmq_logs_queue_length_limit:
+    description: >
+      Sets the number of messages the logs queue can hold.
+      Note this is NOT the message byte length!
+      Not used if an external endpoint is used.
+    type: integer
+    default: 1000000
+
+  rabbitmq_metrics_queue_length_limit:
+    description: >
+      Sets the number of messages the metrics queues can hold.
+      This applies to both the queue that amqp-influx pulls from and
+      the ones Riemann pulls from.
+      Note this is NOT the message byte length!
+      Not used if an external endpoint is used.
+    type: integer
+    default: 1000000
+
+  rabbitmq_fd_limit:
+    description: >
+      Sets the File Descriptor limit for the rabbitmq user.
+      Not used if an external endpoint is used.
+    type: integer
+    default: 102400
+
+  #############################
+  # Management Workers Inputs
+  #############################
+
+  management_worker_log_level:
+    description: >
+      Sets the logging level to use for the management workers. This affects the logging performed
+      by the manager during the execution of management tasks, such as deployment creation
+      and deployment deletion.
+      NOTE: specifying "debug" will result in considerable amount of logging activity. Consider
+      using "info" (or a more restrictive level) for production environments.
+    type: string
+    default: debug
+
+  #############################
+  # Elasticsearch Inputs
+  #############################
+  # https://www.elastic.co/guide/en/elasticsearch/guide/current/heap-sizing.html
+  elasticsearch_heap_size:
+    type: string
+    default: "2g"
+
+  elasticsearch_java_opts:
+    description: >
+      Provide any JAVA_OPTS to Elasticsearch.
+    type: string
+    default: ''
+
+  # The index for events/logs will be named `logstash-YYYY.mm.dd` and
+  # A new index corresponding with today's date will be added each day.
+  # Elasticsearch Curator is used to rotate the indices on a daily basis
+  # via a cronjob.
+  # https://www.elastic.co/blog/curator-tending-your-time-series-indices
+  elasticsearch_index_rotation_interval:
+    description: >
+      Determines the number of days to keep.
+    type: integer
+    default: 7
+
+  elasticsearch_endpoint_ip:
+    description: >
+      An IP Endpoint of your Elasticsearch Cluster.
+    type: string
+    default: ''
+
+  elasticsearch_endpoint_port:
+    description: >
+      The Port of your Elasticsearch Cluster.
+    type: integer
+    default: 9200
+
+  elasticsearch_clustering_enabled:
+    description: >
+      Whether to enable automatic clustering of elasticsearch nodes via multicast discovery.
+      This can be either 'true' or 'false'
+    type: string
+    default: 'false'
+
+  elasticsearch_clustering_discovery_port:
+    description: >
+      The port used to discover other elasticsearch nodes on the same network.
+      Note that the default in elasticsearch's configuration is 54328. Here we default to
+      another port to prevent accidental discovery of already installed node within the
+      same network.
+    type: integer
+    default: 54329
+
+  #############################
+  # InfluxDB Inputs
+  #############################
+  influxdb_endpoint_ip:
+    description: >
+      An IP Endpoint of your InfluxDB Cluster.
+    type: string
+    default: ''
+
+  #############################
+  # Management Worker Inputs
+  #############################
+  management_worker_max_workers:
+    description: >
+      Max number of celery workers.
+    type: integer
+    default: 100
+  management_worker_min_workers:
+    description: >
+      Min number of celery workers.
+    type: integer
+    default: 2
+
+  #############################
+  # Upload Resources Inputs
+  #############################
+  dsl_resources:
+    description: >
+      Holds a set of dsl required resources
+    default:
+      - {'source_path': 'http://www.getcloudify.org/spec/vsphere-plugin/2.0/plugin.yaml', 'destination_path': '/spec/vsphere-plugin/2.0/plugin.yaml'}
+      - {'source_path': 'http://www.getcloudify.org/spec/fabric-plugin/1.4.1/plugin.yaml', 'destination_path': '/spec/fabric-plugin/1.4.1/plugin.yaml'}
+      - {'source_path': 'http://www.getcloudify.org/spec/diamond-plugin/1.3.3/plugin.yaml', 'destination_path': '/spec/diamond-plugin/1.3.3/plugin.yaml'}
+      - {'source_path': 'http://www.getcloudify.org/spec/cloudify/3.4/types.yaml', 'destination_path': '/spec/cloudify/3.4/types.yaml'}
+
+  #############################
+  # Dev Inputs
+  #############################
+
+  # Some plugins installed from sources require compilation - installs a
+  # compiler and the python headers to allow that.
+  install_python_compilers:
+    type: boolean
+    default: false
+
+  # For development purposes, you can use these, which will override the modules
+  # supplied within the rpm.
+  # These should be pip installable tar.gz files.
+
+  cli_source_url:
+    type: string
+    default: ''
+
+  rest_service_source_url:
+    type: string
+    default: ''
+
+  dsl_parser_source_url:
+    type: string
+    default: ''
+
+  rest_client_source_url:
+    type: string
+    default: ''
+
+  plugins_common_source_url:
+    type: string
+    default: ''
+
+  script_plugin_source_url:
+    type: string
+    default: ''
+
+  securest_source_url:
+    type: string
+    default: ''
+
+  amqpinflux_source_url:
+    type: string
+    default: ''
+
+  agent_source_url:
+    type: string
+    default: ''
+
+######################################################################
+# This is a vsphere blueprint specific node_type to allow us to define
+# The public_ip of the machine is an accessible property of the host.
+# By default, the `ip` property is the private ip.
+######################################################################
+node_types:
+
+  connection_configuration:
+     derived_from: cloudify.nodes.Root
+     properties:
+       connection_config: {}
+
+######################################################################
+# These nodes comprise the manager's infrastructure and components
+######################################################################
+node_templates:
+  connection_configuration:
+    type: connection_configuration
+    properties:
+      connection_config:
+        username: { get_input: vsphere_username }
+        password: { get_input: vsphere_password }
+        host: { get_input: vsphere_host }
+        port: { get_input: vsphere_port }
+        datacenter_name: { get_input: vsphere_datacenter_name }
+        resource_pool_name: { get_input: vsphere_resource_pool_name }
+        auto_placement: { get_input: vsphere_auto_placement }
+
+  manager_host:
+    type: cloudify.vsphere.nodes.Server
+    properties:
+      server:
+        name: { get_input: server_name }
+        template: { get_input: template }
+        cpus: { get_input: manager_server_cpus }
+        memory: { get_input: manager_server_memory }
+      install_agent: false
+      networking:
+        domain: { get_input: manager_server_domain }
+        dns_servers: { get_input: dns_servers }
+        connect_networks:
+          - management: true
+            switch_distributed: { get_input: management_network_switch_distributed }
+            use_dhcp: { get_input: management_network_use_dhcp }
+            network: { get_input: management_network_cidr }
+            gateway: { get_input: management_network_gateway }
+            ip: { get_input: management_network_ip}
+            name: { get_input: management_network_name }
+          - external: true
+            switch_distributed: { get_input: external_network_switch_distributed }
+            use_dhcp: { get_input: external_network_use_dhcp }
+            network: { get_input: external_network_cidr }
+            gateway: { get_input: external_network_gateway }
+            ip: { get_input: external_network_ip}
+            name: { get_input: external_network_name }
+      connection_config: { get_property: [connection_configuration, connection_config] }
+
+  # #####################################################################
+  # The manager_configuration node is meant to be read by Cloudify to
+  # provide runtime configuration and information for the CLI and the
+  # Manager.
+  # #####################################################################
+  manager_resources:
+    type: cloudify.nodes.ManagerResources
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+
+  manager_configuration:
+    type: cloudify.nodes.MyCloudifyManager
+    properties:
+      ssh_user: { get_input: ssh_user }
+      ssh_key_filename: { get_input: ssh_key_filename }
+      agent_local_key_path: { get_input: agent_private_key_path }
+      cloudify:
+        resources_prefix: { get_input: resources_prefix }
+
+        cloudify_agent:
+          min_workers: 0
+          max_workers: 5
+          remote_execution_port: 22
+          user: { get_input: agents_user }
+          broker_ip: { get_input: rabbitmq_endpoint_ip }
+          broker_user: { get_input: rabbitmq_username }
+          broker_pass: { get_input: rabbitmq_password }
+          broker_ssl_enabled: { get_input: rabbitmq_ssl_enabled }
+          broker_ssl_cert: { get_input: rabbitmq_cert_public }
+
+        workflows:
+          task_retries: -1  # this means forever
+          task_retry_interval: 30
+
+        policy_engine:
+          start_timeout: 30
+
+        # Declare rules for the default import resolver
+        # which enables using the manager in offline mode.
+        # The resolver replaces an import's http link with the local path
+        # on the manager according to the matching rule's value.
+        # If the resolver cannot read the import from the specified local path
+        # (e.g. when the manager is not in offline mode),
+        # it will fall back to the original http link.
+        import_resolver:
+          parameters:
+            rules:
+            - {'http://www.getcloudify.org/spec': 'http://localhost:53229/spec'}
+
+        upload_resources:
+          dsl_resources: { get_input: dsl_resources }
+
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: components/manager/scripts/create_conf.py
+            hide_output: &hide_output
+              - running
+            fabric_env: &vsphere_fabric_env
+              user: { get_input: ssh_user }
+              key_filename: { get_input: ssh_key_filename }
+              host_string: { get_attribute: [manager_host, public_ip] }
+              disable_known_hosts: True
+              always_use_pty: true
+        configure:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file: components/manager/scripts/vsphere/configure.py
+            task_name: configure
+            task_properties:
+              vsphere_config: { get_property: [connection_configuration, connection_config] }
+            hide_output: *hide_output
+            fabric_env: *vsphere_fabric_env
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: components/manager/scripts/vsphere/update-firewall.sh
+            hide_output: *hide_output
+            fabric_env: *vsphere_fabric_env
+
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+        target_interfaces:
+          cloudify.interfaces.relationship_lifecycle:
+            postconfigure:
+              implementation: components/manager/scripts/set_manager_public_ip.py
+              inputs:
+                public_ip: { get_attribute: [manager_host, public_ip] }
+      - type: cloudify.relationships.depends_on
+        target: manager_resources
+
+  # #####################################################################
+  # The Python and Java nodes are used to provide runtime environments
+  # on specific hosts. It allows us to define the runtime environment
+  # and install it only once per host and then have a node depend on it.
+  # Note that Erlang and NodeJS are also installed as runtime envs as
+  # part of the RabbitMQ and WebUI nodes respectively but as they're not
+  # used by multiple nodes, we're not specifying them as independent
+  # entities.
+  # #####################################################################
+  python_runtime:
+    type: manager.nodes.PythonRuntime
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  java_runtime:
+    type: manager.nodes.JavaRuntime
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  ######################################################################
+  # These are the nodes comprising the Cloudify Manager's components
+  ######################################################################
+  rabbitmq:
+    type: manager.nodes.RabbitMQ
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  elasticsearch:
+    type: manager.nodes.Elasticsearch
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: java_runtime
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  logstash:
+    type: manager.nodes.Logstash
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: java_runtime
+      - type: logstash_to_elasticsearch
+        target: elasticsearch
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  influxdb:
+    type: manager.nodes.InfluxDB
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  nginx:
+    type: manager.nodes.Nginx
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: nginx_to_manager_configuration
+        target: manager_configuration
+      - type: nginx_to_restservice
+        target: rest_service
+
+  riemann:
+    type: manager.nodes.Riemann
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: java_runtime
+      - type: riemann_to_rabbitmq
+        target: rabbitmq
+      - type: riemann_to_nginx
+        target: nginx
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  rest_service:
+    type: manager.nodes.RestService
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: python_runtime
+      - type: rest_to_mgr_config
+        target: manager_configuration
+      - type: restservice_to_elasticsearch
+        target: elasticsearch
+      - type: restservice_to_rabbitmq
+        target: rabbitmq
+
+  mgmt_worker:
+    type: manager.nodes.ManagementWorker
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: python_runtime
+      - type: mgmtworker_to_rabbitmq
+        target: rabbitmq
+      - type: mgmtworker_to_nginx
+        target: nginx
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  amqp_influx:
+    type: manager.nodes.AmqpInfluxBroker
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: cloudify.relationships.depends_on
+        target: python_runtime
+      - type: amqpinflux_to_rabbitmq
+        target: rabbitmq
+      - type: amqpinflux_to_influxdb
+        target: influxdb
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  webui:
+    type: manager.nodes.WebUI
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: webui_to_restservice
+        target: rest_service
+      - type: webui_to_influxdb
+        target: influxdb
+      - type: cloudify.relationships.depends_on
+        target: manager_configuration
+
+  #################################
+  # Sanity
+  #################################
+  sanity:
+    type: manager.nodes.Sanity
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: manager_host
+      - type: sanity_to_mgr_config
+        target: manager_configuration
+      - type: cloudify.relationships.depends_on
+        target: python_runtime
+      - type: cloudify.relationships.depends_on
+        target: java_runtime
+      - type: cloudify.relationships.depends_on
+        target: elasticsearch
+      - type: cloudify.relationships.depends_on
+        target: logstash
+      - type: cloudify.relationships.depends_on
+        target: influxdb
+      - type: cloudify.relationships.depends_on
+        target: nginx
+      - type: cloudify.relationships.depends_on
+        target: riemann
+      - type: cloudify.relationships.depends_on
+        target: rest_service
+      - type: cloudify.relationships.depends_on
+        target: mgmt_worker
+      - type: cloudify.relationships.depends_on
+        target: manager_resources
+      - type: cloudify.relationships.depends_on
+        target: amqp_influx
+
+  ######################################################################
+  # Enable this node if you want to have the CLI installed within
+  # the manager. This might aid in debugging problems or just
+  # controlling the manager from within itself.
+  ######################################################################
+  # cli:
+  #   type: manager.nodes.CLI
+  #   relationships:
+  #     - type: cloudify.relationships.contained_in
+  #       target: manager_host
+  #     - type: cloudify.relationships.depends_on
+  #       target: nginx
+  #     - type: cloudify.relationships.depends_on
+  #       target: restservice
+
+
+plugins:
+  cli:
+    install: false
+    executor: central_deployment_agent
+
+outputs:
+  manager_ip:
+    value: { get_attribute: [manager_host, public_ip] }
+  private_ip:
+    value: { get_attribute: [ manager_host, ip ]}

@@ -1,0 +1,3 @@
+[console_scripts]
+ctx = cloudify.proxy.client:main
+

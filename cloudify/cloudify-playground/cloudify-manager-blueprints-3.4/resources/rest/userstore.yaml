@@ -1,0 +1,9 @@
+users:
+  - username: admin
+    password: admin
+    groups:
+      - cfy_admins
+groups:
+  - name: cfy_admins
+    roles:
+      - administrator

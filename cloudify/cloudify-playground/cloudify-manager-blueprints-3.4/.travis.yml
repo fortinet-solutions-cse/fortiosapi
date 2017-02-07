@@ -1,0 +1,52 @@
+language: python
+sudo: required
+
+python:
+  - 2.7
+
+install:
+    - pip install https://github.com/cloudify-cosmo/cloudify-rest-client/archive/3.4.zip
+    - pip install https://github.com/cloudify-cosmo/cloudify-dsl-parser/archive/3.4.zip
+    - pip install https://github.com/cloudify-cosmo/cloudify-plugins-common/archive/3.4.zip
+    - pip install https://github.com/cloudify-cosmo/cloudify-script-plugin/archive/1.4.zip
+    - pip install https://github.com/cloudify-cosmo/cloudify-cli/archive/3.4.zip
+    - pip install https://github.com/cloudify-cosmo/cloudify-openstack-plugin/archive/1.3.1.zip
+    - pip install coverage==3.7.1
+    - pip install nose
+    - pip install nose-cov
+    - pip install mock
+    - pip install flake8
+    - pip install testtools
+
+env:
+    - OP="validate-blueprints"
+    - OP="flake8"
+    - OP="bootstrap-sanity"
+    - OP="unit-tests"
+
+script:
+    - |
+        set -e
+        if [ "${OP}" == "validate-blueprints" ]; then
+          cfy init
+          blueprints=`find . -name "*-manager-blueprint.yaml"`
+          for blueprint in $blueprints; do
+            cfy blueprints validate -p $blueprint
+          done
+        elif [ "${OP}" == "flake8" ]; then
+          flake8 .
+        elif [ "${OP}" == "bootstrap-sanity" ]; then
+          if [ "${TRAVIS_TAG}" == "bootstrap-sanity" ]; then
+            cd tests
+            pip install -r bootstrap-sanity-requirements.txt
+            python sanity.py
+            exit $?
+          else
+            echo "Not bootstrap-sanity tag, skipping bootstrap sanity test."
+          fi;
+        elif [ "${OP}" == "unit-tests" ]; then
+          cd tests/unit-tests
+          nosetests --with-cov --cov-report term-missing --cov .
+        else
+          exit 1
+        fi;

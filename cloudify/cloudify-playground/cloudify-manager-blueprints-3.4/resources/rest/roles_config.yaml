@@ -1,0 +1,28 @@
+# This file maps roles to allowed and denied permissions.
+# Access will be granted only to allowed permissions, that do not appear in the deny dictionary.
+# Each permission is a dict of <endpoint>:<http methods as list>
+# See the commented configuration below for examples.
+
+administrator:
+  allow:
+    '*':
+      - '*'
+
+################################################################################
+# The deployer role can access any endpoint, and call any method except DELETE
+################################################################################
+deployer:
+  allow:
+    '*':
+      - '*'
+  deny:
+    '*':
+      - DELETE
+
+#############################################################################
+# The viewer role can can access any endpoint, but only call the GET method
+#############################################################################
+viewer:
+  allow:
+    '*':
+      - GET

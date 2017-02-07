@@ -1,0 +1,13 @@
+Metadata-Version: 1.0
+Name: wagon
+Version: 0.3.2
+Summary: Creates Python Wheel based archives with dependencies.
+Home-page: https://github.com/cloudify-cosmo/wagon
+Author: Gigaspaces
+Author-email: cosmo-admin@gigaspaces.com
+License: LICENSE
+Description: Wagon
+        =====
+        
+        See `Official Github Repo <https://github.com/cloudify-cosmo/wagon>`_.
+Platform: All

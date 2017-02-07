@@ -1,0 +1,26 @@
+# REST and UI server.
+server {
+  # server listening
+  listen              *:80;
+  listen              443 ssl;
+  server_name         _;
+
+  # force http redirect to https
+  if ($scheme = http) {
+      return 301 https://$host$request_uri;
+  }
+
+  ssl_certificate     /root/cloudify/server.crt;
+  ssl_certificate_key /root/cloudify/server.key;
+
+  include "/etc/nginx/conf.d/logs-conf.cloudify";
+
+  # serve the UI
+  include "/etc/nginx/conf.d/ui-locations.cloudify";
+
+  # Serves the Rest Service (backed by the cloudify-rest upstream).
+  include "/etc/nginx/conf.d/rest-location.cloudify";
+
+  # Serves the File Server (backed by the cloudify-resources upstream).
+  include "/etc/nginx/conf.d/fileserver-location.cloudify";
+}

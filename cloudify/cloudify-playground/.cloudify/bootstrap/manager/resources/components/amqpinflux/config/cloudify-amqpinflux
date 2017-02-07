@@ -1,0 +1,8 @@
+AMQP_HOST="{{ ctx.instance.runtime_properties.rabbitmq_endpoint_ip }}"
+INFLUXDB_HOST="{{ ctx.instance.runtime_properties.influxdb_endpoint_ip }}"
+AMQP_USERNAME="{{ ctx.instance.runtime_properties.rabbitmq_username }}"
+AMQP_PASSWORD="{{ ctx.instance.runtime_properties.rabbitmq_password }}"
+AMQP_SSL_ENABLED="{{ ctx.instance.runtime_properties.rabbitmq_ssl_enabled }}"
+AMQP_CA_CERT_PATH="{{ ctx.instance.runtime_properties.broker_cert_path }}"
+AMQPINFLUX_HOME="/opt/amqpinflux"
+AMQPINFLUX_VIRTUALENV_DIR="/opt/amqpinflux/env"

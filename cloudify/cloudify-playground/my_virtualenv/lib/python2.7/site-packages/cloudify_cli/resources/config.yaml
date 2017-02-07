@@ -1,0 +1,15 @@
+colors: false
+
+logging:
+
+  # path to a file where cli logs will be saved.
+  filename: {{ log_path }}
+
+  # configuring level per logger
+  loggers:
+
+    # main logger of the cli. provides basic descriptions for executed operations.
+    cloudify.cli.main: info
+
+    # rest client http logs, including headers.
+    cloudify.rest_client.http: info

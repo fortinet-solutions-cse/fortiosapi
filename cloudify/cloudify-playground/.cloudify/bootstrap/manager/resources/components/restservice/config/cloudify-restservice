@@ -1,0 +1,18 @@
+# REST Service's Home directory
+REST_SERVICE_HOME="/opt/manager"
+
+# REST Service's config files
+REST_SERVICE_CONFIG_PATH="/opt/manager/cloudify-rest.conf"
+MANAGER_REST_CONFIG_PATH="/opt/manager/cloudify-rest.conf"
+MANAGER_REST_SECURITY_CONFIG_PATH="/opt/manager/rest-security.conf"
+
+# REST Service's virtualenv
+REST_SERVICE_VIRTUALENV="/opt/manager/env"
+# Duplicate of the above. Need to check if unneeded.
+MANAGER_VIRTUALENV="/opt/manager/env"
+
+# REST Service (and Gunicorn) Log Path
+REST_SERVICE_LOG_PATH="/var/log/cloudify/rest"
+
+# REST Service port
+REST_SERVICE_PORT=8100

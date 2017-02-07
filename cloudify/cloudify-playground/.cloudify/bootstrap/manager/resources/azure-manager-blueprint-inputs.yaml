@@ -1,0 +1,24 @@
+subscription_id: ''
+tenant_id: ''
+client_id: ''
+client_secret: ''
+location: westus
+vm_size: Standard_A2
+vm_os_family: linux
+vm_image_publisher: OpenLogic
+vm_image_offer: CentOS
+vm_image_sku: '7.0'
+vm_image_version: latest
+vm_os_username: centos
+vm_os_password: ''
+vm_os_pubkeys:
+    - path: /home/centos/.ssh/authorized_keys
+      keyData:
+        "ssh-rsa ..."
+agent_remote_key_path: /home/centos/.ssh/agent_kp.pem
+agent_local_key_path: ~/.ssh/id_rsa
+ssh_key_filename: ~/.ssh/id_rsa
+ssh_user: centos
+resource_prefix: lwr
+resource_suffix: 00
+retry_after: 30

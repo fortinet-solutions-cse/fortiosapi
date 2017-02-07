@@ -1,0 +1,32 @@
+[Unit]
+Description=Cloudify Management Worker Service
+Wants=cloudify-rabbitmq.service
+After=cloudify-rabbitmq.service
+
+[Service]
+TimeoutStartSec=0
+Restart=on-failure
+EnvironmentFile=-/etc/sysconfig/cloudify-mgmtworker
+WorkingDirectory=/opt/mgmtworker/work
+ExecStart=/opt/mgmtworker/env/bin/celery worker \
+    -Ofair \
+    --include=cloudify.dispatch \
+    --hostname cloudify.management \
+    --config=cloudify.broker_config \
+    --events \
+    --app=cloudify_agent.app.app \
+    --loglevel=${CELERY_LOG_LEVEL} \
+    --queues=cloudify.management \
+    --logfile=${CELERY_LOG_DIR}/cloudify.management_worker.log \
+    --pidfile=${CELERY_WORK_DIR}/cloudify.management_worker.pid \
+    --autoscale={{ node.properties.max_workers }},{{ node.properties.min_workers }} \
+    --without-gossip \
+    --without-mingle \
+    --with-gate-keeper \
+    --gate-keeper-bucket-size={{ node.properties.gate_keeper_bucket_size }} \
+    --with-logging-server \
+    --logging-server-logdir=${CELERY_LOG_DIR}/logs \
+    --logging-server-handler-cache-size={{ node.properties.max_workers }}
+
+[Install]
+WantedBy=multi-user.target

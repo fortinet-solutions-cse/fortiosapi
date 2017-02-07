@@ -1,0 +1,16 @@
+#!/bin/bash -x
+
+lxc launch images:centos/7/amd64 cfy-manager
+
+#Follow http://docs.getcloudify.org/3.4.0/cli/bootstrap/
+
+sleep 24
+
+LXC="lxc exec cfy-manager"
+$LXC yum update 
+$LXC yum -y install openssh-server logstash java anacron gcc python-devel sudo 
+$LXC bash install-launchpad
+
+lxc restart cfy-manager
+
+# check this https://groups.google.com/forum/#!topic/cloudify-users/U1xMdkZ0HqM

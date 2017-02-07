@@ -1,0 +1,1 @@
+{"relationships": [{"target_name": "manager_host", "target_id": "manager_host_d154f", "type": "cloudify.relationships.contained_in"}], "name": "manager_resources", "runtime_properties": {}, "state": "configuring", "node_id": "manager_resources", "version": 4, "host_id": "manager_host_d154f", "id": "manager_resources_21dbb"}

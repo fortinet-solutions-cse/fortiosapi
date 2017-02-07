@@ -1,0 +1,8 @@
+#!/bin/sh
+
+curator --host localhost delete indices --timestring '%Y.%m.%d' --older-than {{ ctx.node.properties.es_index_rotation_interval }} --time-unit days
+EXITVALUE=$?
+if [ $EXITVALUE != 0 ]; then
+    /usr/bin/logger -t elasticsearch-curator "ALERT exited abnormally with [$EXITVALUE]"
+fi
+exit 0

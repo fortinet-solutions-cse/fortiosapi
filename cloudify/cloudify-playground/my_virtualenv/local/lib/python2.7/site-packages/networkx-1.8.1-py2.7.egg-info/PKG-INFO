@@ -1,0 +1,35 @@
+Metadata-Version: 1.1
+Name: networkx
+Version: 1.8.1
+Summary: Python package for creating and manipulating graphs and networks
+Home-page: http://networkx.lanl.gov/
+Author: NetworkX Developers
+Author-email: networkx-discuss@googlegroups.com
+License: BSD
+Download-URL: http://networkx.lanl.gov/download/networkx
+Description: 
+        NetworkX is a Python package for the creation, manipulation, and
+        study of the structure, dynamics, and functions of complex networks.
+        
+        
+Keywords: Networks,Graph Theory,Mathematics,network,graph,discrete mathematics,math
+Platform: Linux
+Platform: Mac OSX
+Platform: Windows
+Platform: Unix
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.1
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: Topic :: Scientific/Engineering :: Mathematics
+Classifier: Topic :: Scientific/Engineering :: Physics

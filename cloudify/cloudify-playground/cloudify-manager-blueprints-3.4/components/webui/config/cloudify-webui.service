@@ -1,0 +1,15 @@
+[Unit]
+Description=Cloudify WebUI Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+TimeoutStartSec=0
+Restart=on-failure
+EnvironmentFile=-/etc/sysconfig/cloudify-webui
+User=webui
+Group=webui
+ExecStart=/opt/nodejs/bin/node /opt/cloudify-ui/cosmoui.js localhost
+
+[Install]
+WantedBy=multi-user.target

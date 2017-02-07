@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: cloudify-plugins-common
+Version: 3.4
+Summary: Contains necessary decorators and utility methods for writing Cloudify plugins
+Home-page: UNKNOWN
+Author: cosmo-admin
+Author-email: cosmo-admin@gigaspaces.com
+License: LICENSE
+Description: UNKNOWN
+Platform: UNKNOWN

@@ -1,0 +1,4 @@
+[console_scripts]
+activate_cfy_bash_completion = cloudify_cli.activate_bash_completion:main
+cfy = cloudify_cli.cli:main
+

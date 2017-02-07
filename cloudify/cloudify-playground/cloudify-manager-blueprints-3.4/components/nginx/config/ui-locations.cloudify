@@ -1,0 +1,23 @@
+# Statically serves the UI's front end.
+  location / {
+    root  /opt/cloudify-ui;
+    index  index.html  index.htm;
+  }
+
+  # Statically serves grafana for the UI.
+  location /grafana {
+    root /opt/cloudify-ui;
+    index  index.html  index.htm;
+  }
+
+  # Serves the UI's backend (backed by the cloudify-ui upstream).
+  location /backend {
+    proxy_pass         http://cloudify-ui;
+    proxy_read_timeout 90;
+    proxy_buffering    off;
+
+    proxy_set_header   X-Real-IP        $remote_addr;
+    proxy_set_header   X-Scheme         $scheme;
+    proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+    proxy_set_header   Host             $http_host;
+  }

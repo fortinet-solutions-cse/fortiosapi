@@ -1,0 +1,3 @@
+See doc/source/install.rst
+or
+http://networkx.lanl.gov/install.html 
