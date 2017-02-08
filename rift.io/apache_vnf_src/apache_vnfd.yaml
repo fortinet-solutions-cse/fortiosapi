@@ -31,7 +31,7 @@ vnfd:vnfd-catalog:
             name: apache-VM
             vm-flavor:
                 memory-mb: '2096'
-                storage-gb: '20''
+                storage-gb: '20'
                 vcpu-count: '1'
         vendor: Apache
         version: '1.0'
