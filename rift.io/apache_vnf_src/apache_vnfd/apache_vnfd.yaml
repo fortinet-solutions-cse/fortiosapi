@@ -1,0 +1,37 @@
+vnfd:vnfd-catalog:
+    vnfd:vnfd:
+    -   vnfd:connection-point:
+        -   vnfd:name: apache/cp0
+            vnfd:type: VPORT
+        vnfd:description: Fortinet tester
+        vnfd:id: apache
+        vnfd:logo: ubuntu-logo14.png
+        vnfd:mgmt-interface:
+            vnfd:dashboard-params:
+                vnfd:https: 'false'
+                vnfd:path: /
+                vnfd:port: '80'
+            vnfd:vdu-id: apache-VM
+        vnfd:name: apache
+        vnfd:service-function-chain: UNAWARE
+        vnfd:short-name: apache
+        vnfd:vdu:
+        -   vnfd:cloud-init-file: apache_init.cfg
+            vnfd:count: '1'
+            vnfd:description: apache-VM
+            vnfd:external-interface:
+            -   vnfd:name: eth0
+                vnfd:virtual-interface:
+                    vnfd:type: VIRTIO
+                vnfd:vnfd-connection-point-ref: apache/cp0
+            vnfd:guest-epa:
+                vnfd:cpu-pinning-policy: ANY
+            vnfd:id: apache-VM
+            vnfd:image: Trusty x86_64
+            vnfd:name: apache-VM
+            vnfd:vm-flavor:
+                vnfd:memory-mb: '1048'
+                vnfd:storage-gb: '10'
+                vnfd:vcpu-count: '1'
+        vnfd:vendor: Apache
+        vnfd:version: '1.0'

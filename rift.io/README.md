@@ -1,14 +1,25 @@
-lxc launch ubuntu:16.04 riftio-launchpad
+# Rift.io usage for automated demo..
 
-Follow https://open.riftio.com/documentation/riftware/4.3/a/install/install-riftware-on-generic-system.htm
-Run curl or wget to download the install-launchpad script. For example:
+Run ./deploy.sh
+wait a bit .. then you should be able to login on
+http://10.10.10.x:8443/
 
-$ wget http://repo.riftio.com/releases/open.riftio.com/4.3.3/install-launchpad
-Run the install-launchpad script.
-apt install libxml2-dev libxslt-dev
-$ bash install-launchpad
-Installation can take several minutes, depending on your internet speed.
+do lxc list and look for the riftio-lauchpad conatiner IP
+is 10.10.10.x 
 
-After the installation process completes, start the Launchpad service:
+login admin/admin
 
-$ sudo systemctl start launchpad.service
+# build the packages
+cd apache_vnf_src ; make
+cd fortigate_vnfd_src; make
+
+You will create vnfd.tar.gz package you can upload in rift.io
+Then upload: FortigateApache_nsd.yaml
+
+*Workaround for now
+You will have to upload an already configured fortigate image and
+create a snapshot called Fortigate. 
+
+# Going deeper on rift
+Check rift documentation https://open.riftio.com/documentation/riftware/4.3/
+

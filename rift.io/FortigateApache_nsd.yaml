@@ -1,0 +1,55 @@
+nsd:nsd-catalog:
+    nsd:
+    -   constituent-vnfd:
+        -   member-vnf-index: '1'
+            start-by-default: 'true'
+            vnfd-id-ref: fortigate
+        -   member-vnf-index: '2'
+            start-by-default: 'true'
+            vnfd-id-ref: apache
+        id: 3d4a16f0-63e0-4e92-8cd3-cec64c2eaeed
+        ip-profiles:
+        -   ip-profile-params:
+                dhcp-params:
+                    enabled: 'true'
+                gateway-address: 172.27.1.254
+                ip-version: ipv4
+                subnet-address: 172.27.1.0/24
+            name: in
+        -   ip-profile-params:
+                dhcp-params:
+                    enabled: 'true'
+                gateway-address: 10.40.10.254
+                ip-version: ipv4
+                subnet-address: 10.40.10.0/24
+            name: out
+        name: Fortigate Apache
+        service-primitive:
+        -   name: sshcmd
+            parameter:
+            -   data-type: STRING
+                mandatory: 'true'
+                name: commands
+        version: '0.1'
+        vld:
+        -   id: '19102'
+            ip-profile-ref: in
+            name: vld-2
+            provider-network:
+                overlay-type: GRE
+            vnfd-connection-point-ref:
+            -   member-vnf-index-ref: '1'
+                vnfd-connection-point-ref: fortigate/cp2
+                vnfd-id-ref: fortigate
+            -   member-vnf-index-ref: '2'
+                vnfd-connection-point-ref: apache/cp0
+                vnfd-id-ref: apache
+        -   id: b0d7a
+            ip-profile-ref: out
+            name: vld-1
+            provider-network:
+                overlay-type: GRE
+            vnfd-connection-point-ref:
+            -   member-vnf-index-ref: '1'
+                vnfd-connection-point-ref: fortigate/cp3
+                vnfd-id-ref: fortigate

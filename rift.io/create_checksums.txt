@@ -1,1 +1,0 @@
-find * -type f   | xargs md5sum > checksums.txt

@@ -15,26 +15,17 @@
 # under the License.
 #
 
-BUILD_DIR = fortigate_vnfd
+BUILD_DIR = apache_vnfd
 
-CHARMS:= fortios
-CHARM_SRC_DIR := layers
-CHARM_BUILD_DIR := $(BUILD_DIR)/charms
-
-CHARM_SRC_DIRS := $(addprefix $(CHARM_SRC_DIR)/, $(CHARMS))
-CHARM_BUILD_DIRS := $(addprefix $(CHARM_BUILD_DIR)/, $(CHARMS))
-
-all: $(CHARM_BUILD_DIRS)
+all: $(BUILD_DIR)/%
 
 clean:
-	-@ $(RM) -rf $(CHARM_BUILD_DIR)
+	-@ $(RM) -rf $(BUILD_DIR)
 
-$(CHARM_BUILD_DIR)/%: $(CHARM_SRC_DIR)/%
+$(BUILD_DIR)/%: 
 	rm -rf $(BUILD_DIR)/*
-	export LC_ALL=C; charm-build -o $(BUILD_DIR) $<
-	cp -rf cloud-init  fortigate_vnfd.yaml  icons  scripts $(BUILD_DIR)
-	mv $(BUILD_DIR)/builds $(BUILD_DIR)/charms
-	rm -rf $(BUILD_DIR)/deps
+	mkdir -p $(BUILD_DIR)
+	cp -rf cloud-init  apache_vnfd.yaml $(BUILD_DIR)
 	cd $(BUILD_DIR); find * -type f   | xargs md5sum > checksums.txt; cd ..
-	tar czf ../fortigate_vnfd.tar.gz $(BUILD_DIR)
-	echo "fortigate_vnfd.tar.gz ready to be on-boarded" 
+	tar czf ../apache_vnfd.tar.gz $(BUILD_DIR)
+	echo "apache_vnfd.tar.gz ready to be on-boarded" 
