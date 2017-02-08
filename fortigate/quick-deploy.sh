@@ -24,7 +24,7 @@ openstack image show  "FGT VM64 1100" > /dev/null 2>&1 || openstack image create
 
 #Tried (ref http://docs.openstack.org/cli-reference/nova.html)
 
-nova show FGT1  > /dev/null 2>&1 || nova boot --image "FGT VM64 1100" FGT1 --key-name default --security-group default --flavor m1.small --user-data fgt-user-data.txt --config-drive=true --file license=FGVMUL0000075926.lic --nic net-name=private
+nova show FGT1  > /dev/null 2>&1 || nova boot --image "FGT VM64 1100" FGT1 --key-name default --security-group default --flavor m1.small --user-data fgt-user-data.txt --config-drive=true --file license=FGVMUL0000075926.lic --nic net-name=mgmt
 
 #IP=nova floating-ip-create
 

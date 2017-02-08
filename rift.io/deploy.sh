@@ -11,7 +11,7 @@ LXC="lxc exec riftio-launchpad --"
 $LXC ping -c 4 riftio.com
 $LXC wget http://repo.riftio.com/releases/open.riftio.com/4.3.3/install-launchpad
 #Run the install-launchpad script.
-$LXC apt -y install libxml2-dev libxslt-dev
+$LXC apt -y install libxml2-dev libxslt-dev ccze zile
 $LXC bash install-launchpad #next#plugtest 4.4.0.0.54713
 $LXC systemctl start launchpad
 
