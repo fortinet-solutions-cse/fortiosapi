@@ -32,7 +32,7 @@ clean:
 $(CHARM_BUILD_DIR)/%: $(CHARM_SRC_DIR)/%
 	rm -rf $(BUILD_DIR)/*
 	export LC_ALL=C; charm-build -o $(BUILD_DIR) $<
-	cp -rf cloud-init  fortigate_vnfd.yaml  icons  scripts $(BUILD_DIR)
+	cp -rf cloud_init  fortigate_vnfd.yaml  icons  scripts $(BUILD_DIR)
 	mv $(BUILD_DIR)/builds $(BUILD_DIR)/charms
 	rm -rf $(BUILD_DIR)/deps
 	cd $(BUILD_DIR); find * -type f   | xargs md5sum > checksums.txt; cd ..

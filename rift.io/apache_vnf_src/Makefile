@@ -25,7 +25,7 @@ clean:
 $(BUILD_DIR)/%: 
 	rm -rf $(BUILD_DIR)/*
 	mkdir -p $(BUILD_DIR)
-	cp -rf cloud-init icons apache_vnfd.yaml $(BUILD_DIR)
+	cp -rf cloud_init icons apache_vnfd.yaml $(BUILD_DIR)
 	cd $(BUILD_DIR); find * -type f   | xargs md5sum > checksums.txt; cd ..
 	tar czf ../apache_vnfd.tar.gz $(BUILD_DIR)
 	echo "apache_vnfd.tar.gz ready to be on-boarded" 
