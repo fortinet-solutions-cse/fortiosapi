@@ -1,9 +1,0 @@
-README.rst
-setup.cfg
-setup.py
-proxy_tools/__init__.py
-proxy_tools.egg-info/PKG-INFO
-proxy_tools.egg-info/SOURCES.txt
-proxy_tools.egg-info/dependency_links.txt
-proxy_tools.egg-info/not-zip-safe
-proxy_tools.egg-info/top_level.txt

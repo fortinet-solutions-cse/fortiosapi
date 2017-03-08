@@ -1,2 +1,0 @@
-RABBITMQ_LOG_BASE="/var/log/cloudify/rabbitmq"
-RABBITMQ_PID_FILE="/tmp/rabbitmq.pid"
