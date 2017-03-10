@@ -1,24 +1,20 @@
 #!/bin/bash -x
 
-lxc launch ubuntu:16.04 cloudify
-
 #Follow http://docs.getcloudify.org/3.4.1/
+export LC_ALL=C
+
+sudo apt -y install python-pip python-virtualenv wget git
+sudo pip install --upgrade pip
+wget -c http://gigaspaces-repository-eu.s3.amazonaws.com/org/cloudify3/get-cloudify.py
+python get-cloudify.py -e cfy_virtualenv --install-virtualenv
 
 
-LXC="lxc exec cloudify -- "
-$LXC ping -c 4 getcloudify.org
-$LXC apt -y install python-pip python-virtualenv wget git
-$LXC pip install --upgrade pip
-$LXC mkdir -p /root/.ssh
-$LXC wget -c http://gigaspaces-repository-eu.s3.amazonaws.com/org/cloudify3/get-cloudify.py
-$LXC python get-cloudify.py --upgrade
-# check this https://groups.google.com/forum/#!topic/cloudify-users/U1xMdkZ0HqM
-lxc file push ~/.ssh/id_rsa* cloudify/root/.ssh/
 
 #  git -C cloudify-openstack-plugin/ checkout tags/2.0
+[ -d cloudify-manager-blueprints ] ||git clone https://github.com/cloudify-cosmo/cloudify-manager-blueprints.git
+git -C cloudify-manager-blueprints/ checkout tags/3.4.1
 
 lxc launch images:centos/7/amd64 cfy-mngr
-
 # Create a centos container and access to put cfy mngr there
 #Follow http://docs.getcloudify.org/3.4.1/cli/bootstrap/
 
@@ -30,5 +26,16 @@ $LXCm mkdir -p /root/.ssh
 # check this https://groups.google.com/forum/#!topic/cloudify-users/U1xMdkZ0HqM
 lxc file push ~/.ssh/id_rsa.pub cfy-mngr/root/.ssh/authorized_keys
 $LXCm chown root:root /root/.ssh/authorized_keys
-$LXCm echo -e "fortinet\nfortinet" | passwd
+echo -e "fortinet\nfortinet" | $LXCm passwd
+$LXCm sudo reboot
+sleep 9
+$LXCm ping -c 4 getcloudify.org
+export LXCmIP=`lxc exec cfy-mngr -- ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
+envsubst < cfy-lxc-mngr.template >  lxc-manager-blueprint-inputs.yaml
 
+source cfy_virtualenv/bin/activate
+cfy init
+cfy bootstrap --install-plugins -p cloudify-manager-blueprints/simple-manager-blueprint.yaml -i lxc-manager-blueprint-inputs.yaml
+$LXCm sudo reboot
+cfy use -t $LXCmIP
+cfy status

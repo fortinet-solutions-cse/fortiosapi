@@ -1,0 +1,26 @@
+#############################
+# Provider specific Inputs
+#############################
+
+# The public IP of the manager to which the CLI will connect.
+public_ip: '$LXCmIP'
+
+# The manager's private IP address. This is the address which will be used by the
+# application hosts to connect to the Manager's fileserver and message broker.
+private_ip: '$LXCmIP'
+
+# SSH user used to connect to the manager
+ssh_user: 'root'
+
+# SSH key path used to connect to the manager
+ssh_key_filename: '$HOME/.ssh/id_rsa'
+
+admin_username: 'admin'
+admin_password: 'fortinet'
+
+# These allow to override specific validation values
+# NOTE: We do not recommend changing these values unless you know exactly
+# what you're doing.
+minimum_required_total_physical_memory_in_mb: 2048
+#minimum_required_available_disk_space_in_gb: 5
+allowed_heap_size_gap_in_mb: 300
