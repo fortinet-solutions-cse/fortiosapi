@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 
 #Follow http://docs.getcloudify.org/3.4.1/
 export LC_ALL=C
@@ -21,7 +21,7 @@ lxc launch images:centos/7/amd64 cfy-mngr
 LXCm="lxc exec cfy-mngr -- "
 $LXCm ping -c 4 getcloudify.org
 $LXCm yum update
-$LXCm yum -y install openssh-server anacron gcc python-devel sudo 
+$LXCm yum -y install openssh-server anacron gcc python-devel sudo wget
 $LXCm mkdir -p /root/.ssh
 # check this https://groups.google.com/forum/#!topic/cloudify-users/U1xMdkZ0HqM
 lxc file push ~/.ssh/id_rsa.pub cfy-mngr/root/.ssh/authorized_keys
