@@ -125,7 +125,10 @@ class FortiOSConf(object):
         if mkey:
             url_postfix = url_postfix + '/' + str(mkey)
         if vdom:
-            url_postfix += '?vdom=' + vdom
+            if vdom == "global":
+                url_postfix += '?global=1'
+            else:
+                url_postfix += '?vdom=' + vdom
             
         url = self.url_prefix + url_postfix
         return url
