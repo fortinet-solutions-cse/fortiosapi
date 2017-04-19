@@ -1,0 +1,8 @@
+{
+    "username": "$OS_USERNAME",
+    "password": "$OS_PASSWORD",
+    "tenant_name": "$OS_TENANT_NAME",
+    "auth_url": "$OS_AUTH_URL",
+    "region": "$OS_REGION_NAME",
+    "custom_configuration": ""
+}
