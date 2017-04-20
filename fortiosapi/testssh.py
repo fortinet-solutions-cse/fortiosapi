@@ -15,7 +15,6 @@ hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.DEBUG)
 
-logger.debug('often makes a very good meal of %s', 'visiting tourists')
 
 fgt = FortiOSConf()
 
@@ -29,16 +28,16 @@ def main():
     fgthost = '10.10.10.24'
     user = 'admin'
     passwd =''
-    cmd = '''get system interface'''
-    out,err = fgt.ssh(cmd, fgthost, user, passwd)
+    cmd = "get system interface"
+    out,err = fgt.ssh(cmd, "fgthost", user, password=passwd)
     print ("out:"+out)
     print ("err:"+err)
 
     cmd="""config sys global
-    set hostname chubaka
+    set hostname chubiki
     end"""
 
-    out,err = fgt.ssh(cmd, fgthost, user, passwd)
+    out,err = fgt.ssh(cmd, fgthost, user, password=passwd)
 
     print ("out:"+out)
     print ("err:"+err)
