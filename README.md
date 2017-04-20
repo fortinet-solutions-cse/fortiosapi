@@ -1,2 +1,2 @@
-# fortigateconf
-Python library to interact with configuration of fortigate (REST API and SSH)
+# fortiosconf
+Python library to interact with configuration of fortinet devices fortios (REST API and SSH)

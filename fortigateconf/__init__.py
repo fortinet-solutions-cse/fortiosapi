@@ -1,1 +1,0 @@
-from .fortigateconf import FortiOSConf

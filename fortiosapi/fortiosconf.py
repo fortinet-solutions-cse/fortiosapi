@@ -18,7 +18,7 @@
 
 ###################################################################
 #
-# fortigateconf.py aims at simplyfing the configuration and 
+# fortiosapi.py aims at simplyfing the configuration and 
 # integration of Fortgate configuration using the restapi
 #
 # A Python module to abstract configuration using FortiOS REST API 
