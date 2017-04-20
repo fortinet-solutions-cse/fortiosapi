@@ -32,6 +32,7 @@ from collections import namedtuple
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import json
+import pprint
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
 try:  # Python 2.7+
@@ -43,40 +44,27 @@ except ImportError:
 
 logging.getLogger(__name__).addHandler(NullHandler())
 # create logger
-LOG = logging.getLogger('fortinetconflib')
+LOG = logging.getLogger('fortiosapi')
 
 from argparse import Namespace
 def json2obj(data):
     return json.loads(data.decode('utf-8'), object_hook=lambda d: Namespace(**d))
 
-class FortiOSConf(object):
+class FortiOSAPI(object):
     def __init__(self):
         self._https = True
         self._session = requests.session() # use single session
 
     def logging(self, response):
-        LOG.debug("Request : %s on url : %s  ",response.request.method,
+        try:
+            LOG.debug("Request : %s on url : %s  ",response.request.method,
                       response.request.url) 
-        LOG.debug("Response : http code %s  reason : %s  ", response.status_code,response.reason)
-        
-        content=response.content
-        if content is not 'null':
-            if content is not None:
-                try:
-                    j = json.loads(content)
-                except (ValueError,TypeError):
-                    LOG.debug("Response raw content:  %s ", content)
-                else:
-                    if response.status_code is 200 :
-                        try:
-                            result=j['results']	
-                        except (KeyError,TypeError):
-                            LOG.debug("Response results content:  %s ", j)
-                        else:
-                            LOG.debug("Response result content:  %s ", str(result))
-                    else:
-                        LOG.debug("Response raw content:  %s ", j)
-                        
+            LOG.debug("Response : http code %s  reason : %s  ", response.status_code,response.reason)
+        except:
+            LOG.warning("method errors in request when global")
+            
+        LOG.debug("Response in pprint %s ", pprint.pformat(response))
+                
     def debug(self, status):
         if status == 'on':
           LOG.setLevel(logging.DEBUG)
@@ -107,9 +95,11 @@ class FortiOSConf(object):
                                 data='username='+username+'&secretkey='+password,
                                 verify=False)
         self.logging(res)
-
-        # Update session's csrftoken
-        self.update_cookie()
+        if '/ng/prompt?viewOnly&redir' in res.content:
+            # Update session's csrftoken
+            self.update_cookie()
+        else:
+            raise  Exception('login failed')
 
     def logout(self):
         url = self.url_prefix + '/logout'
@@ -125,6 +115,7 @@ class FortiOSConf(object):
         if mkey:
             url_postfix = url_postfix + '/' + str(mkey)
         if vdom:
+            LOG.debug("vdom is: %s",vdom)
             if vdom == "global":
                 url_postfix += '?global=1'
             else:
@@ -177,17 +168,29 @@ class FortiOSConf(object):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(url,params=parameters,data=json.dumps(data),verify = False)            
         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content.decode('utf-8'))
-        resp['reason']=res.reason
         self.logging(res)
+        if vdom == "global":
+            resp = json.loads(res.content)[0]
+            resp['vdom']="global"
+        else:
+            resp = json.loads(res.content.decode('utf-8'))
+            
+        resp['reason']=res.reason
         return resp
 
     def put(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
-        res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content.decode('utf-8'))
-        resp['reason']=res.reason
+        res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)
+        # return the content but add the http method reason (give better hint what to do)
         self.logging(res)
+        if vdom == "global":
+            #return result for the first vdom on the list
+            resp = json.loads(res.content)[0]
+            resp['vdom']="global"
+        else:
+            resp = json.loads(res.content.decode('utf-8'))
+        resp['reason']=res.reason
+        self.logging(resp)
         return resp
 
     def delete(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
@@ -200,7 +203,12 @@ class FortiOSConf(object):
             url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.delete(url,params=parameters,data=json.dumps(data))           
         # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content.decode('utf-8'))
+        if vdom == "global":
+            #return result for the first vdom on the list
+            resp = json.loads(res.content)[0]
+            resp['vdom']="global"
+        else:
+            resp = json.loads(res.content.decode('utf-8'))
         resp['reason']=res.reason
         self.logging(res)
         return resp
@@ -209,25 +217,41 @@ class FortiOSConf(object):
 #may add a force option to delete and redo if troubles.
     def set(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
-        res = self._session.post(url,params=parameters,data=json.dumps(data))            
+        res = self._session.post(url,params=parameters,data=json.dumps(data))
         self.logging(res)
-        r = json2obj(res.content)
-        if r.http_status == 424:
+        if vdom == "global":
+            #with global the retruned string is a list of resp per vdom
+            globres = json.loads(res.content)[0]
+            LOG.debug("raw globres: %s", globres)
+            r = json2obj(json.dumps(globres))
+        else:
+            #any vdom
+            self.logging(res)
+            r = json2obj(res.content)
+        if r.http_status == 424 or r.http_status == 405:
             LOG.warning("Try to post on %s failed doing a put to force parameters change consider delete if still fails ", res.request.url)
             #retreive the table mkey from schema
             schema = self.schema(path, name, vdom=None)
-            keyname = schema['mkey']
-            mkey = data[keyname]
+            try:
+                keyname = schema['mkey']
+                mkey = data[keyname]
+            except KeyError, e:
+                 LOG.warning("mkey not found in schema with error %s. It is recommended to use the put method directly instead ", str(e))
             url = self.cmdb_url(path, name, mkey=mkey,vdom=vdom)
             res = self._session.put(url,params=parameters,data=json.dumps(data),verify=False)
             self.logging(res)
-        # return the content but add the http method reason (give better hint what to do)
-        resp = json.loads(res.content.decode('utf-8'))
-        resp['reason']=res.reason
-        self.logging(res)
-        return resp
-
-
+            if vdom == "global":
+                #return result for the first vdom on the list
+                resp = json.loads(res.content)[0]
+                resp['vdom']="global"
+                LOG.debug("resp: %s" ,resp)
+            else:
+                resp = json.loads(res.content.decode('utf-8'))
+            resp['reason']=res.reason
+            LOG.debug("resp: %s", resp)
+            return resp
+    
+    
 ## send multiline string ''' get system status ''' using ssh
     def ssh(self,cmds, host, user, password=None):
         ''' Send a multi line string via ssh to the fortigate '''
