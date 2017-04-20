@@ -15,7 +15,6 @@ hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.DEBUG)
 
-logger.debug('often makes a very good meal of %s', 'visiting tourists')
 
 fgt = FortiOSConf()
 
@@ -26,31 +25,31 @@ def json2obj(data):
 def main():
     # Login to the FGT ip
     fgt.debug('on')
-    fgt.login('10.10.10.24','admin','')
-    pp = pprint.PrettyPrinter(indent=4)
-    fortiport = "port2"
-    cp = {
-        "ip_address": "10.10.11.254"
-    }
-    pp.pprint(cp)
-   
-    data = {
-        "name": fortiport,
-        "interface": fortiport,
-        "mode": "static",
-        "ip": " "+cp['ip_address']+" 255.255.255.0",
-        "allowaccess":"ping",
-        "vdom":"root"
-    }
-    resp = fgt.set('system','interface', vdom="root", data=data)
+    fgthost = '10.10.10.24'
+    user = 'admin'
+    passwd =''
+    cmd = "get system interface"
+    out,err = fgt.ssh(cmd, "fgthost", user, password=passwd)
+    print ("out:"+out)
+    print ("err:"+err)
 
+    cmd="""config sys global
+    set hostname chubiki
+    end"""
+
+    out,err = fgt.ssh(cmd, fgthost, user, password=passwd)
+
+    print ("out:"+out)
+    print ("err:"+err)
+
+    fgt.login(fgthost,'admin','')
     data = {
-        #         "action" : "add",
-        "seq-num" :"8",
-        "dst": "10.10.30.0 255.255.255.0",
-        "device": "port2",
-        "gateway": "192.168.40.254",
-    }
+  #         "action" : "add",
+           "seq-num" :"8",
+           "dst": "10.10.30.0 255.255.255.0",
+           "device": "port2",
+           "gateway": "192.168.40.254",
+        }
     pp = pprint.PrettyPrinter(indent=4)
     d=json2obj(json.dumps(data))
     resp = fgt.get('router','static', vdom="root", mkey=8)
