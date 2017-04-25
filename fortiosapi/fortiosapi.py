@@ -240,8 +240,7 @@ class FortiOSAPI(object):
             self.logging(res)
             r = json2obj(res.content)
         if r.http_status == 424 or r.http_status == 405:
-            LOG.warning("Try to post on %s  failed doing a put to force\ 
-                        parameters change consider delete if still fails ",
+            LOG.warning("Try to post on %s  failed doing a put to force parameters change consider delete if still fails ",
                         res.request.url)
             # retreive the table mkey from schema
             schema = self.schema(path, name, vdom=None)
