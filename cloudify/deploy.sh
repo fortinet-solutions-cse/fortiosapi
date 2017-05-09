@@ -39,7 +39,7 @@ cfy bootstrap --install-plugins /opt/cfy/cloudify-manager-blueprints/simple-mana
 . ~/nova.rc
 envsubst < openstack_config.template | $LXCm tee /root/openstack_config.json
 cfy init -r
-cfy profiles use 10.10.10.144 -u admin -p fortinet -t default_tenant 
+cfy profiles use $LXCmIP -u admin -p fortinet -t default_tenant 
 cfy status
 
 cat <<EOF
