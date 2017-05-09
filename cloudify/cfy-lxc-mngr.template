@@ -23,14 +23,3 @@ admin_password: 'fortinet'
 # what you're doing.
 minimum_required_total_physical_memory_in_mb: 750
 #minimum_required_available_disk_space_in_gb: 5
-allowed_heap_size_gap_in_mb: 100
-
-dsl_resources:
-  - {'source_path': 'http://www.getcloudify.org/spec/fabric-plugin/1.4.1/plugin.yaml', 'destination_path': '/spec/fabric-plugin/1.4.1/plugin.yaml'}
-  - {'source_path': 'http://www.getcloudify.org/spec/script-plugin/1.4/plugin.yaml', 'destination_path': '/spec/script-plugin/1.4/plugin.yaml'}
-  - {'source_path': 'http://www.getcloudify.org/spec/diamond-plugin/1.3.3/plugin.yaml', 'destination_path': '/spec/diamond-plugin/1.3.3/plugin.yaml'}
-  - {'source_path': 'http://www.getcloudify.org/spec/aws-plugin/1.4.1/plugin.yaml', 'destination_path': '/spec/aws-plugin/1.4.1/plugin.yaml'}
-  - {'source_path': 'http://www.getcloudify.org/spec/openstack-plugin/2.0.1/plugin.yaml', 'destination_path': '/spec/openstack-plugin/2.0.1/plugin.yaml'}
-  - {'source_path': 'http://www.getcloudify.org/spec/tosca-vcloud-plugin/1.3.1/plugin.yaml', 'destination_path': '/spec/tosca-vcloud-plugin/1.3.1/plugin.yaml'}
-  - {'source_path': 'http://www.getcloudify.org/spec/vsphere-plugin/2.0/plugin.yaml', 'destination_path': '/spec/vsphere-plugin/2.0/plugin.yaml'}
-  - {'source_path': 'http://www.getcloudify.org/spec/cloudify/3.4.1/types.yaml', 'destination_path': '/spec/cloudify/3.4.1/types.yaml'}
