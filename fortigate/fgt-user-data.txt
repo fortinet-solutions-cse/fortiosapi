@@ -26,5 +26,5 @@ config system dns
  unset secondary
 end
 config sys global
- set hostname fgt-vm
+ set hostname fgt
 end

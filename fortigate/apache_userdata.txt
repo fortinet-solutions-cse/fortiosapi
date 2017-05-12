@@ -1,0 +1,22 @@
+#cloud-config
+package_upgrade: true
+packages:
+  - apache2-utils
+  - apache2
+  - tcpdump
+  - iperf3
+chpasswd:
+  list: |
+    ubuntu:fortinet
+  expire: False
+write_files:
+  - content: |
+      # Enable dhcp on eth1
+      auto eth1
+      iface eth1 inet dhcp
+    path: /etc/network/interfaces.d/eth1.cfg
+
+#runcmd:
+#  - echo $'auto eth1\niface eth1 inet dhcp' > /etc/network/interfaces.d/eth1.cfg
+
+#src: https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html
