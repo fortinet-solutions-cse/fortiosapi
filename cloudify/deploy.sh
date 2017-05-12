@@ -33,7 +33,8 @@ ssh-keyscan $LXCmIP >> $HOME/.ssh/known_hosts
 envsubst < cfy-lxc-mngr.template >  lxc-manager-blueprint-inputs.yaml
 
 cfy init -r
-cfy bootstrap --install-plugins /opt/cfy/cloudify-manager-blueprints/simple-manager-blueprint.yaml -i lxc-manager-blueprint-inputs.yaml  --task-retry-interval 15 --task-retries 3  --keep-up-on-failure
+cfy bootstrap --install-plugins /opt/cfy/cloudify-manager-blueprints/simple-manager-blueprint.yaml -i lxc-manager-blueprint-inputs.yaml
+#--task-retry-interval 15 --task-retries 3  --keep-up-on-failure
     #|| echo "error catched but keep going anyway"
 #Ref : http://docs.getcloudify.org/3.4.1/plugins/openstack/
 . ~/nova.rc
