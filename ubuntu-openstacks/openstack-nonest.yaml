@@ -108,7 +108,7 @@ applications:
     charm: "cs:xenial/neutron-openvswitch"
     options: 
       "prevent-arp-spoofing": false
-    annotations: 
+    annotations:
       "gui-x": "250"
       "gui-y": "500"
   "nova-cloud-controller": 
