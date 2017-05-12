@@ -83,6 +83,7 @@ applications:
     charm: "cs:xenial/neutron-api"
     num_units: 1
     options: 
+      "enable-ml2-port-security": true
       "neutron-security-groups": true
       "overlay-network-type": gre vxlan
     annotations: 
@@ -105,6 +106,8 @@ applications:
       - "12"
   "neutron-openvswitch": 
     charm: "cs:xenial/neutron-openvswitch"
+    options: 
+      "prevent-arp-spoofing": false
     annotations: 
       "gui-x": "250"
       "gui-y": "500"
