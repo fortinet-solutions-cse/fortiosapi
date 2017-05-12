@@ -4,7 +4,7 @@
 export LC_ALL=C
 
 sudo apt -y install python-pip python-virtualenv wget git
-sudo pip install --upgrade pip
+#sudo pip install --upgrade pip
 wget -c http://repository.cloudifysource.org/cloudify/4.0.0/ga-release/cloudify_4.0.0~ga_amd64.deb                                           
 sudo dpkg -i cloudify*.deb
 
