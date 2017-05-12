@@ -15,9 +15,10 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-set -e
-
 . ~/nova.rc
+
+#Push image
+openstack image show  "fos542" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "fos542"  --file fortios.qcow2
 
 
 #Create mgmt network for neutron for tenant VMs
@@ -32,14 +33,22 @@ if (nova show trafleft  > /dev/null 2>&1 );then
     echo "trafleft already installed"
 else
     nova boot --image "Trusty x86_64" trafleft --key-name default --security-group default --flavor m1.small --user-data apache_userdata.txt --nic net-name=mgmt --nic net-name=left
+    while [ $(nova list |grep trafleft | awk -F "|" '{print $4}') == "BUILD" ]; do
+	sleep 4
+    done
+    
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
     nova floating-ip-associate trafleft $FLOAT_IP
 fi
+
 
 if (nova show trafright  > /dev/null 2>&1 );then
     echo "trafright already installed"
 else
     nova boot --image "Trusty x86_64" trafright --key-name default --security-group default --flavor m1.small --user-data apache_userdata.txt --nic net-name=mgmt --nic net-name=right
+    while [ $(nova list |grep trafright | awk -F "|" '{print $4}') == "BUILD" ]; do
+	sleep 4
+    done
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
     nova floating-ip-associate trafright $FLOAT_IP
 fi
@@ -54,6 +63,9 @@ else
     RIGHTPORT=`neutron port-show right1 -F id -f value`
     nova boot --image "fos542" fos542 --config-drive=true --key-name default  --security-group default  --flavor m1.small  --user-data fos-user-data.txt --nic net-name=mgmt --nic port-id=$LEFTPORT --nic port-id=$RIGHTPORT
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
+    while [ $(nova list |grep fos542 | awk -F "|" '{print $4}') == "BUILD" ]; do
+	sleep 4
+    done
     nova floating-ip-associate fos542 $FLOAT_IP
 fi
 
