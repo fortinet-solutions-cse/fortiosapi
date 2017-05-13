@@ -2,5 +2,6 @@
 
 juju bootstrap lxd lxd
 echo -e "fortinet\nfortinet" | juju change-user-password 
+grep password ~/.local/share/juju/accounts.yaml > /dev/null 2>&1 || echo "    password: fortinet" >> ~/.local/share/juju/accounts.yaml
 juju add-model mitaka
 juju deploy openstack-nonest.yaml
