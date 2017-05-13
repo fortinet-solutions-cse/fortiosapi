@@ -15,40 +15,35 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-. ~/nova.rc
 
-#Push image
-openstack image show  "fos542" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "fos542"  --file fortios.qcow2
+# this create 2 networks, 2 machines a fortigate in the middle and propagate routes so that traffic can be done (there is apache2 on both)
+# do not put the fortigate as the default gateway on the networks it is not supported by openstack
+
+
+. ~/nova.rc
 
 
 #Create mgmt network for neutron for tenant VMs
 neutron net-show left > /dev/null 2>&1 || neutron net-create left
-neutron subnet-show left_subnet > /dev/null 2>&1 || neutron subnet-create left "10.40.40.0/24"  --name left_subnet --gateway 10.40.40.254 --host-route destination=10.20.20.0/24,nexthop=10.40.40.254 
-
+neutron subnet-show left_subnet > /dev/null 2>&1 || neutron subnet-create left "10.40.40.0/24"  --name left_subnet  --host-route destination=10.20.20.0/24,nexthop=10.40.40.254 
+#--gateway 10.40.40.254
 neutron net-show right > /dev/null 2>&1 || neutron net-create right
-neutron subnet-show right_subnet > /dev/null 2>&1 || neutron subnet-create right "10.20.20.0/24" --name right_subnet  --gateway 10.20.20.254
+neutron subnet-show right_subnet > /dev/null 2>&1 || neutron subnet-create right "10.20.20.0/24" --name right_subnet
+#--gateway 10.20.20.254
  
 
 if (nova show trafleft  > /dev/null 2>&1 );then
     echo "trafleft already installed"
 else
     nova boot --image "Trusty x86_64" trafleft --key-name default --security-group default --flavor m1.small --user-data apache_userdata.txt --nic net-name=mgmt --nic net-name=left
-    while [ $(nova list |grep trafleft | awk -F "|" '{print $4}') == "BUILD" ]; do
-	sleep 4
-    done
-    
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
     nova floating-ip-associate trafleft $FLOAT_IP
 fi
-
 
 if (nova show trafright  > /dev/null 2>&1 );then
     echo "trafright already installed"
 else
     nova boot --image "Trusty x86_64" trafright --key-name default --security-group default --flavor m1.small --user-data apache_userdata.txt --nic net-name=mgmt --nic net-name=right
-    while [ $(nova list |grep trafright | awk -F "|" '{print $4}') == "BUILD" ]; do
-	sleep 4
-    done
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
     nova floating-ip-associate trafright $FLOAT_IP
 fi
@@ -63,9 +58,6 @@ else
     RIGHTPORT=`neutron port-show right1 -F id -f value`
     nova boot --image "fos542" fos542 --config-drive=true --key-name default  --security-group default  --flavor m1.small  --user-data fos-user-data.txt --nic net-name=mgmt --nic port-id=$LEFTPORT --nic port-id=$RIGHTPORT
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
-    while [ $(nova list |grep fos542 | awk -F "|" '{print $4}') == "BUILD" ]; do
-	sleep 4
-    done
     nova floating-ip-associate fos542 $FLOAT_IP
 fi
 
