@@ -131,7 +131,7 @@ for flavor in m1.tiny m1.small m1.medium m1.large m1.xlarge
 do
 openstack  flavor delete $flavor || true
 done
-openstack flavor create m1.small --id auto --ram 1024 --disk 20 --vcpus 2
+openstack flavor create m1.small --id auto --ram 1024 --disk 20 --vcpus 1
 openstack flavor create m1.medium --id auto --ram 2048 --disk 20 --vcpus 2
 openstack flavor create m1.large --id auto --ram 4096 --disk 20 --vcpus 4
 
