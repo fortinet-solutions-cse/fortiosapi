@@ -1,7 +1,4 @@
  #FOS VM Config File
-                config sys global
-                set hostname cloudify-vm
-                end
                 config system interface
                 edit mgmt
                 set mode dhcp
