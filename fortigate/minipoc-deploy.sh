@@ -22,6 +22,9 @@
 
 . ~/nova.rc
 
+#Push image
+openstack image show  "fos54" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "fos54"  --file fortios.qcow2
+
 
 #Create mgmt network for neutron for tenant VMs
 neutron net-show left > /dev/null 2>&1 || neutron net-create left
@@ -49,17 +52,14 @@ else
 fi
 
 
-if (nova show fos542  > /dev/null 2>&1 );then
-    echo "fos542 already installed"
+if (nova show fos54  > /dev/null 2>&1 );then
+    echo "fos54 already installed"
 else
     neutron port-show left1 > /dev/null 2>&1 ||neutron port-create left --port-security-enabled=False --fixed-ip ip_address=10.40.40.254 --name left1 
     neutron port-show right1 > /dev/null 2>&1 ||neutron port-create right --port-security-enabled=False --fixed-ip ip_address=10.20.20.254 --name right1 
     LEFTPORT=`neutron port-show left1 -F id -f value`
     RIGHTPORT=`neutron port-show right1 -F id -f value`
-    nova boot --image "fos542" fos542 --config-drive=true --key-name default  --security-group default  --flavor m1.small  --user-data fos-user-data.txt --nic net-name=mgmt --nic port-id=$LEFTPORT --nic port-id=$RIGHTPORT
+    nova boot --image "fos54" fos54 --config-drive=true --key-name default  --security-group default  --flavor m1.small  --user-data fos-user-data.txt --nic net-name=mgmt --nic port-id=$LEFTPORT --nic port-id=$RIGHTPORT
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
-    nova floating-ip-associate fos542 $FLOAT_IP
+    nova floating-ip-associate fos54 $FLOAT_IP
 fi
-
-#sudo iptables -t nat -A PREROUTING -p tcp --dport 4043 -j DNAT --to-destination 10.10.11.15:443
-#sudo iptables -t nat -A PREROUTING -p tcp --dport 4022 -j DNAT --to-destination 10.10.11.15:22
