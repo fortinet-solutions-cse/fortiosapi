@@ -24,7 +24,7 @@ set -x
 
 nova delete trafleft
 nova delete trafright
-nova delete fos542
+nova delete fos54
 
 
 neutron port-delete left1
