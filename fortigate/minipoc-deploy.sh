@@ -68,7 +68,7 @@ else
     RIGHTPORT=`neutron port-show right1 -F id -f value`
     nova boot --image "fos54" fos54 --config-drive=true --key-name default  --security-group default  --flavor m1.small  --user-data fos-user-data.txt --nic net-name=mgmt --nic port-id=$LEFTPORT --nic port-id=$RIGHTPORT
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
-    while [ $(nova list |grep fos542 | awk -F "|" '{print $4}') == "BUILD" ]; do
+    while [ $(nova list |grep fos54 | awk -F "|" '{print $4}') == "BUILD" ]; do
 	sleep 4
     done
     nova floating-ip-associate fos54 $FLOAT_IP
