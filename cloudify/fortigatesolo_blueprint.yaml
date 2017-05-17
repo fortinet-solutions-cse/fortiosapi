@@ -1,0 +1,106 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  First basic blueprint.
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.0/types.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/2.0.1/plugin.yaml
+
+inputs:
+  image:
+    default: {}
+  flavor:
+    default: {}
+  key_name:
+    default: {}
+
+  mgmt_network_name:
+    default: "mgmt"
+
+  keystone_username:
+    default: ""
+  keystone_password:
+    default: ""
+  keystone_tenant_name:
+    default: ""
+  keystone_url:
+    default: ""
+
+
+dsl_definitions:
+
+  openstack_config: &openstack_config
+    username: { get_input: keystone_username }
+    password: { get_input: keystone_password }
+    tenant_name: { get_input: keystone_tenant_name }
+    auth_url: { get_input: keystone_url }
+
+node_templates:
+
+  host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      server:
+        image: { get_input: image }
+        flavor: { get_input: flavor }
+      agent_config:
+        install_method: none # do not install agent
+      openstack_config: *openstack_config
+      management_network_name: { get_input: mgmt_network_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              config_drive: true
+              userdata: |
+                #FOS VM Config File
+                config sys global
+                set hostname cloudify-vm
+                end
+                config system interface
+                edit mgmt
+                set mode dhcp
+                set allowaccess ping https ssh http snmp fgfm
+                set mtu-override enable 
+                set mtu 1456
+                next
+                edit port1
+                set mode dhcp
+                set allowaccess ping
+                next
+                edit port2
+                set mode dhcp
+                set allowaccess ping
+                next
+                end
+                config system dns
+                set primary 10.10.10.1
+                end
+                config firewall policy
+                edit 1
+                set name "Allow any any"
+                set srcintf "any"
+                set dstintf "any"
+                set srcaddr "all"
+                set dstaddr "all"
+                set action accept
+                set schedule "always"
+                set service "ALL"
+                set nat enable
+                next
+                end
+                config system central-management
+                set include-default-servers disable
+                set type fortimanager
+                set fmg 10.210.8.26
+                config server-list
+                edit 1
+                set server-type update rating
+                set server-address 10.210.8.26
+                end
+                end
+#              files:
+#               license: |
+#                some text to put into the file
