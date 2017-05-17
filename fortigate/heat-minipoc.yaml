@@ -38,7 +38,8 @@ resources:
       allocation_pools:
         - start: "10.40.40.3"
           end:  "10.40.40.250"
-
+      host_routes: [{"nexthop": "10.20.20.0/24", "destination": "10.40.40.254"}]
+ 
  right_net:
     type: OS::Neutron::Net
     properties:
@@ -163,6 +164,7 @@ resources:
   properties:
    image: { get_param: ubimage }
    flavor: m1.small
+   key_name: "default"
    user_data_format: RAW
    user_data: |
      #cloud-config
@@ -184,7 +186,6 @@ resources:
          path: /etc/network/interfaces.d/eth1.cfg
    name: trafleft
    security_groups: [ default ]
-   user_data_format: RAW
    networks:
     - network: { get_param: mgmt_net }
     - subnet:  { get_resource: left_subnet }
@@ -200,6 +201,7 @@ resources:
   properties:
    image: { get_param: ubimage }
    flavor: m1.small
+   key_name: "default"
    user_data_format: RAW
    user_data: |
      #cloud-config
@@ -221,7 +223,6 @@ resources:
          path: /etc/network/interfaces.d/eth1.cfg
    name: trafright
    security_groups: [ default ]
-   user_data_format: RAW
    networks:
     - network: { get_param: mgmt_net }
     - subnet:  { get_resource: right_subnet }
