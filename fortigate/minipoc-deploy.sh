@@ -19,9 +19,11 @@
 # this create 2 networks, 2 machines a fortigate in the middle and propagate routes so that traffic can be done (there is apache2 on both)
 # do not put the fortigate as the default gateway on the networks it is not supported by openstack
 
-
-. ~/nova.rc
-
+#if nova access not set then get them from nova.rc
+if [ -x "$OS_AUTH_URL" ]; then 
+  echo "get the Openstack access from ~/nova.rc"
+  . ~/nova.rc
+fi
 #Push image
 openstack image show  "fos54" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "fos54"  --file fortios.qcow2
 

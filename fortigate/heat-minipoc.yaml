@@ -1,0 +1,145 @@
+heat_template_version: 2016-04-08
+## cli deploy $ openstack stack create --template heat-minipoc.yaml mini-poc
+description: >
+  HOT template to create 2 neutron networks, 2 generic VMs a Fortios VM
+  in between and floating ip for everyone.
+  Used for experimenting Fortinet in a cloud environment.
+  
+parameters:
+ fosimage:
+  type: string
+  description: Fortios image
+  default: "fos54"
+ netname:
+  type: string
+  description: My private network
+  default: "mgmt"
+ public_net:
+  type: string
+  description: External network for floating ips
+  default: "ext_net"
+
+
+resources:
+ left_net:
+    type: OS::Neutron::Net
+    properties:
+      name: "left"
+
+ left_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: left_net }
+      cidr: "10.40.40.0/24"
+      allocation_pools:
+        - start: "10.40.40.3"
+          end:  "10.40.40.250"
+
+ right_net:
+    type: OS::Neutron::Net
+    properties:
+      name: "right"
+
+ right_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: right_net }
+      cidr: "10.20.20.0/24"
+      allocation_pools:
+        - start: "10.20.20.3"
+          end:  "10.20.20.250"
+
+ fos_left_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: left_net }
+      port_security_enabled: false
+      fixed_ips:
+        - ip_address: "10.40.40.254"
+
+ fos_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+
+
+ fos:
+  type: OS::Nova::Server
+  properties:
+   image: { get_param: fosimage }
+   flavor: m1.small
+   user_data_format: RAW
+   user_data: |
+                config system interface
+                edit mgmt
+                set mode dhcp
+                set allowaccess ping https ssh http snmp fgfm
+                set mtu-override enable 
+                set mtu 1456
+                next
+                edit port1
+                set mode dhcp
+                set mtu-override enable 
+                set mtu 1456
+                set allowaccess ping
+                next
+                edit port2
+                set mode dhcp
+                set mtu-override enable 
+                set mtu 1456
+                set allowaccess ping
+                next
+                end
+                config system dns
+                set primary 10.10.10.1
+                end
+                config firewall policy
+                edit 1
+                set name "Allow any any"
+                set srcintf "any"
+                set dstintf "any"
+                set srcaddr "all"
+                set dstaddr "all"
+                set action accept
+                set schedule "always"
+                set service "ALL"
+                set nat enable
+                next
+                end
+                config system central-management
+                set include-default-servers disable
+                set type fortimanager
+                set fmg 10.210.8.25
+                config server-list
+                edit 1
+                set server-type update rating
+                set server-address 10.210.8.25 
+                end
+                end
+   name: FOS
+   config_drive: True
+   security_groups: [ default ]
+   user_data_format: RAW
+#   personality: {"license": { get_file: FGVM080000032371.lic }}
+   networks:
+    - network: { get_param: netname }
+    - port:  { get_resource: fos_left_port }
+    - network:  { get_resource: right_net }
+#    - port:  { get_resource: right_port }
+
+ association_fos:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: fos_floating_ip }
+      server_id: { get_resource: fos }
+
+# association:
+#   type: OS::Neutron::FloatingIPAssociation
+#   properties:
+#     floatingip_id: { get_resource: floating_ip }
+#     port_id: {get_attr: [fos, addresses, {get_param: net}, 0, port]}
+
+outputs:
+ fos-info:
+    description: IP address to access of the FGT
+    value: { get_attr: [ fos_floating_ip,  floating_ip_address ] }
