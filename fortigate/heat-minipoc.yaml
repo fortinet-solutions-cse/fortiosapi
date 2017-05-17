@@ -10,7 +10,11 @@ parameters:
   type: string
   description: Fortios image
   default: "fos54"
- netname:
+ ubimage:
+  type: string
+  description: Ubuntu image
+  default: "Trusty x86_64"
+ mgmt_net:
   type: string
   description: My private network
   default: "mgmt"
@@ -122,9 +126,9 @@ resources:
    user_data_format: RAW
 #   personality: {"license": { get_file: FGVM080000032371.lic }}
    networks:
-    - network: { get_param: netname }
+    - network: { get_param: mgmt_net }
     - port:  { get_resource: fos_left_port }
-    - network:  { get_resource: right_net }
+    - subnet:  { get_resource: right_subnet }
 #    - port:  { get_resource: right_port }
 
  association_fos:
@@ -138,8 +142,105 @@ resources:
 #   properties:
 #     floatingip_id: { get_resource: floating_ip }
 #     port_id: {get_attr: [fos, addresses, {get_param: net}, 0, port]}
+ fos_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
 
+ ubr_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+
+ ubl_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+
+
+ ubleft:
+  type: OS::Nova::Server
+  properties:
+   image: { get_param: ubimage }
+   flavor: m1.small
+   user_data_format: RAW
+   user_data: |
+     #cloud-config
+     package_upgrade: true
+     packages:
+       - apache2-utils
+       - apache2
+       - tcpdump
+       - iperf3
+     chpasswd:
+       list: |
+         ubuntu:fortinet
+       expire: False
+     write_files:
+       - content: |
+           # Enable dhcp on eth1
+           auto eth1
+           iface eth1 inet dhcp
+         path: /etc/network/interfaces.d/eth1.cfg
+   name: trafleft
+   security_groups: [ default ]
+   user_data_format: RAW
+   networks:
+    - network: { get_param: mgmt_net }
+    - subnet:  { get_resource: left_subnet }
+
+ association_left:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: ubl_floating_ip }
+      server_id: { get_resource: ubleft }
+
+ ubright:
+  type: OS::Nova::Server
+  properties:
+   image: { get_param: ubimage }
+   flavor: m1.small
+   user_data_format: RAW
+   user_data: |
+     #cloud-config
+     package_upgrade: true
+     packages:
+       - apache2-utils
+       - apache2
+       - tcpdump
+       - iperf3
+     chpasswd:
+       list: |
+         ubuntu:fortinet
+       expire: False
+     write_files:
+       - content: |
+           # Enable dhcp on eth1
+           auto eth1
+           iface eth1 inet dhcp
+         path: /etc/network/interfaces.d/eth1.cfg
+   name: trafright
+   security_groups: [ default ]
+   user_data_format: RAW
+   networks:
+    - network: { get_param: mgmt_net }
+    - subnet:  { get_resource: right_subnet }
+
+
+ association_right:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: ubr_floating_ip }
+      server_id: { get_resource: ubright }
+
+      
 outputs:
  fos-info:
     description: IP address to access of the FGT
     value: { get_attr: [ fos_floating_ip,  floating_ip_address ] }
+ left-info:
+    description: IP address to access left ubuntu machine 
+    value: { get_attr: [ ubl_floating_ip,  floating_ip_address ] }
+ right-info:
+    description: IP address to access right ubuntu machine 
+    value: { get_attr: [ ubr_floating_ip,  floating_ip_address ] }
