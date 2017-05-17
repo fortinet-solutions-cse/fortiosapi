@@ -38,7 +38,7 @@ resources:
       allocation_pools:
         - start: "10.40.40.3"
           end:  "10.40.40.250"
-      host_routes: [{"nexthop": "10.20.20.0/24", "destination": "10.40.40.254"}]
+      host_routes: [{"nexthop": "10.40.40.254", "destination": "10.20.20.0/24"}]
  
  right_net:
     type: OS::Neutron::Net
