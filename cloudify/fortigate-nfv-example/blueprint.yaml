@@ -43,7 +43,7 @@ node_templates:
         create:
           inputs:
             args:
-              floating_network_name: Ext-Net
+              floating_network_name: ext_net
 
   my_network:
     type: cloudify.openstack.nodes.Network
@@ -165,7 +165,7 @@ node_templates:
 
 
 
- client:
+  client:
     type: cloudify.openstack.nodes.Server
     properties:
       server:
