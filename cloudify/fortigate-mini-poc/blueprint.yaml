@@ -1,7 +1,9 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 description: >
-  First basic blueprint.
+  Mini poc deployment : 2 tenants networks 1 fortios in the middle with 1 rule for
+  allowing traffic 2 ubuntu with apache to generate traffic. Everyone has floating ip.
+  
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.0/types.yaml
@@ -36,7 +38,7 @@ dsl_definitions:
 
 node_templates:
 
-  my_floating_ip:
+  fos_floating_ip:
     type: cloudify.openstack.nodes.FloatingIP
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -45,37 +47,95 @@ node_templates:
             args:
               floating_network_name: ext_net
 
-  my_network:
-    type: cloudify.openstack.nodes.Network
-    properties:
-      resource_id: my_network_openstack_name
-
-  my_subnet:
-    type: cloudify.openstack.nodes.Subnet
-    properties:
-      resource_id: my_subnet_openstack_name
+  leftub_floating_ip:
+    type: cloudify.openstack.nodes.FloatingIP
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
           inputs:
             args:
-              cidr: 1.2.3.0/24
+              floating_network_name: ext_net
+
+  rightub_floating_ip:
+    type: cloudify.openstack.nodes.FloatingIP
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              floating_network_name: ext_net
+
+  left_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      resource_id: left_network_openstack
+
+  left_subnet:
+    type: cloudify.openstack.nodes.Subnet
+    properties:
+      resource_id: left_subnet_openstack
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              cidr: 1.40.40.0/24
               ip_version: 4
       cloudify.interfaces.validation:
         creation:
           inputs:
             args:
-              cidr: 1.2.3.0/24
+              cidr: 1.40.40.0/24
               ip_version: 4
     relationships:
-      - target: my_network
+      - target: left_network
         type: cloudify.relationships.contained_in
 
+  right_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      resource_id: right_network_openstack
 
+  right_subnet:
+    type: cloudify.openstack.nodes.Subnet
+    properties:
+      resource_id: right_subnet_openstack
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              cidr: 1.20.20.0/24
+              ip_version: 4
+      cloudify.interfaces.validation:
+        creation:
+          inputs:
+            args:
+              cidr: 1.20.20.0/24
+              ip_version: 4
+    relationships:
+      - target: left_network
+        type: cloudify.relationships.contained_in
+
+  left_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      resource_id: left_port
+      fixed_ip: "10.40.40.254"
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              port_security_enabled: False
+    relationships:
+      - target: left_subnet
+        type: cloudify.relationships.contained_in
+        
   my_security_group:
     type: cloudify.openstack.nodes.SecurityGroup
     properties:
-      resource_id: my_security_group_openstack_name
+      resource_id: my_security_group_openstack
       rules:
         - remote_ip_prefix: 0.0.0.0/0
           port: 8080
@@ -154,18 +214,20 @@ node_templates:
 #               license: |
 #                some text to put into the file
     relationships:
-      - target: my_network
+      - target: left_port
+        type: cloudify.relationships.connected_to      
+      - target: right_network
         type: cloudify.relationships.connected_to
-      - target: my_subnet
+      - target: right_subnet
         type: cloudify.relationships.depends_on
-      - target: my_floating_ip
+      - target: fos_floating_ip
         type: cloudify.openstack.server_connected_to_floating_ip
       - target: my_security_group
         type: cloudify.openstack.server_connected_to_security_group
 
 
 
-  client:
+  leftubuntu:
     type: cloudify.openstack.nodes.Server
     properties:
       server:
@@ -174,7 +236,7 @@ node_templates:
         #useless key_name for fortinet but mandatory for openstack
         key_name: { get_input: key_name }
       agent_config:
-        install_method: none # do not install agent
+        install_method: none # Bug in cloudify agents use internal ip and not floating
       openstack_config: *openstack_config
       management_network_name: { get_input: mgmt_network_name }
     interfaces:
@@ -182,17 +244,30 @@ node_templates:
         create:
           inputs:
             args:
-              config_drive: true
               userdata: |
-#              files:
-#               license: |
-#                some text to put into the file
+                #cloud-config
+                package_upgrade: true
+                packages:
+                  - apache2-utils
+                  - apache2
+                  - tcpdump
+                  - iperf3
+                  chpasswd:
+                    list: |
+                      ubuntu:fortinet
+                      expire: False
+                      write_files:
+                        - content: |
+                          # Enable dhcp on eth1
+                          auto eth1
+                          iface eth1 inet dhcp
+                          path: /etc/network/interfaces.d/eth1.cfg
     relationships:
-      - target: my_network
+      - target: left_network
         type: cloudify.relationships.connected_to
-      - target: my_subnet
+      - target: left_subnet
         type: cloudify.relationships.depends_on
-      - target: my_floating_ip
+      - target: leftub_floating_ip
         type: cloudify.openstack.server_connected_to_floating_ip
       - target: my_security_group
         type: cloudify.openstack.server_connected_to_security_group
