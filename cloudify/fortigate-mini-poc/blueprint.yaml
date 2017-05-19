@@ -74,18 +74,23 @@ node_templates:
     type: cloudify.openstack.nodes.Subnet
     properties:
       resource_id: left_subnet_openstack
+      subnet:
+        host_routes: [ {"nexthop": "10.40.40.254", "destination": "10.20.20.0/24"} ]
+#        allocation_pools:
+#          - start: 10.40.40.1
+#            end: 10.40.40.140
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
           inputs:
             args:
-              cidr: 1.40.40.0/24
+              cidr: 10.40.40.0/24
               ip_version: 4
       cloudify.interfaces.validation:
         creation:
           inputs:
             args:
-              cidr: 1.40.40.0/24
+              cidr: 10.40.40.0/24
               ip_version: 4
     relationships:
       - target: left_network
@@ -105,16 +110,16 @@ node_templates:
         create:
           inputs:
             args:
-              cidr: 1.20.20.0/24
+              cidr: 10.20.20.0/24
               ip_version: 4
       cloudify.interfaces.validation:
         creation:
           inputs:
             args:
-              cidr: 1.20.20.0/24
+              cidr: 10.20.20.0/24
               ip_version: 4
     relationships:
-      - target: left_network
+      - target: right_network
         type: cloudify.relationships.contained_in
 
   left_port:
@@ -129,8 +134,10 @@ node_templates:
             args:
               port_security_enabled: False
     relationships:
+      - target: left_network
+        type: cloudify.relationships.connected_to
       - target: left_subnet
-        type: cloudify.relationships.contained_in
+        type: cloudify.relationships.depends_on
         
   my_security_group:
     type: cloudify.openstack.nodes.SecurityGroup
@@ -216,14 +223,16 @@ node_templates:
     relationships:
       - target: left_port
         type: cloudify.relationships.connected_to      
+      - target: left_port
+        type: cloudify.relationships.depends_on
       - target: right_network
         type: cloudify.relationships.connected_to
       - target: right_subnet
         type: cloudify.relationships.depends_on
       - target: fos_floating_ip
         type: cloudify.openstack.server_connected_to_floating_ip
-      - target: my_security_group
-        type: cloudify.openstack.server_connected_to_security_group
+#      - target: my_security_group
+#        type: cloudify.openstack.server_connected_to_security_group
 
 
 
@@ -268,6 +277,51 @@ node_templates:
       - target: left_subnet
         type: cloudify.relationships.depends_on
       - target: leftub_floating_ip
+        type: cloudify.openstack.server_connected_to_floating_ip
+      - target: my_security_group
+        type: cloudify.openstack.server_connected_to_security_group
+
+  rightubuntu:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      server:
+        image: { get_input: ub_imageid }
+        flavor: { get_input: ub_flavorid }
+        #useless key_name for fortinet but mandatory for openstack
+        key_name: { get_input: key_name }
+      agent_config:
+        install_method: none # Bug in cloudify agents use internal ip and not floating
+      openstack_config: *openstack_config
+      management_network_name: { get_input: mgmt_network_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              userdata: |
+                #cloud-config
+                package_upgrade: true
+                packages:
+                  - apache2-utils
+                  - apache2
+                  - tcpdump
+                  - iperf3
+                  chpasswd:
+                    list: |
+                      ubuntu:fortinet
+                      expire: False
+                      write_files:
+                        - content: |
+                          # Enable dhcp on eth1
+                          auto eth1
+                          iface eth1 inet dhcp
+                          path: /etc/network/interfaces.d/eth1.cfg
+    relationships:
+      - target: right_network
+        type: cloudify.relationships.connected_to
+      - target: right_subnet
+        type: cloudify.relationships.depends_on
+      - target: rightub_floating_ip
         type: cloudify.openstack.server_connected_to_floating_ip
       - target: my_security_group
         type: cloudify.openstack.server_connected_to_security_group
