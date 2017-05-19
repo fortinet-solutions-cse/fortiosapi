@@ -76,9 +76,9 @@ node_templates:
       resource_id: left_subnet_openstack
       subnet:
         host_routes: [ {"nexthop": "10.40.40.254", "destination": "10.20.20.0/24"} ]
-#        allocation_pools:
-#          - start: 10.40.40.1
-#            end: 10.40.40.140
+        allocation_pools:
+          - start: 10.40.40.1
+            end: 10.40.40.140
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -168,9 +168,6 @@ node_templates:
               config_drive: true
               userdata: |
                 #FOS VM Config File
-                config sys global
-                set hostname cloudify-vm
-                end
                 config system interface
                 edit mgmt
                 set mode dhcp
@@ -261,16 +258,16 @@ node_templates:
                   - apache2
                   - tcpdump
                   - iperf3
-                  chpasswd:
-                    list: |
-                      ubuntu:fortinet
-                      expire: False
-                      write_files:
-                        - content: |
-                          # Enable dhcp on eth1
-                          auto eth1
-                          iface eth1 inet dhcp
-                          path: /etc/network/interfaces.d/eth1.cfg
+                chpasswd:
+                  list: |
+                    ubuntu:fortinet
+                  expire: False
+                write_files:
+                  - content: |
+                      # Enable dhcp on eth1
+                      auto eth1
+                      iface eth1 inet dhcp
+                    path: /etc/network/interfaces.d/eth1.cfg
     relationships:
       - target: left_network
         type: cloudify.relationships.connected_to
@@ -306,16 +303,16 @@ node_templates:
                   - apache2
                   - tcpdump
                   - iperf3
-                  chpasswd:
-                    list: |
-                      ubuntu:fortinet
-                      expire: False
-                      write_files:
-                        - content: |
-                          # Enable dhcp on eth1
-                          auto eth1
-                          iface eth1 inet dhcp
-                          path: /etc/network/interfaces.d/eth1.cfg
+                chpasswd:
+                  list: |
+                    ubuntu:fortinet
+                  expire: False
+                write_files:
+                  - content: |
+                      # Enable dhcp on eth1
+                      auto eth1
+                      iface eth1 inet dhcp
+                    path: /etc/network/interfaces.d/eth1.cfg
     relationships:
       - target: right_network
         type: cloudify.relationships.connected_to
