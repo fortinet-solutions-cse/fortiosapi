@@ -55,9 +55,9 @@ export OS_PROJECT_NAME=mini-poc$i
     echo "Configuring Openstack Neutron Networking"
 
     #Create mgmt network for neutron for tenant VMs
-    neutron net-show mgmt > /dev/null 2>&1 || neutron net-create mgmt
-    neutron subnet-show mgmt_subnet > /dev/null 2>&1 || neutron subnet-create mgmt $NEUTRON_FIXED_NET_CIDR -- --name mgmt_subnet --dns_nameservers list=true $NEUTRON_DNS
-    SUBNET_ID=$(neutron subnet-show mgmt_subnet | grep " id" | awk '{print $4}')
+    neutron net-show mgmt$i > /dev/null 2>&1 || neutron net-create mgmt$i
+    neutron subnet-show mgmt$i_subnet > /dev/null 2>&1 || neutron subnet-create mgmt$i $NEUTRON_FIXED_NET_CIDR -- --name mgmt$i_subnet --dns_nameservers list=true $NEUTRON_DNS
+    SUBNET_ID=$(neutron subnet-show mgmt$i_subnet | grep " id" | awk '{print $4}')
 
     #Create router for external network and mgmt network
     neutron router-show tenant$i-router > /dev/null 2>&1 || neutron router-create tenant$i-router
