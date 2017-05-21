@@ -38,7 +38,8 @@ do
     source ~/nova.rc
     openstack project create --description "Fortinet min-poc $i project" mini-poc$i
     openstack user create --project mini-poc$i --password fortinet tenant$i
-    openstack role add --user  tenant$i --project mini-poc$i  Member
+    openstack role create Tenant$i
+    openstack role add --user  tenant$i --project mini-poc$i  Tenant$i
 
     echo "unset SERVICE_TOKEN
 unset SERVICE_ENDPOINT 
@@ -56,8 +57,8 @@ export OS_PROJECT_NAME=mini-poc$i
 
     #Create mgmt network for neutron for tenant VMs
     neutron net-show mgmt$i > /dev/null 2>&1 || neutron net-create mgmt$i
-    neutron subnet-show mgmt$i_subnet > /dev/null 2>&1 || neutron subnet-create mgmt$i $NEUTRON_FIXED_NET_CIDR -- --name mgmt$i_subnet --dns_nameservers list=true $NEUTRON_DNS
-    SUBNET_ID=$(neutron subnet-show mgmt$i_subnet | grep " id" | awk '{print $4}')
+    neutron subnet-show mgmt${i}_subnet > /dev/null 2>&1 || neutron subnet-create mgmt$i $NEUTRON_FIXED_NET_CIDR -- --name mgmt${i}_subnet --dns_nameservers list=true $NEUTRON_DNS
+    SUBNET_ID=`neutron subnet-show mgmt${i}_subnet -f value --field id`
 
     #Create router for external network and mgmt network
     neutron router-show tenant$i-router > /dev/null 2>&1 || neutron router-create tenant$i-router

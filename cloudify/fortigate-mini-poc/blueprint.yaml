@@ -218,19 +218,17 @@ node_templates:
 #               license: |
 #                some text to put into the file
     relationships:
-      - target: left_port
-        type: cloudify.relationships.connected_to      
+      - target: fos_floating_ip
+        type: cloudify.openstack.server_connected_to_floating_ip
       - target: left_port
         type: cloudify.relationships.depends_on
       - target: right_network
         type: cloudify.relationships.connected_to
-      - target: right_subnet
-        type: cloudify.relationships.depends_on
-      - target: fos_floating_ip
-        type: cloudify.openstack.server_connected_to_floating_ip
+#      - target: right_subnet
+#        type: cloudify.relationships.depends_on
 #      - target: my_security_group
 #        type: cloudify.openstack.server_connected_to_security_group
-
+#not compatible with portsecurity disabled
 
 
   leftubuntu:
