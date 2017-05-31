@@ -44,7 +44,7 @@ usage()
 {
 cat << EOF
     
-setup-fortidemos - This script aims to setup you host to be fully ready for fortidemos usage LXD/Docker perso lab
+fortistacks - This script aims to setup you host to be fully ready for fortidemos usage LXD/Docker perso lab
 
 USAGE: -p /dev/sdaX install sudoers desktop
 
@@ -139,7 +139,7 @@ lxd-init()
 
 sudoers()
 {
-   #  Go passwordless for sudo this is a dev fortidemos DO NOT DO in Prod
+   #  Go passwordless for sudo this is a dev fortistacks DO NOT DO in Prod
 
     echo "$USER ALL=(ALL) NOPASSWD:ALL" |  sudo tee /etc/sudoers.d/99-nopasswd
 }
@@ -206,7 +206,7 @@ install()
 
 
 OPTS=$(getopt -o hdp: --long help,debug,partition: \
-     -n 'fortidemos' -- "$@")
+     -n 'fortistacks' -- "$@")
 
 
 

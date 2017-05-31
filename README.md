@@ -1,4 +1,4 @@
-# fortidemos #
+# fortistacks #
 
 Is a collection of scripts and pre defined setups for running full
 stack of software (multi openstack, docker, kubernetes, etc..)
@@ -27,18 +27,18 @@ for power users).
 
 on your newly installed Ubuntu:
 
-`git clone https://github.com/thomnico/fortidemos.git`
+`git clone https://github.com/thomnico/fortistacks.git`
 
-`cd fortidemos`
+`cd fortistacks`
 
-`./fortidemos -p /dev/sdaX sudoers install desktop`
+`./fortistacks -p /dev/sdaX sudoers install desktop`
 
 Be sure to replace /dev/sdaX with a free to use partition.
 
 ## What's now ##
 
 Now you have a lxd ready ubuntu, sudo without passwd and access it
-from MacOSX and windows vnc://<IP of fortidemos>
+from MacOSX and windows vnc://<IP of fortistacksxs>
 
 The first instance of this project contains a openstack mitaka on
 ubuntu you can use:
