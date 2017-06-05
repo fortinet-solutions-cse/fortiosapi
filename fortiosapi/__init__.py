@@ -1,1 +1,1 @@
-from .fortiosapi import FortiOSConf
+from .fortiosapi import FortiOSAPI
