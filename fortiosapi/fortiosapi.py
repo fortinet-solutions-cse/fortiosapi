@@ -98,7 +98,7 @@ class FortiOSAPI(object):
                                  data='username=' + username + '&secretkey=' + password,
                                  verify=False)
         self.logging(res)
-        if '/ng/prompt?viewOnly&redir' in res.content:
+        if b"/ng/prompt?viewOnly&redir" in res.content:
             # Update session's csrftoken
             self.update_cookie()
         else:
@@ -247,7 +247,7 @@ class FortiOSAPI(object):
             try:
                 keyname = schema['mkey']
                 mkey = data[keyname]
-            except KeyError, e:
+            except (KeyError, e):
                 LOG.warning(
                     "mkey not found in schema with error %s. It is recommended to use the put method directly instead ", str(e))
             url = self.cmdb_url(path, name, mkey=mkey, vdom=vdom)
