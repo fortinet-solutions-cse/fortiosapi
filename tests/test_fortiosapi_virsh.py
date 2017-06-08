@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import unittest
+
 # Copyright 2015 Fortinet, Inc.
 #
 # All Rights Reserved
@@ -20,76 +22,79 @@
 #
 # fortiosapi.py unit test rely on a local VM so can verify from
 # the console (pexpect)
-# 
+# user must be able to do all kvm/qemu function
+# parameters in virsh.yaml or a file as a conf
+# will use a fortios.qcow2 image create the vm and destroy it at the
+# end this will allow to test a list of versions/products automated
 #
 ###################################################################
-import unittest
 from fortiosapi import FortiOSAPI
 import sys
+import os
 import pprint
 import json
-from argparse import Namespace
 import pexpect
 import yaml
 import logging
 formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-logger = logging.getLogger('fortiosapi'
+logger = logging.getLogger('fortiosapi')
 hdlr = logging.FileHandler('/var/tmp/testfortiosapi.log')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.DEBUG)
 
-#Option parsing
-parser = argparse.ArgumentParser(description="Can push the configuration for virsh ")
-parser.add_argument('-c', action="store", dest="conffile", default='virsh.yaml')
-args = parser.parse_args()
-
 fgt = FortiOSAPI()
                            
-def json2obj(data):
-    return json.loads(data, object_hook=lambda d: Namespace(**d))
+#def json2obj(data):
+#    return json.loads(data, object_hook=lambda d: Namespace(**d))
 
-with open(args.conffile, 'r') as f:
-    conf = yaml.load(f)
-                           
+virshconffile =  os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
+conf = yaml.load(open(virshconffile,'r'))
+child = pexpect.spawn('virsh console fostest')
+#TODO add the option to run on a remote VM with -c qemu+ssh://
+fgt.debug('on')
+
 class TestFortinetRestAPI(unittest.TestCase):
- 
+
+    # Note that, for Python 3 compatibility reasons, we are using spawnu and
+    # importing unicode_literals (above). spawnu accepts Unicode input and
+    # unicode_literals makes all string literals in this script Unicode by default.
+
     def setUp(self):
-        # must use pexepct to reset VM to factory
         pass
  
     def test_login(self):
-        self.assertEqual( multiply(3,4), 12)
- 
-    def test_get(self):
-        self.assertEqual( multiply('a',3), 'aaa')
- 
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
 
-def json2obj(data):
-    return json.loads(data, object_hook=lambda d: Namespace(**d))
-
-
-def main():
-    # Login to the FGT ip
-    fgt.debug('on')
-    fgt.login('192.168.40.8','admin','')
-    data = {
-  #         "action" : "add",
-           "seq-num" :"8",
-           "dst": "10.10.30.0 255.255.255.0",
-           "device": "port2",
-           "gateway": "192.168.40.254",
+    def test_setaccessperm(self):
+        data = {
+            "name": "mgmt",
+            "allowaccess": "ping https ssh http fgfm snmp",
+            "vdom":"root"
         }
-    pp = pprint.PrettyPrinter(indent=4)
-    d=json2obj(json.dumps(data))
-    pp.pprint(fgt.get_name_path_dict( vdom="root"))
-  #  resp = fgt.schema('diagnose__tree__','debug', vdom="root")
-  #  pp.pprint(resp)
-    resp = fgt.post('diagnose__tree__','debug', vdom="root", mkey="enable")
+        self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
+        
     
-    pp.pprint(resp)
-
-    fgt.logout()
+if __name__ == '__main__':
+    #in case it was not closed properly before
+    child.sendline('quit')
+    child.expect('Escape character')
+    child.sendline('\r\r')
+    child.expect('.* login:')
+    child.sendline( "admin\r")
+    child.expect("Password:")
+    child.sendline ("\r")
+    child.expect(' #')    
+    child.send('get system status\r')
+    #must have expect for before /afte to be populated
+    child.expect(['License','FortiOS '])
+    print("after:"+child.after)
+    print("after:"+child.after)
+#    for i in range(0, 24):
+    print(child.readline(-1))
+#    child.sendline(' execute factoryreset keepvmlicense')
+    # must use pexepct to reset VM to factory
+    #print(child.before) to get the ouput
+    unittest.main()
+    child.sendline('quit')

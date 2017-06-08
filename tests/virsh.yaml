@@ -1,6 +1,8 @@
-virsh:
-  endpoint: ""
-  # could be qemu+shh://ip/
-  ip: 192.168.11.12
-  vmfolders: /var/lib/images
-  image: fortios.qcow2
+sut:
+  virshurl: ""
+  # could be qemu+ssh://ip/system
+  ip: 192.168.122.70
+  vmname: "fostest"
+  user: "admin"
+  passwd: ""
+  vdom: "root"

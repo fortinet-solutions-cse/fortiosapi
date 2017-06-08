@@ -1,0 +1,4 @@
+paramiko
+requests
+pexpect
+pyyaml
