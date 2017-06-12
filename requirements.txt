@@ -2,3 +2,4 @@ paramiko
 requests
 pexpect
 pyyaml
+nose
