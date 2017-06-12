@@ -51,7 +51,7 @@ fgt = FortiOSAPI()
 
 virshconffile =  os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
 conf = yaml.load(open(virshconffile,'r'))
-child = pexpect.spawn('virsh console fostest')
+child = pexpect.spawn('virsh console '+conf["sut"]["vmname"])
 #TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
 
@@ -67,6 +67,14 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_login(self):
         self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
 
+    def test_putaccessperm(self):
+        data = {
+            "name": "mgmt",
+            "allowaccess": "ping https ssh http fgfm snmp",
+            "vdom":"root"
+        }
+        self.assertEqual(fgt.put('system','interface', vdom="root", data=data)['http_status'], 200)
+        
     def test_setaccessperm(self):
         data = {
             "name": "mgmt",
