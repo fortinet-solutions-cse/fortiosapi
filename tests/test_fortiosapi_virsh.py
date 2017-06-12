@@ -73,7 +73,7 @@ class TestFortinetRestAPI(unittest.TestCase):
             "allowaccess": "ping https ssh http fgfm snmp",
             "vdom":"root"
         }
-        self.assertEqual(fgt.put('system','interface', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.put('system','interface', vdom="root", data=data)['http_status'], 405)
         
     def test_setaccessperm(self):
         data = {
