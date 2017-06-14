@@ -1,6 +1,5 @@
 paramiko
-requests
+requests[security]
 pexpect
 pyyaml
 nose
-certify
