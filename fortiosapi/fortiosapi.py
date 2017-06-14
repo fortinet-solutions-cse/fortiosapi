@@ -32,6 +32,9 @@ import json
 import pprint
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
+# try to fix 5.6 handshake error
+import ssl
+print ssl.OPENSSL_VERSION
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
