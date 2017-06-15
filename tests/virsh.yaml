@@ -6,3 +6,4 @@ sut:
   user: "admin"
   passwd: ""
   vdom: "root"
+  product: "fos56"
