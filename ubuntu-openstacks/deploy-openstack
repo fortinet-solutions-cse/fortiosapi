@@ -5,3 +5,8 @@ echo -e "fortinet\nfortinet" | juju change-user-password
 grep password ~/.local/share/juju/accounts.yaml > /dev/null 2>&1 || echo "    password: fortinet" >> ~/.local/share/juju/accounts.yaml
 juju add-model mitaka
 juju deploy openstack-nonest.yaml
+# juju-wait last version was not test with python2 !!
+# Need a special version
+sudo -H pip install juju-wait==2.5.0
+echo "waiting for deployment to complete can be 1hour"
+juju-wait

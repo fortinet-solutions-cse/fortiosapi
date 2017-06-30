@@ -14,7 +14,7 @@ lxc launch images:centos/7/amd64 cfy-mngr && sleep 12
 
 LXCm="lxc exec cfy-mngr -- "
 $LXCm ping -c 4 github.com
-$LXCm yum update
+$LXCm yum -y update
 $LXCm yum -y install openssh-server anacron gcc python-devel sudo wget which java
 $LXCm mkdir -p /root/.ssh
 # check this https://groups.google.com/forum/#!topic/cloudify-users/U1xMdkZ0HqM
