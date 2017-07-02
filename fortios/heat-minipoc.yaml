@@ -6,10 +6,10 @@ description: >
   Used for experimenting Fortinet in a cloud environment.
   
 parameters:
- fgtimage:
+ fosimage:
   type: string
   description: Fortios image
-  default: "fgt54"
+  default: "fos54"
  ubimage:
   type: string
   description: Ubuntu image
@@ -54,7 +54,7 @@ resources:
         - start: "10.20.20.3"
           end:  "10.20.20.250"
 
- fgt_left_port:
+ fos_left_port:
     type: OS::Neutron::Port
     properties:
       network_id: { get_resource: left_net }
@@ -62,16 +62,16 @@ resources:
       fixed_ips:
         - ip_address: "10.40.40.254"
 
- fgt_floating_ip:
+ fos_floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
       floating_network: { get_param: public_net }
 
 
- fgt:
+ fos:
   type: OS::Nova::Server
   properties:
-   image: { get_param: fgtimage }
+   image: { get_param: fosimage }
    flavor: m1.small
    user_data_format: RAW
    user_data: |
@@ -111,29 +111,39 @@ resources:
                 set nat enable
                 next
                 end
-   name: FGT
+                config system central-management
+                set include-default-servers disable
+                set type fortimanager
+                set fmg 10.210.8.25
+                config server-list
+                edit 1
+                set server-type update rating
+                set server-address 10.210.8.25 
+                end
+                end
+   name: FOS
    config_drive: True
    security_groups: [ default ]
    user_data_format: RAW
 #   personality: {"license": { get_file: FGVM080000032371.lic }}
    networks:
     - network: { get_param: mgmt_net }
-    - port:  { get_resource: fgt_left_port }
+    - port:  { get_resource: fos_left_port }
     - subnet:  { get_resource: right_subnet }
 #    - port:  { get_resource: right_port }
 
- association_fgt:
+ association_fos:
     type: OS::Nova::FloatingIPAssociation
     properties:
-      floating_ip: { get_resource: fgt_floating_ip }
-      server_id: { get_resource: fgt }
+      floating_ip: { get_resource: fos_floating_ip }
+      server_id: { get_resource: fos }
 
 # association:
 #   type: OS::Neutron::FloatingIPAssociation
 #   properties:
 #     floatingip_id: { get_resource: floating_ip }
-#     port_id: {get_attr: [fgt, addresses, {get_param: net}, 0, port]}
- fgt_floating_ip:
+#     port_id: {get_attr: [fos, addresses, {get_param: net}, 0, port]}
+ fos_floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
       floating_network: { get_param: public_net }
@@ -226,9 +236,9 @@ resources:
 
       
 outputs:
- fgt-info:
+ fos-info:
     description: IP address to access of the FGT
-    value: { get_attr: [ fgt_floating_ip,  floating_ip_address ] }
+    value: { get_attr: [ fos_floating_ip,  floating_ip_address ] }
  left-info:
     description: IP address to access left ubuntu machine 
     value: { get_attr: [ ubl_floating_ip,  floating_ip_address ] }
