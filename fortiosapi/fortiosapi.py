@@ -50,10 +50,6 @@ logging.getLogger(__name__).addHandler(NullHandler())
 LOG = logging.getLogger('fortiosapi')
 
 
-def json2obj(data):
-    return json.loads(data.decode('utf-8'),
-                      object_hook=lambda d: Namespace(**d))
-
 
 class FortiOSAPI(object):
     def __init__(self):
@@ -236,17 +232,20 @@ class FortiOSAPI(object):
         if vdom == "global":
             # with global the retruned string is a list of resp per vdom
             globres = json.loads(res.content)[0]
+            globres['vdom'] = "global"
             LOG.debug("raw globres: %s", globres)
-            r = json2obj(json.dumps(globres))
+            r = globres
         else:
             # any vdom
-            self.logging(res)
-            r = json2obj(res.content)
-        if r.http_status == 424 or r.http_status == 405:
+            r = json.loads(res.content.decode('utf-8'))
+            LOG.debug("raw results: %s", r)
+
+            
+        if r['http_status'] == 424 or r['http_status'] == 405:
             LOG.warning("Try to post on %s  failed doing a put to force parameters change consider delete if still fails ",
                         res.request.url)
             # retreive the table mkey from schema
-            schema = self.schema(path, name, vdom=None)
+            schema = self.schema(path, name, vdom=vdom)
             try:
                 keyname = schema['mkey']
                 mkey = data[keyname]
@@ -267,6 +266,12 @@ class FortiOSAPI(object):
             resp['reason'] = res.reason
             LOG.debug("resp: %s", resp)
             return resp
+        else:
+            try:
+                keyname = r['reason']
+            except (KeyError):
+                r['reason']="n/a"
+            return r
 
 
 # send multiline string ''' get system status ''' using ssh

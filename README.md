@@ -18,6 +18,5 @@ There is a get_schema call and an example to get the schema of the
 differents methods to ease writting them.
 
 ## Roadmap
-unittests
 monitoring
 license upload and update-now.

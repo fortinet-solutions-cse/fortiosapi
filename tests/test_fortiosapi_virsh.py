@@ -39,7 +39,7 @@ import logging
 formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')
-hdlr = logging.FileHandler('/var/tmp/testfortiosapi.log')
+hdlr = logging.FileHandler('testfortiosapi.log')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.DEBUG)
@@ -83,7 +83,10 @@ class TestFortinetRestAPI(unittest.TestCase):
         }
         self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
         
-    
+##
+## Todo get, set , ssh, post, delete with checking fom pexcept
+## get schema too .. then add the license and monitoring
+
 if __name__ == '__main__':
     #in case it was not closed properly before
     child.sendline('quit')
@@ -96,13 +99,13 @@ if __name__ == '__main__':
     child.expect(' #')    
     child.send('get system status\r')
     #must have expect for before /afte to be populated
-    child.expect(['License','FortiOS '])
+    child.expect(['License Status','FortiOS '])
     print("after:"+child.after)
     print("after:"+child.after)
+#after gives you the character after the catch from expect
 #    for i in range(0, 24):
     print(child.readline(-1))
 #    child.sendline(' execute factoryreset keepvmlicense')
     # must use pexepct to reset VM to factory
-    #print(child.before) to get the ouput
     unittest.main()
     child.sendline('quit')
