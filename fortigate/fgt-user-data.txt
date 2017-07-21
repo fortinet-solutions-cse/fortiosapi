@@ -5,22 +5,25 @@
                 set allowaccess ping https ssh http snmp fgfm
                 set mtu-override enable 
                 set mtu 1456
+                set defaultgw enable 
                 next
                 edit port2
                 set mode dhcp
                 set mtu-override enable 
                 set mtu 1456
                 set allowaccess ping
-                next
+                 set defaultgw disable 
+               next
                 edit port3
                 set mode dhcp
                 set mtu-override enable 
                 set mtu 1456
                 set allowaccess ping
+                 set defaultgw disable 
                 next
                 end
                 config system dns
-                set primary 10.10.10.1
+                set primary 8.8.8.8
                 end
                 config firewall policy
                 edit 1
