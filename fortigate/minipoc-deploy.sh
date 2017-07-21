@@ -25,7 +25,7 @@ if [ -x "$OS_AUTH_URL" ]; then
   . ~/nova.rc
 fi
 #Push image
-openstack image show  "fos54" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "fos54"  --file fortios.qcow2
+openstack image show  "fgt54" > /dev/null 2>&1 || openstack image create --disk-format qcow2 --container-format bare  --public  "fgt54"  --file fortios.qcow2
 
 
 #Create mgmt network for neutron for tenant VMs
@@ -61,17 +61,17 @@ else
 fi
 
 
-if (nova show fos54  > /dev/null 2>&1 );then
-    echo "fos54 already installed"
+if (nova show fgt54  > /dev/null 2>&1 );then
+    echo "fgt54 already installed"
 else
     neutron port-show left1 > /dev/null 2>&1 ||neutron port-create left --port-security-enabled=False --fixed-ip ip_address=10.40.40.254 --name left1 
     neutron port-show right1 > /dev/null 2>&1 ||neutron port-create right --port-security-enabled=False --fixed-ip ip_address=10.20.20.254 --name right1 
     LEFTPORT=`neutron port-show left1 -F id -f value`
     RIGHTPORT=`neutron port-show right1 -F id -f value`
-    nova boot --image "fos54" fos54 --config-drive=true --key-name default  --security-group default  --flavor m1.small  --user-data fgt-user-data.txt --nic net-name=mgmt --nic port-id=$LEFTPORT --nic port-id=$RIGHTPORT
+    nova boot --image "fgt54" fgt54 --config-drive=true --key-name default  --security-group default  --flavor m1.small  --user-data fgt-user-data.txt --nic net-name=mgmt --nic port-id=$LEFTPORT --nic port-id=$RIGHTPORT --file license=FGT.lic
     FLOAT_IP="$(nova floating-ip-create | grep ext_net | awk -F "|" '{ print $3}')"
-    while [ $(nova list |grep fos54 | awk -F "|" '{print $4}') == "BUILD" ]; do
+    while [ $(nova list |grep fgt54 | awk -F "|" '{print $4}') == "BUILD" ]; do
 	sleep 4
     done
-    nova floating-ip-associate fos54 $FLOAT_IP
+    nova floating-ip-associate fgt54 $FLOAT_IP
 fi
