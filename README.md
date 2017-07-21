@@ -27,7 +27,7 @@ for power users).
 
 on your newly installed Ubuntu:
 
-`git clone https://github.com/thomnico/fortistacks.git`
+`git clone https://github.com/fortinet-solutions-cse/fortistacks.git`
 
 `cd fortistacks`
 
@@ -49,7 +49,9 @@ ubuntu you can use:
 will take some time (like 40mins) monitor with
 `watch -c juju status --color`
 
-Check the README in this folder.
+Fortigate/Fortios folders deal with fortinet products on openstack/heat.
 
-The fortigate folder shows how to use cloud-init, heat-template (even
-from horizon).
+Cloudify deal with a full MANO implementation and blueprint.
+
+Check the README in every folder for details. Those can be used on public or personnal real openstack with minimum adaptation.
+
