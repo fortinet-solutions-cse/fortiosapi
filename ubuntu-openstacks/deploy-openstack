@@ -6,7 +6,8 @@ grep password ~/.local/share/juju/accounts.yaml > /dev/null 2>&1 || echo "    pa
 juju add-model mitaka
 juju deploy openstack-nonest.yaml
 # juju-wait last version was not test with python2 !!
-# Need a special version
-sudo -H pip install juju-wait==2.5.0
+# Move to python3
+sudo apt install python3-pip
+sudo -H pip3 install juju-wait
 echo "waiting for deployment to complete can be 1hour"
-juju-wait
+python3 /usr/local/bin/juju-wait
