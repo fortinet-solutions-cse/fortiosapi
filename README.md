@@ -1,5 +1,7 @@
 # fortidemos #
 
+A full explanation/follow along video is available here: https://vimeo.com/215625341
+
 Is a collection of scripts and pre defined setups for running full
 stack of software (multi openstack, docker, kubernetes, etc..)
 orchestrators or even bigdata stacks.
