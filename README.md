@@ -17,6 +17,8 @@ here .. it is bad.
 
 ## Requirement ##
 
+(Please have a look to this video showing installation and execution steps: https://vimeo.com/215625341)
+
 Install a fresh ubuntu 16.04 with a 100G available free linux
 partition or disk.
 On a single disk machine go in advance mode for disk to ensure
