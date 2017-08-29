@@ -107,11 +107,10 @@ class FortiOSAPI(object):
     def logout(self):
         url = self.url_prefix + '/logout'
         res = self._session.post(url, verify=False)
-
+        self._session.close()
         self.logging(res)
 
     def cmdb_url(self, path, name, vdom, mkey):
-
         # return builded URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
         if mkey:
@@ -125,6 +124,31 @@ class FortiOSAPI(object):
 
         url = self.url_prefix + url_postfix
         return url
+
+    def mon_url(self, path, name, vdom, mkey):
+        # return builded URL
+        url_postfix = '/api/v2/monitor/' + path + '/' + name
+        if mkey:
+            url_postfix = url_postfix + '/' + str(mkey)
+        if vdom:
+            LOG.debug("vdom is: %s", vdom)
+            if vdom == "global":
+                url_postfix += '?global=1'
+            else:
+                url_postfix += '?vdom=' + vdom
+
+        url = self.url_prefix + url_postfix
+        return url
+
+    def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
+        url = self.mon_url(path, name, vdom, mkey)
+        res = self._session.get(url, params=parameters)
+        # return the content but add the http method reason (give better hint
+        # what to do)
+        resp = json.loads(res.content.decode('utf-8'))
+        resp['reason'] = res.reason
+        self.logging(res)
+        return resp
 
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)

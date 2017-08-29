@@ -74,11 +74,16 @@ class TestFortinetRestAPI(unittest.TestCase):
             "vdom":"root"
         }
         self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
-        
+
+    def test_monitorresources(self):
+        self.assertEqual(fgt.monitor('system','resource', vdom="root")['status'], 'success')
+
+    # tests are run on alphabetic sorting so this must be last call
+    def test_zzlogout(self):
+        self.assertEqual(fgt.logout(), None)
     
 if __name__ == '__main__':
     #in case it was not closed properly before
-    child.sendline('quit')
     child.expect('Escape character')
     child.sendline('\r\r')
     child.expect('.* login:')
@@ -97,4 +102,4 @@ if __name__ == '__main__':
     # must use pexepct to reset VM to factory
     #print(child.before) to get the ouput
     unittest.main()
-    child.sendline('quit')
+    child.sendline('\rend\rquit\r')
