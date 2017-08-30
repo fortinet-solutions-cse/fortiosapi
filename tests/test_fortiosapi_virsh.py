@@ -39,7 +39,7 @@ import logging
 formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')
-hdlr = logging.FileHandler('/var/tmp/testfortiosapi.log')
+hdlr = logging.FileHandler('testfortiosapi.log')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.DEBUG)
@@ -64,16 +64,19 @@ class TestFortinetRestAPI(unittest.TestCase):
     def setUp(self):
         pass
  
-    def test_login(self):
+    def test_00login(self):
         self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
 
     def test_setaccessperm(self):
         data = {
-            "name": "mgmt",
+            "name": "port1",
             "allowaccess": "ping https ssh http fgfm snmp",
             "vdom":"root"
         }
         self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
+
+    def test_getsystemglobal(self):
+        self.assertEqual(fgt.get('system','global', vdom="global")['status'], 'success')
 
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system','resource', vdom="root")['status'], 'success')

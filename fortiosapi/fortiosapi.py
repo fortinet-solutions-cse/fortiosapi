@@ -145,19 +145,26 @@ class FortiOSAPI(object):
         res = self._session.get(url, params=parameters)
         # return the content but add the http method reason (give better hint
         # what to do)
-        resp = json.loads(res.content.decode('utf-8'))
-        resp['reason'] = res.reason
         self.logging(res)
+        if vdom == "global":
+            resp = json.loads(res.content.decode('utf-8'))[0]
+            resp['vdom'] = "global"
+        else:
+            resp = json.loads(res.content.decode('utf-8'))
+        LOG.debug("MONITOR resp is: %s", resp)
         return resp
 
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.get(url, params=parameters)
-        # return the content but add the http method reason (give better hint
-        # what to do)
-        resp = json.loads(res.content.decode('utf-8'))
-        resp['reason'] = res.reason
         self.logging(res)
+
+        if vdom == "global":
+            resp = json.loads(res.content.decode('utf-8'))[0]
+            resp['vdom'] = "global"
+        else:
+            resp = json.loads(res.content.decode('utf-8'))
+        LOG.debug("GET resp is: %s", resp)
         return resp
 
     def schema(self, path, name, vdom=None, mkey=None, parameters=None):
