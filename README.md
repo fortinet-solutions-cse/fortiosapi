@@ -2,8 +2,6 @@
 
 Python library to configure Fortinet devices (REST API and SSH)
 
-Monitoring is pending.
-
 Compare to the REST API there a few add-ons:
  In addition to get,put,post,delete methods there is a set which will
  try to post and if failing will put and collect the mkey directly.
@@ -18,6 +16,4 @@ There is a get_schema call and an example to get the schema of the
 differents methods to ease writting them.
 
 ## Roadmap
-unittests
-monitoring
 license upload and update-now.
