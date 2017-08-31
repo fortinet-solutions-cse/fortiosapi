@@ -143,8 +143,7 @@ class FortiOSAPI(object):
     def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom, mkey)
         res = self._session.get(url, params=parameters)
-        # return the content but add the http method reason (give better hint
-        # what to do)
+
         self.logging(res)
         if vdom == "global":
             resp = json.loads(res.content.decode('utf-8'))[0]
@@ -203,8 +202,8 @@ class FortiOSAPI(object):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(
             url, params=parameters, data=json.dumps(data), verify=False)
-        # return the content but add the http method reason (give better hint
-        # what to do)
+
+        LOG.debug("post resp: %s", resp)
         self.logging(res)
         if vdom == "global":
             resp = json.loads(res.content)[0]
@@ -212,15 +211,12 @@ class FortiOSAPI(object):
         else:
             resp = json.loads(res.content.decode('utf-8'))
 
-        resp['reason'] = res.reason
         return resp
 
     def put(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.put(url, params=parameters,
                                 data=json.dumps(data), verify=False)
-        # return the content but add the http method reason (give better hint
-        # what to do)
         self.logging(res)
         if vdom == "global":
             # return result for the first vdom on the list
@@ -228,7 +224,7 @@ class FortiOSAPI(object):
             resp['vdom'] = "global"
         else:
             resp = json.loads(res.content.decode('utf-8'))
-        resp['reason'] = res.reason
+
         self.logging(resp)
         return resp
 
@@ -243,15 +239,14 @@ class FortiOSAPI(object):
             url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.delete(
             url, params=parameters, data=json.dumps(data))
-        # return the content but add the http method reason (give better hint
-        # what to do)
+
         if vdom == "global":
             # return result for the first vdom on the list
             resp = json.loads(res.content)[0]
             resp['vdom'] = "global"
         else:
             resp = json.loads(res.content.decode('utf-8'))
-        resp['reason'] = res.reason
+
         self.logging(res)
         return resp
 
@@ -292,7 +287,7 @@ class FortiOSAPI(object):
                 LOG.debug("resp: %s", resp)
             else:
                 resp = json.loads(res.content.decode('utf-8'))
-            resp['reason'] = res.reason
+        
             LOG.debug("resp: %s", resp)
             return resp
 
