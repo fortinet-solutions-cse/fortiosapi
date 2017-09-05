@@ -99,7 +99,15 @@ class TestFortinetRestAPI(unittest.TestCase):
             self.assertEqual(fgt.license()['results']['vm']['status'], "vm_valid")
         else:
             self.assertTrue(True, "not supported before 5.6")
-            
+
+    def test_central_management(self):
+        #This call does not have mkey test used to validate it does not blow up
+        data = {
+            "type": "fortimanager",
+            "fmg": "10.210.67.18",
+        }
+        self.assertEqual(fgt.put('system','central-management', vdom="root",data=data)['status'], 'success')
+        
         
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system','vdom-resource', mkey='select', vdom="root")['status'], 'success')
