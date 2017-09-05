@@ -134,10 +134,14 @@ class FortiOSAPI(object):
         schema = self.schema(path, name, vdom=None)
         try:
             keyname = schema['mkey']
+        except KeyError:
+            LOG.warning("there is no mkey for %s/%s", path , name)
+            return None
+        try:
             mkey = data[keyname]
-        except (KeyError, e):
-            LOG.warning(
-                "mkey not found in schema with error %s. It is recommended to declare mkey ", str(e))
+        except KeyError:
+            LOG.warning("mkey %s not set in the data", mkey)
+            return None
         return mkey
     
     def logout(self):
