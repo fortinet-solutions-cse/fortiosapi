@@ -3,4 +3,4 @@ requests
 pexpect
 pyyaml
 nose
-nose2
+packaging

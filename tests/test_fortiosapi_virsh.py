@@ -36,6 +36,7 @@ import json
 import pexpect
 import yaml
 import logging
+from packaging.version import Version
 formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')
@@ -60,7 +61,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     # Note that, for Python 3 compatibility reasons, we are using spawnu and
     # importing unicode_literals (above). spawnu accepts Unicode input and
     # unicode_literals makes all string literals in this script Unicode by default.
-
+    
     def setUp(self):
         pass
  
@@ -75,11 +76,33 @@ class TestFortinetRestAPI(unittest.TestCase):
         }
         self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
 
-    def test_getsystemglobal(self):
-        self.assertEqual(fgt.get('system','global', vdom="global")['status'], 'success')
+    @unittest.expectedFailure
+    def test_accesspermfail(self):
+        data = {
+            "name": "port1",
+            "allowaccess": "ping https ssh http fgfm snmp",
+            "vdom":"root"
+        }
+        self.assertEqual(fgt.set('system','interface', vdom="root", mkey='bad', data=data)['http_status'], 200, "broken")
+        
 
+    def test_01getsystemglobal(self):
+        resp = fgt.get('system','global', vdom="global")
+        fortiversion = resp['version']
+        self.assertEqual(resp['status'], 'success')
+
+    #should put a test on version to disable if less than 5.6 don't work decoration 
+    #@unittest.skipIf(Version(fgt.get_version()) < Version('5.6'),
+    #                 "not supported with fortios before 5.6")
+    def test_is_license_valid(self):
+        if Version(fgt.get_version()) > Version('5.6'):
+            self.assertEqual(fgt.license()['results']['vm']['status'], "vm_valid")
+        else:
+            self.assertTrue(True, "not supported before 5.6")
+            
+        
     def test_monitorresources(self):
-        self.assertEqual(fgt.monitor('system','resource', vdom="root")['status'], 'success')
+        self.assertEqual(fgt.monitor('system','vdom-resource', mkey='select', vdom="root")['status'], 'success')
 
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):

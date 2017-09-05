@@ -9,7 +9,7 @@ def readme():
 
 setup(
     name='fortiosapi',
-    version='0.8.1',
+    version='0.9.1',
     description='Python modules to interact with fortinet products configuration rest and ssh',
     long_description=readme(),
     # Valid Classifiers are here: https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -27,4 +27,3 @@ setup(
     include_package_data=True,
     packages=['fortiosapi'],
 )
-

@@ -15,5 +15,7 @@ take care of the differences in the repsonses.
 There is a get_schema call and an example to get the schema of the
 differents methods to ease writting them.
 
-## Roadmap
-license upload and update-now.
+## License (5.6)
+A rest call to check and force license validation check starting with 5.6
+See license.
+usage of schema and mkey for every call for 5.6 

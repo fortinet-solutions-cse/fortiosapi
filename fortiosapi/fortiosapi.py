@@ -24,6 +24,8 @@
 # A Python module to abstract configuration using FortiOS REST API
 #
 ###################################################################
+
+import time
 import paramiko
 import subprocess
 import requests
@@ -42,41 +44,60 @@ from argparse import Namespace
 # Disable warnings about certificates.
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+# may need to move to specifying the ca or use Verify=false
+# cafile = 'cacert.pem' 
+# r = requests.get(url, verify=cafile)
 logging.getLogger(__name__).addHandler(NullHandler())
 # create logger
 LOG = logging.getLogger('fortiosapi')
 
 
-def json2obj(data):
-    return json.loads(data.decode('utf-8'),
-                      object_hook=lambda d: Namespace(**d))
-
-
 class FortiOSAPI(object):
     def __init__(self):
         self._https = True
+        self._fortiversion = "Version is set when logged"
+        # reference the fortinet version of the targeted product.
         self._session = requests.session()  # use single session
-
+        #persistant and same for all
+        self._session.verify = False
+        #(can be changed to) self._session.verify = '/path/to/certfile'
+        
+        
     def logging(self, response):
         try:
             LOG.debug("Request : %s on url : %s  ", response.request.method,
                       response.request.url)
             LOG.debug("Response : http code %s  reason : %s  ",
                       response.status_code, response.reason)
+            LOG.debug("raw response:  %s ", response.content)
         except:
             LOG.warning("method errors in request when global")
 
-        LOG.debug("Response in pprint %s ", pprint.pformat(response))
 
     def debug(self, status):
         if status == 'on':
             LOG.setLevel(logging.DEBUG)
+
+    def formatresponse(self, res, vdom=None):
+        LOG.debug("formating response")
+        self.logging(res)
+        # Generic way to format the return from FortiAPI
+        # If vdom is global the resp is a dict of resp (even 1)
+        # 1 per vdom we check only the first one here (might need a more complex check)
+        if vdom == "global":
+            resp = json.loads(res.content.decode('utf-8'))[0]
+            resp['vdom'] = "global"
+        else:
+            resp = json.loads(res.content.decode('utf-8'))
+        return resp
+       
 
     def https(self, status):
         if status == 'on':
             self._https = True
         if status == 'off':
             self._https = False
+            
 
     def update_cookie(self):
         # Retrieve server csrf and update session's headers
@@ -95,22 +116,37 @@ class FortiOSAPI(object):
             self.url_prefix = 'http://' + self.host
         url = self.url_prefix + '/logincheck'
         res = self._session.post(url,
-                                 data='username=' + username + '&secretkey=' + password,
-                                 verify=False)
+                                 data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
-        if b"/ng/prompt?viewOnly&redir" in res.content:
+        self._fortiversion = self.monitor('system','vdom-resource', mkey='select')['version']
+        #Ajax=1 documented in 5.6 API ref but available on 5.4
+        if b"1document.location=\"/ng/prompt?viewOnly&redir" in res.content:
             # Update session's csrftoken
             self.update_cookie()
         else:
             raise Exception('login failed')
 
+    def get_version(self):
+        return  self._fortiversion
+
+    def get_mkey(self,path, name, vdom=None, data=None):
+        # retreive the table mkey from schema
+        schema = self.schema(path, name, vdom=None)
+        try:
+            keyname = schema['mkey']
+            mkey = data[keyname]
+        except (KeyError, e):
+            LOG.warning(
+                "mkey not found in schema with error %s. It is recommended to declare mkey ", str(e))
+        return mkey
+    
     def logout(self):
         url = self.url_prefix + '/logout'
-        res = self._session.post(url, verify=False)
+        res = self._session.post(url)
         self._session.close()
         self.logging(res)
 
-    def cmdb_url(self, path, name, vdom, mkey):
+    def cmdb_url(self, path, name, vdom, mkey=None):
         # return builded URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
         if mkey:
@@ -121,11 +157,10 @@ class FortiOSAPI(object):
                 url_postfix += '?global=1'
             else:
                 url_postfix += '?vdom=' + vdom
-
         url = self.url_prefix + url_postfix
         return url
 
-    def mon_url(self, path, name, vdom, mkey):
+    def mon_url(self, path, name, vdom=None, mkey=None):
         # return builded URL
         url_postfix = '/api/v2/monitor/' + path + '/' + name
         if mkey:
@@ -143,36 +178,24 @@ class FortiOSAPI(object):
     def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom, mkey)
         res = self._session.get(url, params=parameters)
-
-        self.logging(res)
-        if vdom == "global":
-            resp = json.loads(res.content.decode('utf-8'))[0]
-            resp['vdom'] = "global"
-        else:
-            resp = json.loads(res.content.decode('utf-8'))
-        LOG.debug("MONITOR resp is: %s", resp)
-        return resp
+        LOG.debug("in MONITOR function")
+        return self.formatresponse(res,vdom=vdom)
 
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
+        
         res = self._session.get(url, params=parameters)
-        self.logging(res)
+        LOG.debug("in GET function")
+        return self.formatresponse(res,vdom=vdom)
 
-        if vdom == "global":
-            resp = json.loads(res.content.decode('utf-8'))[0]
-            resp['vdom'] = "global"
-        else:
-            resp = json.loads(res.content.decode('utf-8'))
-        LOG.debug("GET resp is: %s", resp)
-        return resp
-
-    def schema(self, path, name, vdom=None, mkey=None, parameters=None):
+    def schema(self, path, name, vdom=None):
+        # vdom or global is managed in cmdb_url
         if vdom is None:
-            url = self.cmdb_url(path, name, vdom, mkey) + "?action=schema"
+            url = self.cmdb_url(path, name, vdom) + "?action=schema"
         else:
-            url = self.cmdb_url(path, name, vdom, mkey) + "&action=schema"
+            url = self.cmdb_url(path, name, vdom) + "&action=schema"
 
-        res = self._session.get(url, params=parameters)
+        res = self._session.get(url)
         self.logging(res)
         if res.status_code is 200:
             return json.loads(res.content.decode('utf-8'))['results']
@@ -199,97 +222,56 @@ class FortiOSAPI(object):
 
     def post(self, path, name, vdom=None,
              mkey=None, parameters=None, data=None):
+        if not mkey:
+            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(
-            url, params=parameters, data=json.dumps(data), verify=False)
+            url, params=parameters, data=json.dumps(data))
 
-        LOG.debug("post resp: %s", resp)
-        self.logging(res)
-        if vdom == "global":
-            resp = json.loads(res.content)[0]
-            resp['vdom'] = "global"
-        else:
-            resp = json.loads(res.content.decode('utf-8'))
-
-        return resp
+        LOG.debug("in POST function")
+        return self.formatresponse(res,vdom=vdom)
 
     def put(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
+        if not mkey:
+            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.put(url, params=parameters,
-                                data=json.dumps(data), verify=False)
-        self.logging(res)
-        if vdom == "global":
-            # return result for the first vdom on the list
-            resp = json.loads(res.content)[0]
-            resp['vdom'] = "global"
-        else:
-            resp = json.loads(res.content.decode('utf-8'))
+                                data=json.dumps(data))
+        LOG.debug("in PUT function")
+        return self.formatresponse(res,vdom=vdom)
 
-        self.logging(resp)
-        return resp
 
     def delete(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
         # Need to find the type of the mkey to avoid error when integer assume
         # the other types will be ok.
-        schema = self.schema(path, name)
-        keytype = schema['mkey_type']
-        if keytype == "integer":
-            url = self.cmdb_url(path, name, vdom, mkey)
-        else:
-            url = self.cmdb_url(path, name, vdom, mkey)
+        if not mkey:
+            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
+        url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.delete(
             url, params=parameters, data=json.dumps(data))
 
-        if vdom == "global":
-            # return result for the first vdom on the list
-            resp = json.loads(res.content)[0]
-            resp['vdom'] = "global"
-        else:
-            resp = json.loads(res.content.decode('utf-8'))
-
-        self.logging(res)
-        return resp
+        LOG.debug("in DELETE function")
+        return self.formatresponse(res,vdom=vdom)
 
 # Set will try to post if err code is 424 will try put (ressource exists)
 # may add a force option to delete and redo if troubles.
     def set(self, path, name, vdom=None, mkey=None, parameters=None, data=None):
+        if not mkey:
+            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.post(url, params=parameters, data=json.dumps(data))
-        self.logging(res)
-        if vdom == "global":
-            # with global the retruned string is a list of resp per vdom
-            globres = json.loads(res.content)[0]
-            LOG.debug("raw globres: %s", globres)
-            r = json2obj(json.dumps(globres))
-        else:
-            # any vdom
-            self.logging(res)
-            r = json2obj(res.content)
-        if r.http_status == 424 or r.http_status == 405:
+        LOG.debug("in SET function doing POST")
+        r = self.formatresponse(res,vdom=vdom)
+
+        if r['http_status'] == 424 or r['http_status'] == 405:
             LOG.warning("Try to post on %s  failed doing a put to force parameters change consider delete if still fails ",
                         res.request.url)
-            # retreive the table mkey from schema
-            schema = self.schema(path, name, vdom=None)
-            try:
-                keyname = schema['mkey']
-                mkey = data[keyname]
-            except (KeyError, e):
-                LOG.warning(
-                    "mkey not found in schema with error %s. It is recommended to use the put method directly instead ", str(e))
             url = self.cmdb_url(path, name, mkey=mkey, vdom=vdom)
             res = self._session.put(
-                url, params=parameters, data=json.dumps(data), verify=False)
-            self.logging(res)
-            if vdom == "global":
-                # return result for the first vdom on the list
-                resp = json.loads(res.content)[0]
-                resp['vdom'] = "global"
-                LOG.debug("resp: %s", resp)
-            else:
-                resp = json.loads(res.content.decode('utf-8'))
-        
-            LOG.debug("resp: %s", resp)
-            return resp
+                url, params=parameters, data=json.dumps(data))
+            LOG.debug("in SET function doing PUT")
+            return self.formatresponse(res,vdom=vdom)
+           
 
 
 # send multiline string ''' get system status ''' using ssh
@@ -317,3 +299,24 @@ class FortiOSAPI(object):
             raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
                                                 output=results)
         return (''.join(str(results)), ''.join(str(stderr)))
+
+
+    def license(self):
+        resp = self.monitor('license','status')
+        if resp['results']['vm']['status'] == "vm_valid":
+            return resp
+        else:
+            # if vm license not valid we try to update and check again
+             url = self.mon_url('system', 'fortiguard', mkey='update')
+             postres = self._session.post(url)
+             LOG.debug("Return POST fortiguard %s:", postres)
+             if json.loads(postres.content.decode('utf-8'))['status'] == 'success':
+                 time.sleep(17)
+                 return self.monitor('license','status')
+                 
+
+# Todo for license check and update
+#GET /api/v2/monitor/license/status
+#To update FortiGuard license status, you can use the following API
+#POST api/v2/monitor/system/fortiguard/update
+ 
