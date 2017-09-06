@@ -1,5 +1,7 @@
 # fortistacks #
 
+A full explanation/follow along video is available here: https://vimeo.com/215625341
+
 Is a collection of scripts and pre defined setups for running full
 stack of software (multi openstack, docker, kubernetes, etc..)
 orchestrators or even bigdata stacks.
@@ -16,6 +18,8 @@ contribution is supposed to respect that. Don't put your company IP in
 here .. it is bad.
 
 ## Requirement ##
+
+(Please have a look to this video showing installation and execution steps: https://vimeo.com/215625341)
 
 Install a fresh ubuntu 16.04 with a 100G available free linux
 partition or disk.
