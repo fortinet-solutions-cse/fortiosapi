@@ -115,7 +115,13 @@ resources:
    config_drive: True
    security_groups: [ default ]
    user_data_format: RAW
-#   personality: {"license": { get_file: FGVM080000032371.lic }}
+#   personality: {"license":
+#  -----BEGIN FGT VM LICENSE-----
+#  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#  KQkV+M0QnaPNeflgAAAAuK74PkXL6V33n2WaYUEb9S981Xoo6hjuF4EUAwbgJKL/v3ZF0doXylw2
+#  oXben61XZpvip3cwZfbeQuaa5Vmt+SnBH7GZPkBGQSbuSXqjJHB+/iq4naP8h1t05yWhHlRM
+#  -----END FGT VM LICENSE-----}
+   personality: {"license": { get_file: FGT.lic }}
    networks:
     - network: { get_param: mgmt_net }
     - port:  { get_resource: fgt_left_port }
