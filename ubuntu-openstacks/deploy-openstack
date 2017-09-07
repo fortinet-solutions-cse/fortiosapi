@@ -3,6 +3,8 @@
 juju bootstrap lxd lxd
 echo -e "fortinet\nfortinet" | juju change-user-password 
 grep password ~/.local/share/juju/accounts.yaml > /dev/null 2>&1 || echo "    password: fortinet" >> ~/.local/share/juju/accounts.yaml
+# becouse some random versions of juju comes without the gui
+juju upgrade-gui
 juju add-model mitaka
 juju deploy openstack-nonest.yaml
 # juju-wait last version was not test with python2 !!
@@ -10,4 +12,4 @@ juju deploy openstack-nonest.yaml
 sudo apt install python3-pip
 sudo -H pip3 install juju-wait
 echo "waiting for deployment to complete can be 1hour"
-python3 /usr/local/bin/juju-wait
+python3 /usr/local/bin/juju-wait -v

@@ -144,6 +144,8 @@ applications:
     charm: "cs:xenial/openstack-dashboard"
     num_units: 1
     expose: true
+    options:
+      webroot: /
     annotations: 
       "gui-x": "500"
       "gui-y": "-250"

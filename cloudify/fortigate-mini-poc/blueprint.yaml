@@ -169,17 +169,11 @@ node_templates:
               userdata: |
                 #FOS VM Config File
                 config system interface
-                edit mgmt
+                edit port1
                 set mode dhcp
                 set allowaccess ping https ssh http snmp fgfm
                 set mtu-override enable 
                 set mtu 1456
-                next
-                edit port1
-                set mode dhcp
-                set mtu-override enable 
-                set mtu 1456
-                set allowaccess ping
                 next
                 edit port2
                 set mode dhcp
@@ -187,9 +181,15 @@ node_templates:
                 set mtu 1456
                 set allowaccess ping
                 next
+                edit port3
+                set mode dhcp
+                set mtu-override enable 
+                set mtu 1456
+                set allowaccess ping
+                next
                 end
                 config system dns
-                set primary 10.10.10.1
+                set primary 8.8.8.8
                 end
                 config firewall policy
                 edit 1
