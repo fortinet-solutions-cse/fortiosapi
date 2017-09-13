@@ -67,7 +67,11 @@ class TestFortinetRestAPI(unittest.TestCase):
  
     def test_00login(self):
         self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
-
+        
+    def test_01logout_login(self):
+        self.assertEqual( fgt.logout(), None)
+        self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
+                
     def test_setaccessperm(self):
         data = {
             "name": "port1",
@@ -86,7 +90,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         self.assertEqual(fgt.set('system','interface', vdom="root", mkey='bad', data=data)['http_status'], 200, "broken")
         
 
-    def test_01getsystemglobal(self):
+    def test_02getsystemglobal(self):
         resp = fgt.get('system','global', vdom="global")
         fortiversion = resp['version']
         self.assertEqual(resp['status'], 'success')

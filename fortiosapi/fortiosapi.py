@@ -87,6 +87,7 @@ class FortiOSAPI(object):
             resp = json.loads(res.content.decode('utf-8'))[0]
             resp['vdom'] = "global"
         else:
+            LOG.debug("content res: %s", res.content)
             resp = json.loads(res.content.decode('utf-8'))
         return resp
 
@@ -98,12 +99,13 @@ class FortiOSAPI(object):
 
     def update_cookie(self):
         # Retrieve server csrf and update session's headers
+        LOG.debug("cookies are  : %s ", self._session.cookies )
         for cookie in self._session.cookies:
             if cookie.name == 'ccsrftoken':
                 csrftoken = cookie.value[1:-1]  # token stored as a list
-                LOG.debug("csrftoken before update  : %s ", cookie)
+                LOG.debug("csrftoken before update  : %s ", csrftoken)
                 self._session.headers.update({'X-CSRFTOKEN': csrftoken})
-                LOG.debug("csrftoken after update  : %s ", cookie)
+                LOG.debug("csrftoken after update  : %s ", csrftoken)
 
     def login(self, host, username, password):
         self.host = host
@@ -116,15 +118,17 @@ class FortiOSAPI(object):
             url,
             data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
-        self._fortiversion = self.monitor(
-            'system', 'vdom-resource', mkey='select')['version']
         # Ajax=1 documented in 5.6 API ref but available on 5.4
         if b"1document.location=\"/ng/prompt?viewOnly&redir" in res.content:
             # Update session's csrftoken
             self.update_cookie()
         else:
             raise Exception('login failed')
-
+        try:
+            self._fortiversion = self.get('system', 'status',vdom="root")['version']
+        except:
+            raise Exception('can not get following login')
+            
     def get_version(self):
         return self._fortiversion
 
@@ -147,6 +151,7 @@ class FortiOSAPI(object):
         url = self.url_prefix + '/logout'
         res = self._session.post(url)
         self._session.close()
+        self._session.cookies.clear()
         self.logging(res)
 
     def cmdb_url(self, path, name, vdom, mkey=None):
@@ -161,6 +166,7 @@ class FortiOSAPI(object):
             else:
                 url_postfix += '?vdom=' + vdom
         url = self.url_prefix + url_postfix
+        LOG.debug("urlbuild is %s with crsf: %s", url ,self._session.headers )
         return url
 
     def mon_url(self, path, name, vdom=None, mkey=None):
@@ -289,9 +295,16 @@ class FortiOSAPI(object):
                        allow_agent=False, timeout=10)
         LOG.debug("ssh login to  %s ", host)
         # commands is a multiline string using the ''' string ''' format
-        stdin, stdout, stderr = client.exec_command(cmds)
-
+        try:
+            stdin, stdout, stderr = client.exec_command(cmds)
+        except:
+            LOG.debug("exec_command failed")
+            raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
+                                                output=output)
+            
+        LOG.debug("ssh command in:  %s out: %s err: %s ", stdin, stdout , stderr)
         retcode = stdout.channel.recv_exit_status()
+        LOG.debug("Paramiko return code : %s ", retcode)
         client.close()  # @TODO re-use connections
         if retcode > 0:
             output = stderr.read().strip()
