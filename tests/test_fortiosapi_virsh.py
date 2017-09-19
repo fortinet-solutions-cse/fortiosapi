@@ -52,7 +52,7 @@ fgt = FortiOSAPI()
 
 virshconffile =  os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
 conf = yaml.load(open(virshconffile,'r'))
-child = pexpect.spawn('virsh console fostest')
+child = pexpect.spawn('virsh console '+conf["sut"]["vmname"])
 #TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
 
@@ -64,6 +64,18 @@ class TestFortinetRestAPI(unittest.TestCase):
     
     def setUp(self):
         pass
+    
+    def sendtoconsole(self, cmds):
+        #sometime lock waiting for prompt
+        child.sendline ("\r")
+        #look for prompt or login
+        r = child.expect(['.* login:','#'])
+        if r == 0:
+            child.sendline( "admin\r")
+            child.expect("Password:")
+            child.sendline ("\r")
+        for line in cmds.splitlines():
+            child.sendline(line+'\r')
  
     def test_00login(self):
         self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
@@ -80,6 +92,21 @@ class TestFortinetRestAPI(unittest.TestCase):
         }
         self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
 
+    def test_posttorouter(self):
+        data = {
+            "seq-num": "8",
+            "dst": "10.10.32.0 255.255.255.0",
+            "device": "port1",
+            "gateway": "192.168.40.252",
+        }
+        #ensure the seq 8 for route is not present
+        cmds='''config router static
+        delete 8
+        end '''        
+        self.sendtoconsole(cmds)
+        self.assertEqual(fgt.post('router','static', vdom="root", data=data)['http_status'], 200)
+
+       
     @unittest.expectedFailure
     def test_accesspermfail(self):
         data = {
@@ -140,4 +167,4 @@ if __name__ == '__main__':
     # must use pexepct to reset VM to factory
     #print(child.before) to get the ouput
     unittest.main()
-    child.sendline('\rend\rquit\r')
+#    child.sendline('\rend\rquit\r')

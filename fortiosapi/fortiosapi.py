@@ -233,7 +233,8 @@ class FortiOSAPI(object):
              mkey=None, parameters=None, data=None):
         if not mkey:
             mkey = self.get_mkey(path, name, vdom=vdom, data=data)
-        url = self.cmdb_url(path, name, vdom, mkey)
+        #post with mkey will return a 404 as the next level is not there yet
+        url = self.cmdb_url(path, name, vdom, mkey=None)
         res = self._session.post(
             url, params=parameters, data=json.dumps(data))
 
@@ -269,7 +270,8 @@ class FortiOSAPI(object):
             mkey=None, parameters=None, data=None):
         if not mkey:
             mkey = self.get_mkey(path, name, vdom=vdom, data=data)
-        url = self.cmdb_url(path, name, vdom, mkey)
+        #post with mkey will return a 404 as the next level is not there yet
+        url = self.cmdb_url(path, name, vdom, mkey=None)
         res = self._session.post(url, params=parameters, data=json.dumps(data))
         LOG.debug("in SET function doing POST")
         r = self.formatresponse(res, vdom=vdom)
