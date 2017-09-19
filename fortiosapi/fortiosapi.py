@@ -268,12 +268,10 @@ class FortiOSAPI(object):
 # may add a force option to delete and redo if troubles.
     def set(self, path, name, vdom=None,
             mkey=None, parameters=None, data=None):
-        if not mkey:
-            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
         #post with mkey will return a 404 as the next level is not there yet
         url = self.cmdb_url(path, name, vdom, mkey=None)
         res = self._session.post(url, params=parameters, data=json.dumps(data))
-        LOG.debug("in SET function doing POST")
+        LOG.debug("in SET function after POST")
         r = self.formatresponse(res, vdom=vdom)
 
         if r['http_status'] == 424 or r['http_status'] == 405:
@@ -281,12 +279,15 @@ class FortiOSAPI(object):
                 "Try to post on %s  failed doing a put to force parameters\
                 change consider delete if still fails ",
                 res.request.url)
+            if not mkey:
+                mkey = self.get_mkey(path, name, vdom=vdom, data=data)
             url = self.cmdb_url(path, name, mkey=mkey, vdom=vdom)
             res = self._session.put(
                 url, params=parameters, data=json.dumps(data))
-            LOG.debug("in SET function doing PUT")
+            LOG.debug("in SET function after PUT")
             return self.formatresponse(res, vdom=vdom)
-
+        else:
+            return r
 
 # send multiline string ''' get system status ''' using ssh
     def ssh(self, cmds, host, user, password=None):
