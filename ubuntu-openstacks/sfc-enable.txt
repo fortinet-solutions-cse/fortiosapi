@@ -1,0 +1,59 @@
+# follow : https://docs.openstack.org/networking-sfc/latest/install/install.html 
+juju ssh neutron-api/0
+  sudo pip install -c https://git.openstack.org/cgit/openstack/requirements/plain/upper-constraints.txt?h=stable/ocata networking-sfc==4.0.0
+#After installing the package, enable the service plugins in neutron-server by adding them in neutron.conf 
+#(typically found in /etc/neutron/):
+# in /etc/neutron/neutron.conf
+#add to service_plugins:
+
+service_plugins=<by juju>,networking_sfc.services.flowclassifier.plugin.FlowClassifierPlugin,networking_sfc.services.sfc.plugin.SfcPlugin
+
+In the same configuration file, specify the driver to use in the plugins. Here we use the OVS driver:
+
+[sfc]
+drivers = ovs
+
+[flowclassifier]
+drivers = ovs
+
+After that, restart the neutron-server. In devstack, this is the q-svc service. With systemd setups you can run:
+
+sudo systemctl restart neutron-server
+
+
+
+Compute nodes
+
+After installing the package, enable the networking-sfc extension in the Open vSwitch agent. The configuration file name can change, the default one is /etc/neutron/plugins/ml2/ml2_conf.ini. Add the sfc extension:
+
+
+juju ssh neutron-gateway/0
+ in /etc/neutron/plugins/ml2/openvswitch_agent.ini
+ Section agent:
+ 
+extensions = sfc
+
+AND:   sudo pip install -c https://git.openstack.org/cgit/openstack/requirements/plain/upper-constraints.txt?h=stable/ocata networking-sfc==4.0.0
+
+
+And restart the neutron-openvswitch-agent process. In devstack, this is the q-agt service. With systemd setups you can run:
+
+sudo systemctl restart neutron-openvswitch-agent
+
+Database setup
+
+#The database is the standard Neutron database with a few more tables, which can be configured with neutron-db-manage command-line tool:
+
+juju ssh neutron-api/0
+
+sudo neutron-db-manage --subproject networking-sfc upgrade head
+
+
+On client:
+
+sudo pip install -c https://git.openstack.org/cgit/openstack/requirements/plain/upper-constraints.txt?h=stable/ocata python-neutronclient
+
+To test : 
+https://docs.openstack.org/ocata/networking-guide/config-sfc.html
+
+Then ODL :
