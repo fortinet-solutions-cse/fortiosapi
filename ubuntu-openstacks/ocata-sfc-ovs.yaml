@@ -149,7 +149,7 @@ services:
     charm: cs:~openstack-charmers-next/nova-compute
     num_units: 2
     options:
-#      config-flags: default_ephemeral_format=ext4
+      config-flags: default_ephemeral_format=ext4
       openstack-origin: cloud:xenial-ocata
       enable-live-migration: true
       enable-resize: true
