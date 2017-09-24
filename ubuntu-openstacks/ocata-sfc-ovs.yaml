@@ -110,7 +110,7 @@ services:
       neutron-security-groups: true
       worker-multiplier: 0.25
       "enable-ml2-port-security": true
-      "overlay-network-type": vxlan
+      "overlay-network-type": vxlan gre
   neutron-gateway:
     annotations:
       gui-x: '0'
@@ -121,8 +121,14 @@ services:
       openstack-origin: cloud:xenial-ocata
       bridge-mappings: physnet1:br-ex
       data-port: br-ex:eth1
+      #Must do after:
+      # neutron net-create --provider:network_type flat \
+      #--provider:physical_network physnet1 --router:external=true \
+      #external
+      #neutron router-gateway-set provider external
       worker-multiplier: 0.25
-      "instance-mtu": 1456
+      instance-mtu: 1400
+      # Recommend by openstack doc
   neutron-openvswitch:
     annotations:
       gui-x: '250'
@@ -154,6 +160,7 @@ services:
       enable-live-migration: true
       enable-resize: true
       migration-auth-type: ssh
+      libvirt-image-backend: rbd  
   ntp:
     annotations:
       gui-x: '1000'
@@ -166,6 +173,7 @@ services:
       gui-y: '-250'
     charm: cs:~openstack-charmers-next/openstack-dashboard
     num_units: 1
+    expose: true
     options:
       openstack-origin: cloud:xenial-ocata
       webroot: /
