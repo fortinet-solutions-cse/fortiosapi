@@ -86,9 +86,10 @@ if [ "$TENANT_ID" = "" ]; then
 fi
 
 echo "Configuring Openstack Neutron Networking"
+## from https://jujucharms.com/u/openstack-charmers-next/neutron-gateway/
 
 #create ext network with neutron for floating IPs
-neutron net-show ext_net > /dev/null 2>&1 || neutron net-create ext_net --tenant-id $TENANT_ID -- --router:external=True
+neutron net-show ext_net > /dev/null 2>&1 || neutron net-create ext_net --tenant-id $TENANT_ID -- --router:external=True --provider:network_type flat --provider:physical_network physnet1 
 EXTERNAL_NETWORK_ID=$(neutron net-show ext_net | grep " id" | awk '{print $4}')
 neutron subnet-show ext_net_subnet > /dev/null 2>&1 || neutron subnet-create ext_net $NEUTRON_EXT_NET_CIDR --name ext_net_subnet --tenant-id $TENANT_ID \
 --allocation-pool start=$NEUTRON_FLOAT_RANGE_START,end=$NEUTRON_FLOAT_RANGE_END \
@@ -103,8 +104,12 @@ SUBNET_ID=$(neutron subnet-show mgmt_subnet | grep " id" | awk '{print $4}')
 neutron router-show provider-router > /dev/null 2>&1 || neutron router-create --tenant-id $TENANT_ID provider-router
 ROUTER_ID=$(neutron router-show provider-router | grep " id" | awk '{print $4}')
 
-neutron router-gateway-clear provider-router || true
-neutron router-gateway-set $ROUTER_ID $EXTERNAL_NETWORK_ID
+#neutron net-create --provider:network_type flat --provider:physical_network physnet1 --router:external=true  external
+#neutron router-gateway-clear provider-router || true
+# new linked to physnet1
+neutron router-gateway-set provider-router ext_net || true
+
+#neutron router-gateway-set $ROUTER_ID $EXTERNAL_NETWORK_ID
 ## make it always ok to have it indempodent.
 neutron router-interface-add $ROUTER_ID $SUBNET_ID || true
 

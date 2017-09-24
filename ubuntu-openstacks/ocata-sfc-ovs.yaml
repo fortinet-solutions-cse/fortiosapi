@@ -1,0 +1,293 @@
+series: xenial
+services:
+  aodh:
+    annotations:
+      gui-x: '1500'
+      gui-y: '0'
+    charm: cs:~openstack-charmers-next/aodh
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-ocata
+  ceilometer:
+    annotations:
+      gui-x: '1250'
+      gui-y: '0'
+    charm: cs:~openstack-charmers-next/ceilometer
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-ocata
+  ceilometer-agent:
+    annotations:
+      gui-x: '1250'
+      gui-y: '500'
+    charm: cs:~openstack-charmers-next/ceilometer-agent
+    num_units: 0
+  ceph-mon:
+    annotations:
+      gui-x: '750'
+      gui-y: '500'
+    charm: cs:~openstack-charmers-next/ceph-mon
+    num_units: 3
+    options:
+      expected-osd-count: 3
+  ceph-osd:
+    annotations:
+      gui-x: '1000'
+      gui-y: '500'
+    charm: cs:~openstack-charmers-next/ceph-osd
+    num_units: 3
+    options:
+      osd-devices: /srv/osd
+      osd-reformat: 'yes'
+      "use-direct-io": false
+  ceph-radosgw:
+    annotations:
+      gui-x: '1000'
+      gui-y: '250'
+    charm: cs:~openstack-charmers-next/ceph-radosgw
+    num_units: 1
+  cinder:
+    annotations:
+      gui-x: '750'
+      gui-y: '0'
+    charm: cs:~openstack-charmers-next/cinder
+    num_units: 1
+    options:
+      worker-multiplier: 0.25
+      openstack-origin: cloud:xenial-ocata
+      block-device: None
+      glance-api-version: 2
+  cinder-ceph:
+    annotations:
+      gui-x: '750'
+      gui-y: '250'
+    charm: cs:~openstack-charmers-next/cinder-ceph
+    num_units: 0
+  glance:
+    annotations:
+      gui-x: '250'
+      gui-y: '0'
+    charm: cs:~openstack-charmers-next/glance
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-ocata
+      worker-multiplier: 0.25
+  keystone:
+    annotations:
+      gui-x: '500'
+      gui-y: '0'
+    charm: cs:~openstack-charmers-next/keystone
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-ocata
+      admin-password: fortinet
+      worker-multiplier: 0.25
+  mongodb:
+    annotations:
+      gui-x: '1287.9999389648438'
+      gui-y: '251.24996948242188'
+    charm: cs:mongodb
+    num_units: 1
+  mysql:
+    annotations:
+      gui-x: '0'
+      gui-y: '250'
+    charm: cs:~openstack-charmers-next/percona-cluster
+    num_units: 1
+    options:
+      max-connections: 1000
+      innodb-buffer-pool-size: 256M
+  neutron-api:
+    annotations:
+      gui-x: '500'
+      gui-y: '500'
+    charm: cs:~openstack-charmers-next/neutron-api
+    num_units: 1
+    options:
+      neutron-security-groups: "false"
+      openstack-origin: cloud:xenial-ocata
+      flat-network-providers: physnet1
+      neutron-security-groups: true
+      worker-multiplier: 0.25
+      "enable-ml2-port-security": true
+      "overlay-network-type": vxlan gre
+  neutron-gateway:
+    annotations:
+      gui-x: '0'
+      gui-y: '0'
+    charm: cs:~openstack-charmers-next/neutron-gateway
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-ocata
+      bridge-mappings: physnet1:br-ex
+      data-port: br-ex:eth1
+      #Must do after:
+      # neutron net-create --provider:network_type flat \
+      #--provider:physical_network physnet1 --router:external=true \
+      #external
+      #neutron router-gateway-set provider external
+      worker-multiplier: 0.25
+      instance-mtu: 1400
+      # Recommend by openstack doc
+  neutron-openvswitch:
+    annotations:
+      gui-x: '250'
+      gui-y: '500'
+    charm: cs:~openstack-charmers-next/neutron-openvswitch
+    options: 
+      "prevent-arp-spoofing": false
+    num_units: 0
+  nova-cloud-controller:
+    annotations:
+      gui-x: '0'
+      gui-y: '500'
+    charm: cs:~openstack-charmers-next/nova-cloud-controller
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-ocata
+      network-manager: Neutron
+      worker-multiplier: 0.25
+      console-access-protocol: novnc
+  nova-compute:
+    annotations:
+      gui-x: '250'
+      gui-y: '250'
+    charm: cs:~openstack-charmers-next/nova-compute
+    num_units: 2
+    options:
+      config-flags: default_ephemeral_format=ext4
+      openstack-origin: cloud:xenial-ocata
+      enable-live-migration: true
+      enable-resize: true
+      migration-auth-type: ssh
+      libvirt-image-backend: rbd  
+  ntp:
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+    charm: cs:ntp
+    num_units: 0
+  openstack-dashboard:
+    annotations:
+      gui-x: '500'
+      gui-y: '-250'
+    charm: cs:~openstack-charmers-next/openstack-dashboard
+    num_units: 1
+    expose: true
+    options:
+      openstack-origin: cloud:xenial-ocata
+      webroot: /
+  rabbitmq-server:
+    annotations:
+      gui-x: '500'
+      gui-y: '250'
+    charm: cs:~openstack-charmers-next/rabbitmq-server
+    num_units: 1
+  heat: 
+    charm: "cs:~openstack-charmers-next/heat"
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-ocata
+    annotations: 
+      "gui-x": "300"
+      "gui-y": "300"
+relations:
+- - nova-compute:amqp
+  - rabbitmq-server:amqp
+- - neutron-gateway:amqp
+  - rabbitmq-server:amqp
+- - keystone:shared-db
+  - mysql:shared-db
+- - nova-cloud-controller:identity-service
+  - keystone:identity-service
+- - glance:identity-service
+  - keystone:identity-service
+- - neutron-api:identity-service
+  - keystone:identity-service
+- - neutron-openvswitch:neutron-plugin-api
+  - neutron-api:neutron-plugin-api
+- - neutron-api:shared-db
+  - mysql:shared-db
+- - neutron-api:amqp
+  - rabbitmq-server:amqp
+- - neutron-gateway:neutron-plugin-api
+  - neutron-api:neutron-plugin-api
+- - glance:shared-db
+  - mysql:shared-db
+- - glance:amqp
+  - rabbitmq-server:amqp
+- - nova-cloud-controller:image-service
+  - glance:image-service
+- - nova-compute:image-service
+  - glance:image-service
+- - nova-cloud-controller:cloud-compute
+  - nova-compute:cloud-compute
+- - nova-cloud-controller:amqp
+  - rabbitmq-server:amqp
+- - nova-cloud-controller:quantum-network-service
+  - neutron-gateway:quantum-network-service
+- - nova-compute:neutron-plugin
+  - neutron-openvswitch:neutron-plugin
+- - neutron-openvswitch:amqp
+  - rabbitmq-server:amqp
+- - openstack-dashboard:identity-service
+  - keystone:identity-service
+- - nova-cloud-controller:shared-db
+  - mysql:shared-db
+- - nova-cloud-controller:neutron-api
+  - neutron-api:neutron-api
+- - cinder:image-service
+  - glance:image-service
+- - cinder:amqp
+  - rabbitmq-server:amqp
+- - cinder:identity-service
+  - keystone:identity-service
+- - cinder:cinder-volume-service
+  - nova-cloud-controller:cinder-volume-service
+- - cinder-ceph:storage-backend
+  - cinder:storage-backend
+- - ceph-mon:client
+  - nova-compute:ceph
+- - nova-compute:ceph-access
+  - cinder-ceph:ceph-access
+- - cinder:shared-db
+  - mysql:shared-db
+- - ceph-mon:client
+  - cinder-ceph:ceph
+- - ceph-mon:client
+  - glance:ceph
+- - ceph-osd:mon
+  - ceph-mon:osd
+- - ntp:juju-info
+  - nova-compute:juju-info
+- - ntp:juju-info
+  - neutron-gateway:juju-info
+- - ceph-radosgw:mon
+  - ceph-mon:radosgw
+- - ceph-radosgw:identity-service
+  - keystone:identity-service
+- - ceilometer:amqp
+  - rabbitmq-server:amqp
+- - ceilometer-agent:ceilometer-service
+  - ceilometer:ceilometer-service
+- - ceilometer:identity-service
+  - keystone:identity-service
+- - ceilometer:identity-notifications
+  - keystone:identity-notifications
+- - ceilometer-agent:nova-ceilometer
+  - nova-compute:nova-ceilometer
+- - ceilometer:shared-db
+  - mongodb:database
+- - aodh:shared-db
+  - mysql:shared-db
+- - aodh:identity-service
+  - keystone:identity-service
+- - aodh:amqp
+  - rabbitmq-server:amqp
+- - "heat:shared-db"
+  - "mysql:shared-db"
+- - "heat:amqp"
+  - "rabbitmq-server:amqp"
+- - "heat:identity-service"
+  - "keystone:identity-service"
+
