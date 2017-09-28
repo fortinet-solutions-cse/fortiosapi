@@ -190,6 +190,13 @@ class FortiOSAPI(object):
         LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
 
+    def download(self, path, name, vdom=None, mkey=None, parameters=None):
+        url = self.mon_url(path, name)
+        res = self._session.get(url, params=parameters)
+        LOG.debug("in DOWNLOAD function")
+        return res
+       
+
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
 
