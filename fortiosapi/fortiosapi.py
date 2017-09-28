@@ -209,7 +209,7 @@ class FortiOSAPI(object):
         if res.status_code is 200:
             return json.loads(res.content.decode('utf-8'))['results']
         else:
-            return json.loads(res.decode('utf-8'))
+            return json.loads(res.content.decode('utf-8'))
 
     def get_name_path_dict(self, vdom=None):
         # return builded URL
