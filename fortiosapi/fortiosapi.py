@@ -196,7 +196,12 @@ class FortiOSAPI(object):
         LOG.debug("in DOWNLOAD function")
         return res
        
-
+    def upload(self, path, name, vdom=None, mkey=None, parameters=None, data=None, files=None):
+        url = self.mon_url(path, name)
+        res = self._session.post(url, params=parameters, data=data, files=files)
+        LOG.debug("in UPLOAD function")
+        return res
+               
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
 
