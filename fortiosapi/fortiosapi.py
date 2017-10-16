@@ -190,6 +190,18 @@ class FortiOSAPI(object):
         LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
 
+    def download(self, path, name, vdom=None, mkey=None, parameters=None):
+        url = self.mon_url(path, name)
+        res = self._session.get(url, params=parameters)
+        LOG.debug("in DOWNLOAD function")
+        return res
+       
+    def upload(self, path, name, vdom=None, mkey=None, parameters=None, data=None, files=None):
+        url = self.mon_url(path, name)
+        res = self._session.post(url, params=parameters, data=data, files=files)
+        LOG.debug("in UPLOAD function")
+        return res
+               
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
 
@@ -209,7 +221,7 @@ class FortiOSAPI(object):
         if res.status_code is 200:
             return json.loads(res.content.decode('utf-8'))['results']
         else:
-            return json.loads(res.decode('utf-8'))
+            return json.loads(res.content.decode('utf-8'))
 
     def get_name_path_dict(self, vdom=None):
         # return builded URL
