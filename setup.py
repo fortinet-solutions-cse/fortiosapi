@@ -9,7 +9,7 @@ def readme():
 
 setup(
     name='fortiosapi',
-    version='0.9.5',
+    version='0.9.6',
     description='Python modules to interact with fortinet products configuration rest and ssh',
     long_description=readme(),
     # Valid Classifiers are here: https://pypi.python.org/pypi?%3Aaction=list_classifiers
