@@ -119,16 +119,18 @@ class FortiOSAPI(object):
             data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
-        if b"1document.location=\"/ng/prompt?viewOnly&redir" in res.content:
+        
+        if res.content[0]==b"1":
             # Update session's csrftoken
             self.update_cookie()
         else:
             raise Exception('login failed')
         try:
-            self._fortiversion = self.get('system', 'status',vdom="root")['version']
+            self._fortiversion = self.monitor('license', 'status')['version']
         except:
             raise Exception('can not get following login')
-            
+        # Might be wise to return the license status here
+        
     def get_version(self):
         return self._fortiversion
 
