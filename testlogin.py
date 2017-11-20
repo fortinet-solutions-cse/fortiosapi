@@ -13,25 +13,23 @@ formatter = logging.Formatter(
 logger = logging.getLogger('fortiosapi')
 hdlr = logging.FileHandler('testfortiosapi.log')
 hdlr.setFormatter(formatter)
-logger.addHandler(hdlr) 
+logger.addHandler(hdlr)
 logger.setLevel(logging.DEBUG)
 
 fgt = FortiOSAPI()
-                           
+
 
 def main():
     # Login to the FGT ip
     fgt.debug('on')
     fgthost = '192.168.115.131'
     user = 'admin'
-    passwd =''
-    resp = fgt.login(fgthost,user,passwd)
+    passwd = ''
+    resp = fgt.login(fgthost, user, passwd)
     pp = pprint.PrettyPrinter(indent=4)
     resp = fgt.license()
     pp = pprint.PrettyPrinter(indent=4)
-    
     pp.pprint(resp)
-    
 
 if __name__ == '__main__':
-  main()
+    main()

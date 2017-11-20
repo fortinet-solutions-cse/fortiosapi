@@ -99,7 +99,7 @@ class FortiOSAPI(object):
 
     def update_cookie(self):
         # Retrieve server csrf and update session's headers
-        LOG.debug("cookies are  : %s ", self._session.cookies )
+        LOG.debug("cookies are  : %s ", self._session.cookies)
         for cookie in self._session.cookies:
             if cookie.name == 'ccsrftoken':
                 csrftoken = cookie.value[1:-1]  # token stored as a list
@@ -119,18 +119,18 @@ class FortiOSAPI(object):
             data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
-        
-        if res.content[0]==b"1":
+
+        if res.content[0] == b"1":
             # Update session's csrftoken
             self.update_cookie()
         else:
             raise Exception('login failed')
         try:
-            self._fortiversion = self.monitor('license', 'status')['version']
+            self._fortiversion = self.monitor('system', 'interface')['version']
         except:
             raise Exception('can not get following login')
         # Might be wise to return the license status here
-        
+
     def get_version(self):
         return self._fortiversion
 
@@ -168,7 +168,7 @@ class FortiOSAPI(object):
             else:
                 url_postfix += '?vdom=' + vdom
         url = self.url_prefix + url_postfix
-        LOG.debug("urlbuild is %s with crsf: %s", url ,self._session.headers )
+        LOG.debug("urlbuild is %s with crsf: %s", url, self._session.headers)
         return url
 
     def mon_url(self, path, name, vdom=None, mkey=None):
@@ -197,13 +197,15 @@ class FortiOSAPI(object):
         res = self._session.get(url, params=parameters)
         LOG.debug("in DOWNLOAD function")
         return res
-       
-    def upload(self, path, name, vdom=None, mkey=None, parameters=None, data=None, files=None):
+
+    def upload(self, path, name, vdom=None, mkey=None,
+               parameters=None, data=None, files=None):
         url = self.mon_url(path, name)
-        res = self._session.post(url, params=parameters, data=data, files=files)
+        res = self._session.post(url, params=parameters,
+                                 data=data, files=files)
         LOG.debug("in UPLOAD function")
         return res
-               
+
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
 
@@ -247,7 +249,8 @@ class FortiOSAPI(object):
              mkey=None, parameters=None, data=None):
         if not mkey:
             mkey = self.get_mkey(path, name, vdom=vdom, data=data)
-        #post with mkey will return a 404 as the next level is not there yet
+
+        # post with mkey will return a 404 as the next level is not there yet
         url = self.cmdb_url(path, name, vdom, mkey=None)
         res = self._session.post(
             url, params=parameters, data=json.dumps(data))
@@ -282,7 +285,7 @@ class FortiOSAPI(object):
 # may add a force option to delete and redo if troubles.
     def set(self, path, name, vdom=None,
             mkey=None, parameters=None, data=None):
-        #post with mkey will return a 404 as the next level is not there yet
+        # post with mkey will return a 404 as the next level is not there yet
         url = self.cmdb_url(path, name, vdom, mkey=None)
         res = self._session.post(url, params=parameters, data=json.dumps(data))
         LOG.debug("in SET function after POST")
@@ -318,8 +321,8 @@ class FortiOSAPI(object):
             LOG.debug("exec_command failed")
             raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
                                                 output=output)
-            
-        LOG.debug("ssh command in:  %s out: %s err: %s ", stdin, stdout , stderr)
+        LOG.debug("ssh command in:  %s out: %s err: %s ",
+                  stdin, stdout, stderr)
         retcode = stdout.channel.recv_exit_status()
         LOG.debug("Paramiko return code : %s ", retcode)
         client.close()  # @TODO re-use connections
