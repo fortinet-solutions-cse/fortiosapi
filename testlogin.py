@@ -22,7 +22,7 @@ fgt = FortiOSAPI()
 def main():
     # Login to the FGT ip
     fgt.debug('on')
-    fgthost = '192.168.115.131'
+    fgthost = '192.168.122.71'
     user = 'admin'
     passwd = ''
     resp = fgt.login(fgthost, user, passwd)

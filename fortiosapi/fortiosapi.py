@@ -119,8 +119,8 @@ class FortiOSAPI(object):
             data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
-
-        if res.content[0] == b"1":
+        
+        if res.content.decode('ascii')[0] == '1':
             # Update session's csrftoken
             self.update_cookie()
         else:
@@ -281,27 +281,30 @@ class FortiOSAPI(object):
         LOG.debug("in DELETE function")
         return self.formatresponse(res, vdom=vdom)
 
-# Set will try to post if err code is 424 will try put (ressource exists)
+# Set will try to put if err code is 424 will try put (ressource exists)
 # may add a force option to delete and redo if troubles.
     def set(self, path, name, vdom=None,
             mkey=None, parameters=None, data=None):
         # post with mkey will return a 404 as the next level is not there yet
-        url = self.cmdb_url(path, name, vdom, mkey=None)
-        res = self._session.post(url, params=parameters, data=json.dumps(data))
-        LOG.debug("in SET function after POST")
+        url = self.cmdb_url(path, name, vdom, mkey=mkey)
+        if not mkey:
+            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
+        url = self.cmdb_url(path, name, mkey=mkey, vdom=vdom)
+        res = self._session.put(
+            url, params=parameters, data=json.dumps(data))
+        LOG.debug("in SET function after PUT")
         r = self.formatresponse(res, vdom=vdom)
 
-        if r['http_status'] == 424 or r['http_status'] == 405:
+        if r['http_status'] == 404 or r['http_status'] == 405:
             LOG.warning(
-                "Try to post on %s  failed doing a put to force parameters\
+                "Try to put on %s  failed doing a put to force parameters\
                 change consider delete if still fails ",
                 res.request.url)
-            if not mkey:
-                mkey = self.get_mkey(path, name, vdom=vdom, data=data)
-            url = self.cmdb_url(path, name, mkey=mkey, vdom=vdom)
-            res = self._session.put(
+            #need to reset the url without mkey if doing a post
+            url = self.cmdb_url(path, name, mkey=None, vdom=vdom)
+            res = self._session.post(
                 url, params=parameters, data=json.dumps(data))
-            LOG.debug("in SET function after PUT")
+            LOG.debug("in SET function after POST")
             return self.formatresponse(res, vdom=vdom)
         else:
             return r
@@ -341,7 +344,7 @@ class FortiOSAPI(object):
 
     def license(self):
         resp = self.monitor('license', 'status')
-        if resp['results']['vm']['status'] == "vm_valid":
+        if resp['results']['vm']['status'] == "vm_valid" or "vm_eval":
             return resp
         else:
             # if vm license not valid we try to update and check again

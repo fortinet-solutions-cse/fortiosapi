@@ -1,1 +1,9 @@
-virsh54.yaml
+sut:
+  virshurl: ""
+  # could be qemu+ssh://ip/system
+  ip: 192.168.122.71
+  vmname: "fos56"
+  user: "admin"
+  passwd: ""
+  vdom: "root"
+  eval: "no"

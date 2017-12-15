@@ -56,6 +56,7 @@ child = pexpect.spawn('virsh console '+conf["sut"]["vmname"])
 #TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
 
+
 class TestFortinetRestAPI(unittest.TestCase):
 
     # Note that, for Python 3 compatibility reasons, we are using spawnu and
@@ -78,6 +79,11 @@ class TestFortinetRestAPI(unittest.TestCase):
             child.sendline(line+'\r')
  
     def test_00login(self):
+        # adapt if using eval license or not
+        if conf["sut"]["eval"] == "yes":
+            fgt.https('off')
+        else:
+            fgt.https('on')
         self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
         
     def test_01logout_login(self):
@@ -91,6 +97,19 @@ class TestFortinetRestAPI(unittest.TestCase):
             "vdom":"root"
         }
         self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
+        
+    def test_setfirewalladdress(self):
+        data = {
+            "name": "all.acme.test",
+            "wildcard-fqdn": "*.acme.test",
+            "type": "wildcard-fqdn",
+        }
+        #ensure the seq 8 for route is not present
+        cmds='''config firewall address
+        delete all.acme.test
+        end '''        
+        self.sendtoconsole(cmds)
+        self.assertEqual(fgt.set('firewall','address', vdom="root", data=data)['http_status'], 200)
 
     def test_posttorouter(self):
         data = {
@@ -127,7 +146,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     #                 "not supported with fortios before 5.6")
     def test_is_license_valid(self):
         if Version(fgt.get_version()) > Version('5.6'):
-            self.assertEqual(fgt.license()['results']['vm']['status'], "vm_valid")
+            self.assertTrue(fgt.license()['results']['vm']['status'] == "vm_valid" or "vm_eval")
         else:
             self.assertTrue(True, "not supported before 5.6")
 
@@ -163,8 +182,9 @@ if __name__ == '__main__':
     print("after:"+child.after)
 #    for i in range(0, 24):
     print(child.readline(-1))
-#    child.sendline(' execute factoryreset keepvmlicense')
+    #incase want to reset the fortigate first
+    #child.sendline(' execute factoryreset keepvmlicense')
     # must use pexepct to reset VM to factory
     #print(child.before) to get the ouput
     unittest.main()
-#    child.sendline('\rend\rquit\r')
+
