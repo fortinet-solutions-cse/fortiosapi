@@ -4,6 +4,6 @@ sut:
   ip: 192.168.122.71
   vmname: "fos56"
   user: "admin"
-  passwd: ""
+  passwd: "toto"
   vdom: "root"
   eval: "no"

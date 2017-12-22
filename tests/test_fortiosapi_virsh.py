@@ -52,7 +52,9 @@ fgt = FortiOSAPI()
 
 virshconffile =  os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
 conf = yaml.load(open(virshconffile,'r'))
+# when python35 pexepct will be fixed#child = pexpect.spawn('virsh console '+conf["sut"]["vmname"],logfile=open("testfortiosapi.lo", "w"))
 child = pexpect.spawn('virsh console '+conf["sut"]["vmname"])
+#child.logfile = sys.stdout
 #TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
 
@@ -68,16 +70,17 @@ class TestFortinetRestAPI(unittest.TestCase):
     
     def sendtoconsole(self, cmds):
         #sometime lock waiting for prompt
-        child.sendline ("\r")
+        child.sendline(str("\n "))
         #look for prompt or login
         r = child.expect(['.* login:','#'])
         if r == 0:
-            child.sendline( "admin\r")
+            child.send( "admin\n")
             child.expect("Password:")
-            child.sendline ("\r")
+            child.send(conf["sut"]["passwd"]+"\n")
+            child.expect(' #')
         for line in cmds.splitlines():
             child.sendline(line+'\r')
- 
+
     def test_00login(self):
         # adapt if using eval license or not
         if conf["sut"]["eval"] == "yes":
@@ -110,6 +113,8 @@ class TestFortinetRestAPI(unittest.TestCase):
         end '''        
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.set('firewall','address', vdom="root", data=data)['http_status'], 200)
+#doing it a second time to test put instead of post
+        self.assertEqual(fgt.set('firewall','address', vdom="root", data=data)['http_status'], 200)
 
     def test_posttorouter(self):
         data = {
@@ -124,6 +129,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         end '''        
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router','static', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.set ('router','static', vdom="root", data=data)['http_status'], 200)
 
        
     @unittest.expectedFailure
@@ -173,8 +179,9 @@ if __name__ == '__main__':
     child.expect('.* login:')
     child.sendline( "admin\r")
     child.expect("Password:")
-    child.sendline ("\r")
-    child.expect(' #')    
+    child.send(conf["sut"]["passwd"]+"\n")
+    child.sendline("\r")
+    child.expect(' #')
     child.send('get system status\r')
     #must have expect for before /afte to be populated
     child.expect(['License','FortiOS '])
