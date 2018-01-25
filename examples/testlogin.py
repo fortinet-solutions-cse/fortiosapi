@@ -1,13 +1,9 @@
 #!/usr/bin/python
-from fortiosapi import FortiOSAPI
-import sys
-import os
-import pprint
-import json
-import pexpect
-import yaml
 import logging
-from packaging.version import Version
+import pprint
+
+from fortiosapi import FortiOSAPI
+
 formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')
@@ -22,9 +18,9 @@ fgt = FortiOSAPI()
 def main():
     # Login to the FGT ip
     fgt.debug('on')
-    fgthost = '192.168.122.71'
+    fgthost = '10.10.10.125'
     user = 'admin'
-    passwd = ''
+    passwd = 'toto'
     resp = fgt.login(fgthost, user, passwd)
     pp = pprint.PrettyPrinter(indent=4)
     resp = fgt.license()
