@@ -25,22 +25,21 @@
 #
 ###################################################################
 
-import time
-import paramiko
-import subprocess
-import requests
-from collections import namedtuple
 import json
-import pprint
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
+import subprocess
+import time
+
+import paramiko
+import requests
+
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
-from argparse import Namespace
 # Disable warnings about certificates.
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
