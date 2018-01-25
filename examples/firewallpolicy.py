@@ -39,6 +39,14 @@ def main():
 
     fgt.login(ip, 'admin', passwd)
     data = {
+        'name': "apiset",
+        "scan-mode": "quick",
+        'http': {"options": "scan avmonitor",},
+        "emulator": "enable",
+    }
+    fgt.set('antivirus', 'profile', vdom="root", data=data)
+
+    data = {
         'policyid': "66",
         'name': "Testfortiosapi",
         'action': "accept",
@@ -50,7 +58,7 @@ def main():
         'service': [{"name": "HTTPS"}],
         "utm-status": "enable",
         "profile-type": "single",
-        'av-profile': "default",
+        'av-profile': "apiset",
         'profile-protocol-options': "default",
         'ssl-ssh-profile': "certificate-inspection",
         'logtraffic': "all",
