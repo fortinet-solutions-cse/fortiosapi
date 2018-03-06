@@ -118,7 +118,7 @@ class FortiOSAPI(object):
             data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
-        
+
         if res.content.decode('ascii')[0] == '1':
             # Update session's csrftoken
             self.update_cookie()
@@ -343,7 +343,7 @@ class FortiOSAPI(object):
 
     def license(self):
         resp = self.monitor('license', 'status')
-        if resp['results']['vm']['status'] == "vm_valid" or "vm_eval":
+        if resp['status'] == 'success':
             return resp
         else:
             # if vm license not valid we try to update and check again
