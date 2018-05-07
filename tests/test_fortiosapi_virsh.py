@@ -87,9 +87,10 @@ class TestFortinetRestAPI(unittest.TestCase):
             child.expect("Password:")
             child.send(conf["sut"]["passwd"]+"\n")
             child.expect(' #')
+        result = ''''''
         for line in cmds.splitlines():
             child.sendline(line +'\r')
-        result = child.readline(-1)
+            result = result + str(child.readline(-1))
         child.terminate()
         return (result)
 
@@ -136,10 +137,11 @@ class TestFortinetRestAPI(unittest.TestCase):
             "gateway": "192.168.40.252",
         }
         #ensure the seq 8 for route is not present
-        cmds='''config router static
+        cmds = '''end
+        config router static
         delete 8
-        end '''        
-        self.sendtoconsole(cmds)
+        end '''
+        logger.info("Console result %s", self.sendtoconsole(cmds))
         self.assertEqual(fgt.post('router','static', vdom="root", data=data)['http_status'], 200)
         self.assertEqual(fgt.set ('router','static', vdom="root", data=data)['http_status'], 200)
 
@@ -182,6 +184,7 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
+        logpexecpt.close()  # avoid py35 warning
         self.assertEqual(fgt.logout(), None)
     
 if __name__ == '__main__':
