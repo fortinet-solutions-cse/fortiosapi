@@ -1,5 +1,23 @@
 #!/usr/bin/env python
+import logging
+import os
+import pexpect
 import unittest
+import yaml
+
+from packaging.version import Version
+
+###################################################################
+#
+# fortiosapi.py unit test rely on a local VM so can verify from
+# the console (pexpect)
+# user must be able to do all kvm/qemu function
+# parameters in virsh.yaml or a file as a conf
+# will use a fortios.qcow2 image create the vm and destroy it at the
+# end this will allow to test a list of versions/products automated
+#
+###################################################################
+from fortiosapi import FortiOSAPI
 
 # Copyright 2015 Fortinet, Inc.
 #
@@ -17,26 +35,6 @@ import unittest
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-
-###################################################################
-#
-# fortiosapi.py unit test rely on a local VM so can verify from
-# the console (pexpect)
-# user must be able to do all kvm/qemu function
-# parameters in virsh.yaml or a file as a conf
-# will use a fortios.qcow2 image create the vm and destroy it at the
-# end this will allow to test a list of versions/products automated
-#
-###################################################################
-from fortiosapi import FortiOSAPI
-import sys
-import os
-import pprint
-import json
-import pexpect
-import yaml
-import logging
-from packaging.version import Version
 formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')
@@ -47,39 +45,53 @@ logger.setLevel(logging.DEBUG)
 
 fgt = FortiOSAPI()
                            
-#def json2obj(data):
-#    return json.loads(data, object_hook=lambda d: Namespace(**d))
 
 virshconffile =  os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
 conf = yaml.load(open(virshconffile,'r'))
-# when python35 pexepct will be fixed#child = pexpect.spawn('virsh console '+conf["sut"]["vmname"],logfile=open("testfortiosapi.lo", "w"))
-child = pexpect.spawn('virsh console '+conf["sut"]["vmname"])
+# when python35 pexepct will be fixed#child = pexpect.spawn('virsh console '+conf["sut"]["vmname"],
+# logfile=open("testfortiosapi.lo", "w"))
+
+# child = pexpect.spawn('virsh console '+ str(conf["sut"]["vmname"]).strip(),logfile=open("child.log","w"))
 #child.logfile = sys.stdout
 #TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
-
+logpexecpt = open("child.log", "wb")
 
 class TestFortinetRestAPI(unittest.TestCase):
 
     # Note that, for Python 3 compatibility reasons, we are using spawnu and
     # importing unicode_literals (above). spawnu accepts Unicode input and
     # unicode_literals makes all string literals in this script Unicode by default.
-    
+
     def setUp(self):
         pass
     
     def sendtoconsole(self, cmds):
+        # in case it was not closed properly before
+        child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
+                              logfile=logpexecpt)
+        # child.send('get system status\r')
+        # must have expect for before /afte to be populated
+        # child.expect(['License', 'FortiOS '])
+        # print("after:" + child.after)
+        # incase want to reset the fortigate first
+        # child.sendline(' execute factoryreset keepvmlicense')
+        # must use pexepct to reset VM to factory
+        # print(child.before) to get the ouput
         #sometime lock waiting for prompt
-        child.sendline(str("\n "))
+        child.sendline('\r\r')
         #look for prompt or login
-        r = child.expect(['.* login:','#'])
+        r = child.expect(['.* login:', '#', 'Escape character'])
         if r == 0:
             child.send( "admin\n")
             child.expect("Password:")
             child.send(conf["sut"]["passwd"]+"\n")
             child.expect(' #')
         for line in cmds.splitlines():
-            child.sendline(line+'\r')
+            child.sendline(line +'\r')
+        result = child.readline(-1)
+        child.terminate()
+        return (result)
 
     def test_00login(self):
         # adapt if using eval license or not
@@ -119,7 +131,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_posttorouter(self):
         data = {
             "seq-num": "8",
-            "dst": "10.10.32.0 255.255.255.0",
+            "dst": "10.11.32.0/24",
             "device": "port1",
             "gateway": "192.168.40.252",
         }
@@ -173,25 +185,4 @@ class TestFortinetRestAPI(unittest.TestCase):
         self.assertEqual(fgt.logout(), None)
     
 if __name__ == '__main__':
-    #in case it was not closed properly before
-    child.expect('Escape character')
-    child.sendline('\r\r')
-    child.expect('.* login:')
-    child.sendline( "admin\r")
-    child.expect("Password:")
-    child.send(conf["sut"]["passwd"]+"\n")
-    child.sendline("\r")
-    child.expect(' #')
-    child.send('get system status\r')
-    #must have expect for before /afte to be populated
-    child.expect(['License','FortiOS '])
-    print("after:"+child.after)
-    print("after:"+child.after)
-#    for i in range(0, 24):
-    print(child.readline(-1))
-    #incase want to reset the fortigate first
-    #child.sendline(' execute factoryreset keepvmlicense')
-    # must use pexepct to reset VM to factory
-    #print(child.before) to get the ouput
     unittest.main()
-
