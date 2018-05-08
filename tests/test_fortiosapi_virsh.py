@@ -69,16 +69,14 @@ class TestFortinetRestAPI(unittest.TestCase):
         pass
 
     def sendtoconsole(self, cmds, in_output=False):
-        # in case it was not closed properly before
+        # Use pexpect to interact with the console
+        # check the prompt then send output
+        # return True if commands sent and if output found
+        # in_output parameter allow to search in the cmd output
+        # if the string is available to check API call was correct for example
 
-        # child.send('get system status\r')
-        # must have expect for before /afte to be populated
-        # child.expect(['License', 'FortiOS '])
-        # print("after:" + child.after)
-        # incase want to reset the fortigate first
-        # child.sendline(' execute factoryreset keepvmlicense')
-        # must use pexepct to reset VM to factory
-        # print(child.before) to get the ouput
+        # Trick: child.sendline(' execute factoryreset keepvmlicense')
+
 
         #sometime lock waiting for prompt
         child.sendline('\r')
@@ -95,23 +93,21 @@ class TestFortinetRestAPI(unittest.TestCase):
             if r == 1:
                 child.sendline('\r')
                 logged = True
-                # flush buffers
-                child.readline(-1)
             if r == 2:
                 child.sendline('\r')
-        result = False
+        result = True
         for line in cmds.splitlines():
             child.sendline(line +'\r')
-        # Ensure going back to prompt
-        child.sendline('end \r')
+
         if in_output:
             try:
-                r = child.expect([in_output], timeout=2)
+                r = child.expect([in_output], timeout=4)
             except:
                 r = 99
+                result = False
                 pass
-            if r == 0:
-                result = True
+            if r != 0:
+                result = False
         return (result)
 
     def test_00login(self):
