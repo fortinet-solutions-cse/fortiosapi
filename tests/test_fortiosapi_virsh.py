@@ -79,14 +79,22 @@ class TestFortinetRestAPI(unittest.TestCase):
         # must use pexepct to reset VM to factory
         # print(child.before) to get the ouput
         #sometime lock waiting for prompt
-        child.sendline('\r\r')
+        child.sendline('\r')
         #look for prompt or login
-        r = child.expect(['.* login:', '#', 'Escape character'])
-        if r == 0:
-            child.send( "admin\n")
-            child.expect("Password:")
-            child.send(conf["sut"]["passwd"]+"\n")
-            child.expect(' #')
+        logged = False
+        while not logged:
+            r = child.expect(['.* login:', '#', 'Escape character'])
+            if r == 0:
+                child.send("admin\n")
+                child.expect("Password:")
+                child.send(conf["sut"]["passwd"] + "\n")
+                child.expect(' #')
+                logged = True
+            if r == 1:
+                child.sendline('\r')
+                logged = True
+            if r == 2:
+                child.sendline('\r')
         result = ''''''
         for line in cmds.splitlines():
             child.sendline(line +'\r')
