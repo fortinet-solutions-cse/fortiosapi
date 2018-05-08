@@ -56,6 +56,8 @@ conf = yaml.load(open(virshconffile,'r'))
 #TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
 logpexecpt = open("child.log", "wb")
+child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
+                      logfile=logpexecpt)
 
 class TestFortinetRestAPI(unittest.TestCase):
 
@@ -65,11 +67,10 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     def setUp(self):
         pass
-    
-    def sendtoconsole(self, cmds):
+
+    def sendtoconsole(self, cmds, in_output=False):
         # in case it was not closed properly before
-        child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
-                              logfile=logpexecpt)
+
         # child.send('get system status\r')
         # must have expect for before /afte to be populated
         # child.expect(['License', 'FortiOS '])
@@ -78,6 +79,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         # child.sendline(' execute factoryreset keepvmlicense')
         # must use pexepct to reset VM to factory
         # print(child.before) to get the ouput
+
         #sometime lock waiting for prompt
         child.sendline('\r')
         #look for prompt or login
@@ -93,13 +95,23 @@ class TestFortinetRestAPI(unittest.TestCase):
             if r == 1:
                 child.sendline('\r')
                 logged = True
+                # flush buffers
+                child.readline(-1)
             if r == 2:
                 child.sendline('\r')
-        result = ''''''
+        result = False
         for line in cmds.splitlines():
             child.sendline(line +'\r')
-            result = result + str(child.readline(-1))
-        child.terminate()
+        # Ensure going back to prompt
+        child.sendline('end \r')
+        if in_output:
+            try:
+                r = child.expect([in_output], timeout=2)
+            except:
+                r = 99
+                pass
+            if r == 0:
+                result = True
         return (result)
 
     def test_00login(self):
@@ -149,8 +161,11 @@ class TestFortinetRestAPI(unittest.TestCase):
         config router static
         delete 8
         end '''
-        logger.info("Console result %s", self.sendtoconsole(cmds))
+        self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router','static', vdom="root", data=data)['http_status'], 200)
+        cmds = '''show router static 8'''
+        res = self.sendtoconsole(cmds, in_output="192.168.40.252")
+        self.assertTrue(res)
         self.assertEqual(fgt.set ('router','static', vdom="root", data=data)['http_status'], 200)
 
        
@@ -192,8 +207,10 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
+        child.terminate()
         logpexecpt.close()  # avoid py35 warning
         self.assertEqual(fgt.logout(), None)
-    
+
+
 if __name__ == '__main__':
     unittest.main()
