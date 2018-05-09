@@ -60,6 +60,7 @@ class FortiOSAPI(object):
         # persistant and same for all
         self._session.verify = False
         # (can be changed to) self._session.verify = '/path/to/certfile'
+        self._apitoken
 
     def logging(self, response):
         try:
@@ -129,6 +130,14 @@ class FortiOSAPI(object):
         except:
             raise Exception('can not get following login')
         # Might be wise to return the license status here
+
+    def set_apitoken(self, apitoken):
+        # if using apitoken method then login/passwd will be disabled
+        self.set_apitoken = apitoken
+
+    def generate_apitoken(self, host, username, password):
+
+    # use the API to generate a new token and update the internal _apitoken var.
 
     def get_version(self):
         return self._fortiversion
@@ -342,6 +351,10 @@ class FortiOSAPI(object):
         return (''.join(str(results)), ''.join(str(stderr)))
 
     def license(self):
+        # license check and update
+        # GET /api/v2/monitor/license/status
+        # force (exec update-now) with FortiGuard if invalid
+        # POST api/v2/monitor/system/fortiguard/update
         resp = self.monitor('license', 'status')
         if resp['status'] == 'success':
             return resp
@@ -355,8 +368,32 @@ class FortiOSAPI(object):
                 time.sleep(17)
                 return self.monitor('license', 'status')
 
+    def settree(self, yamltree):
+        # take a yaml tree with name: path: mkey: structure and recursively set the values.
+        # create a copy to only keep the leaf as node (table firewall rules etc
+        # Split the tree in 2 yaml objects
+        yamltreel3 = yamltree
+        for name in yamltree:
+            for path in yamltree[name]:
+                for k in yamltree[name][path].copy():
+                    node = yamltree[name][path][k]
+                    LOG.debug("iterate in yamltree @ node: %s value %s ", k, yamltree[name][path][k])
+                    if isinstance(node, (dict)):
+                        # if the node is a structure remove from yamltree keep in yamltreel3
+                        del yamltree[name][path][k]
+                    else:
+                        # Should then be a string only so remove from yamltreel3
+                        del yamltreel3[name][path][k]
+        # yamltree and yamltreel3 are now differents
+        # Set the standard value on top of nodes first (example if setting firewall mode it must be done before pushing a rule l3)
+        for name in yamltree:
+            for path in yamltree[name]:
+                self.set(name, path, data=yamltree[name][path])
+                LOG.debug("iterate in yamltree @ name: %s path %s value %s", name, path, yamltree[name][path][k])
 
-# Todo for license check and update
-# GET /api/v2/monitor/license/status
-# To update FortiGuard license status, you can use the following API
-# POST api/v2/monitor/system/fortiguard/update
+        for name in yamltreel3:
+            for path in yamltreel3[name]:
+                for k in yamltreel3[name][path].copy():
+                    node = yamltreel3[name][path][k]
+                    LOG.debug("iterate in yamltreel3 @ node: %s value %s ", k, yamltreel3[name][path][k])
+                    self.set(name, path, mkey=k, data=yamltreel3[name][path][k])
