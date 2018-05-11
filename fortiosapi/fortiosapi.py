@@ -60,7 +60,7 @@ class FortiOSAPI(object):
         # persistant and same for all
         self._session.verify = False
         # (can be changed to) self._session.verify = '/path/to/certfile'
-        self._apitoken
+        self._apitoken = None
 
     def logging(self, response):
         try:
@@ -136,7 +136,7 @@ class FortiOSAPI(object):
         self.set_apitoken = apitoken
 
     def generate_apitoken(self, host, username, password):
-
+        pass
     # use the API to generate a new token and update the internal _apitoken var.
 
     def get_version(self):
