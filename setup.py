@@ -7,6 +7,7 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
+
 setup(
     name='fortiosapi',
     version='0.9.91',

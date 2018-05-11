@@ -42,6 +42,7 @@ except ImportError:
             pass
 # Disable warnings about certificates.
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 # may need to move to specifying the ca or use Verify=false
 # cafile = 'cacert.pem'
@@ -133,10 +134,11 @@ class FortiOSAPI(object):
 
     def set_apitoken(self, apitoken):
         # if using apitoken method then login/passwd will be disabled
-        self.set_apitoken = apitoken
+        self._apitoken = apitoken
 
     def generate_apitoken(self, host, username, password):
         pass
+
     # use the API to generate a new token and update the internal _apitoken var.
 
     def get_version(self):
@@ -289,8 +291,8 @@ class FortiOSAPI(object):
         LOG.debug("in DELETE function")
         return self.formatresponse(res, vdom=vdom)
 
-# Set will try to put if err code is 424 will try put (ressource exists)
-# may add a force option to delete and redo if troubles.
+    # Set will try to put if err code is 424 will try put (ressource exists)
+    # may add a force option to delete and redo if troubles.
     def set(self, path, name, vdom=None,
             mkey=None, parameters=None, data=None):
         # post with mkey will return a 404 as the next level is not there yet
@@ -308,7 +310,7 @@ class FortiOSAPI(object):
                 "Try to put on %s  failed doing a put to force parameters\
                 change consider delete if still fails ",
                 res.request.url)
-            #need to reset the url without mkey if doing a post
+            # need to reset the url without mkey if doing a post
             url = self.cmdb_url(path, name, mkey=None, vdom=vdom)
             res = self._session.post(
                 url, params=parameters, data=json.dumps(data))
@@ -317,7 +319,7 @@ class FortiOSAPI(object):
         else:
             return r
 
-# send multiline string ''' get system status ''' using ssh
+    # send multiline string ''' get system status ''' using ssh
     def ssh(self, cmds, host, user, password=None):
         ''' Send a multi line string via ssh to the fortigate '''
         client = paramiko.SSHClient()
