@@ -25,11 +25,13 @@
 #
 ###################################################################
 
+import copy
 import json
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
 import subprocess
 import time
+from collections import OrderedDict
 
 import paramiko
 import requests
@@ -62,6 +64,7 @@ class FortiOSAPI(object):
         self._session.verify = False
         # (can be changed to) self._session.verify = '/path/to/certfile'
         self._apitoken = None
+        self.yamltreel3 = None
 
     def logging(self, response):
         try:
@@ -84,13 +87,20 @@ class FortiOSAPI(object):
         # If vdom is global the resp is a dict of resp (even 1)
         # 1 per vdom we check only the first one here (might need a more
         # complex check)
-        if vdom == "global":
-            resp = json.loads(res.content.decode('utf-8'))[0]
-            resp['vdom'] = "global"
-        else:
-            LOG.debug("content res: %s", res.content)
-            resp = json.loads(res.content.decode('utf-8'))
-        return resp
+        try:
+            if vdom == "global":
+                resp = json.loads(res.content.decode('utf-8'))[0]
+                resp['vdom'] = "global"
+            else:
+                LOG.debug("content res: %s", res.content)
+                resp = json.loads(res.content.decode('utf-8'))
+            return resp
+        except:
+            # that means res.content does not exist (error in general)
+            # in that case return raw result
+            LOG.warning("in formatresponse res.content does not exist, should not occur")
+            return res
+
 
     def https(self, status):
         if status == 'on':
@@ -144,20 +154,29 @@ class FortiOSAPI(object):
     def get_version(self):
         return self._fortiversion
 
-    def get_mkey(self, path, name, vdom=None, data=None):
+    def get_mkeyname(self, path, name, vdom=None):
         # retreive the table mkey from schema
         schema = self.schema(path, name, vdom=None)
         try:
             keyname = schema['mkey']
         except KeyError:
             LOG.warning("there is no mkey for %s/%s", path, name)
+            return False
+        return keyname
+
+    def get_mkey(self, path, name, data, vdom=None):
+        # retreive the table mkey from schema
+        keyname = self.get_mkeyname(path, name, vdom)
+        if keyname == False:
+            LOG.warning("there is no mkey for %s/%s", path, name)
             return None
-        try:
-            mkey = data[keyname]
-        except KeyError:
-            LOG.warning("mkey %s not set in the data", mkey)
-            return None
-        return mkey
+        else:
+            try:
+                mkey = data[keyname]
+            except KeyError:
+                LOG.warning("mkey %s not set in the data", mkey)
+                return None
+            return mkey
 
     def logout(self):
         url = self.url_prefix + '/logout'
@@ -231,7 +250,6 @@ class FortiOSAPI(object):
             url = self.cmdb_url(path, name, vdom) + "&action=schema"
 
         res = self._session.get(url)
-        self.logging(res)
         if res.status_code is 200:
             return json.loads(res.content.decode('utf-8'))['results']
         else:
@@ -255,23 +273,30 @@ class FortiOSAPI(object):
                 dict.append(keys['path'] + " " + keys['name'])
         return dict
 
-    def post(self, path, name, vdom=None,
-             mkey=None, parameters=None, data=None):
-        if not mkey:
-            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
-
+    def post(self, path, name, data, vdom=None,
+             mkey=None, parameters=None):
+        # we always post to the upper name/path the mkey is in the data.
+        # So we can ensure the data set is correctly filled in case mkey is passed.
+        LOG.debug("in POST function")
+        if mkey:
+            mkeyname = self.get_mkeyname(path, name, vdom)
+            LOG.debug("in post calculated mkeyname : %s mkey: %s ", mkeyname, mkey)
+            # if mkey is forced on the function call then we change it in the data
+            # even if inconsistent data/mkey is passed
+            data[mkeyname] = mkey
         # post with mkey will return a 404 as the next level is not there yet
+        # we pushed mkey in data if needed.
         url = self.cmdb_url(path, name, vdom, mkey=None)
+        LOG.debug("POST sent data : %s", json.dumps(data))
         res = self._session.post(
             url, params=parameters, data=json.dumps(data))
-
-        LOG.debug("in POST function")
+        LOG.debug("POST raw results: %s", res )
         return self.formatresponse(res, vdom=vdom)
 
     def put(self, path, name, vdom=None,
             mkey=None, parameters=None, data=None):
         if not mkey:
-            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
+            mkey = self.get_mkey(path, name, data, vdom=vdom)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.put(url, params=parameters,
                                 data=json.dumps(data))
@@ -283,7 +308,7 @@ class FortiOSAPI(object):
         # Need to find the type of the mkey to avoid error when integer assume
         # the other types will be ok.
         if not mkey:
-            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
+            mkey = self.get_mkey(path, name, data, vdom=vdom)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.delete(
             url, params=parameters, data=json.dumps(data))
@@ -293,13 +318,12 @@ class FortiOSAPI(object):
 
     # Set will try to put if err code is 424 will try put (ressource exists)
     # may add a force option to delete and redo if troubles.
-    def set(self, path, name, vdom=None,
-            mkey=None, parameters=None, data=None):
+    def set(self, path, name, data, mkey=None, vdom=None, parameters=None):
         # post with mkey will return a 404 as the next level is not there yet
         url = self.cmdb_url(path, name, vdom, mkey=mkey)
         if not mkey:
-            mkey = self.get_mkey(path, name, vdom=vdom, data=data)
-        url = self.cmdb_url(path, name, mkey=mkey, vdom=vdom)
+            mkey = self.get_mkey(path, name, data, vdom=vdom)
+        url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.put(
             url, params=parameters, data=json.dumps(data))
         LOG.debug("in SET function after PUT")
@@ -310,11 +334,8 @@ class FortiOSAPI(object):
                 "Try to put on %s  failed doing a put to force parameters\
                 change consider delete if still fails ",
                 res.request.url)
-            # need to reset the url without mkey if doing a post
-            url = self.cmdb_url(path, name, mkey=None, vdom=vdom)
-            res = self._session.post(
-                url, params=parameters, data=json.dumps(data))
-            LOG.debug("in SET function after POST")
+            res = self.post(path, name, data, vdom, mkey)
+            LOG.debug("in SET function after POST result %s", res)
             return self.formatresponse(res, vdom=vdom)
         else:
             return r
@@ -374,28 +395,48 @@ class FortiOSAPI(object):
         # take a yaml tree with name: path: mkey: structure and recursively set the values.
         # create a copy to only keep the leaf as node (table firewall rules etc
         # Split the tree in 2 yaml objects
-        yamltreel3 = yamltree
-        for name in yamltree:
+        yamltreel3 = OrderedDict()
+        yamltreel3 = copy.deepcopy(yamltree)
+        LOG.debug("intial yamltreel3 is %s ", yamltreel3)
+        for name in yamltree.copy():
             for path in yamltree[name]:
                 for k in yamltree[name][path].copy():
                     node = yamltree[name][path][k]
-                    LOG.debug("iterate in yamltree @ node: %s value %s ", k, yamltree[name][path][k])
                     if isinstance(node, (dict)):
                         # if the node is a structure remove from yamltree keep in yamltreel3
+                        LOG.debug("Delete yamltree k: %s node: %s ", k, node)
                         del yamltree[name][path][k]
+                        LOG.debug("during DEL yamltreel3 is %s ", yamltreel3)
                     else:
                         # Should then be a string only so remove from yamltreel3
-                        del yamltreel3[name][path][k]
+                        del yamltreel3[name][path]
         # yamltree and yamltreel3 are now differents
+        LOG.debug("after yamltree is %s ", yamltree)
+        LOG.debug("after yamltreel3 is %s ", yamltreel3)
+        restree = False
         # Set the standard value on top of nodes first (example if setting firewall mode it must be done before pushing a rule l3)
         for name in yamltree:
             for path in yamltree[name]:
-                self.set(name, path, data=yamltree[name][path])
-                LOG.debug("iterate in yamltree @ name: %s path %s value %s", name, path, yamltree[name][path][k])
+                LOG.debug("iterate set in yamltree @ name: %s path %s value %s", name, path, yamltree[name][path])
+                if yamltree[name][path]:
+                    res = self.set(name, path, data=yamltree[name][path])
+                    if res['status'] == "success":
+                        restree = True
+                    else:
+                        restree = False
+                        break
 
         for name in yamltreel3:
             for path in yamltreel3[name]:
                 for k in yamltreel3[name][path].copy():
                     node = yamltreel3[name][path][k]
-                    LOG.debug("iterate in yamltreel3 @ node: %s value %s ", k, yamltreel3[name][path][k])
-                    self.set(name, path, mkey=k, data=yamltreel3[name][path][k])
+                    LOG.debug("iterate set in yamltreel3 @ node: %s value %s ", k, yamltreel3[name][path][k])
+                    res = self.set(name, path, mkey=k, data=node)
+                    if res['status'] == "success":
+                        restree = True
+                    else:
+                        restree = False
+                        break
+
+        #   Must defined a coherent returned value out
+        return restree

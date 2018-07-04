@@ -5,6 +5,7 @@ import pexpect
 import unittest
 import yaml
 
+import oyaml as yaml
 from packaging.version import Version
 
 ###################################################################
@@ -140,9 +141,9 @@ class TestFortinetRestAPI(unittest.TestCase):
         delete all.acme.test
         end '''
         self.sendtoconsole(cmds)
-        self.assertEqual(fgt.set('firewall', 'address', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
         # doing it a second time to test put instead of post
-        self.assertEqual(fgt.set('firewall', 'address', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
 
     def test_posttorouter(self):
         data = {
@@ -157,11 +158,11 @@ class TestFortinetRestAPI(unittest.TestCase):
         delete 8
         end '''
         self.sendtoconsole(cmds)
-        self.assertEqual(fgt.post('router', 'static', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.post('router', 'static', data=data, vdom="root")['http_status'], 200)
         cmds = '''show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
-        self.assertEqual(fgt.set('router', 'static', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.set('router', 'static', data, vdom="root")['http_status'], 200)
 
     @unittest.expectedFailure
     def test_accesspermfail(self):
@@ -198,6 +199,35 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom="root")['status'], 'success')
 
+    def test_settree(self):
+        yamldata = '''
+            antivirus:
+              profile:
+                apisettree:
+                  "scan-mode": "quick"
+                  'http': {"options": "scan avmonitor",}
+                  "emulator": "enable"
+            firewall:
+              policy:
+                67:
+                  'name': "Testfortiosapi"
+                  'action': "accept"
+                  'srcintf': [{"name": "port1"}]
+                  'dstintf': [{"name": "port2"}]
+                  'srcaddr': [{"name": "all"}]
+                  'dstaddr': [{"name": "all"}]
+                  'schedule': "always"
+                  'service': [{"name": "HTTPS"}]
+                  "utm-status": "enable"
+                  "profile-type": "single"
+                  'av-profile': "apisettree"
+                  'profile-protocol-options': "default"
+                  'ssl-ssh-profile': "certificate-inspection"
+                  'logtraffic': "all"
+                    '''
+        #        yamltree=OrderedDict()
+        yamltree = yaml.load(yamldata)
+        self.assertTrue(fgt.settree(yamltree), True)
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
         child.terminate()
