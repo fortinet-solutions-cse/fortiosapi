@@ -101,7 +101,6 @@ class FortiOSAPI(object):
             LOG.warning("in formatresponse res.content does not exist, should not occur")
             return res
 
-
     def https(self, status):
         if status == 'on':
             self._https = True
@@ -290,7 +289,7 @@ class FortiOSAPI(object):
         LOG.debug("POST sent data : %s", json.dumps(data))
         res = self._session.post(
             url, params=parameters, data=json.dumps(data))
-        LOG.debug("POST raw results: %s", res )
+        LOG.debug("POST raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
     def put(self, path, name, vdom=None,
@@ -341,11 +340,11 @@ class FortiOSAPI(object):
             return r
 
     # send multiline string ''' get system status ''' using ssh
-    def ssh(self, cmds, host, user, password=None):
+    def ssh(self, cmds, host, user, password=None, port=22):
         ''' Send a multi line string via ssh to the fortigate '''
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(host, port=22, username=user, password=password,
+        client.connect(host, port=port, username=user, password=password,
                        allow_agent=False, timeout=10)
         LOG.debug("ssh login to  %s ", host)
         # commands is a multiline string using the ''' string ''' format
