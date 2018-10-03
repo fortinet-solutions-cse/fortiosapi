@@ -127,8 +127,10 @@ class FortiOSAPI(object):
         try:
             self._fortiversion = self.monitor('system', 'interface')['version']
         except:
-            raise Exception('can not get following login')
-        # Might be wise to return the license status here
+            license_status = self.monitor('license', 'status')
+            print('can not get following login, check license status')
+            raise Exception(license_status)
+        # Now you can capture the exception and check the license status
 
     def get_version(self):
         return self._fortiversion
