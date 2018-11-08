@@ -1,9 +1,9 @@
 sut:
   virshurl: ""
   # could be qemu+ssh://ip/system
-  ip: 10.10.10.115:8443
-  vmname: "fos56"
+  ip: 192.168.122.136
+  vmname: "fostest"
   user: "admin"
-  passwd: "toto"
+  passwd: ""
   vdom: "root"
   eval: "no"
