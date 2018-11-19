@@ -309,13 +309,13 @@ class FortiOSAPI(object):
             return r
 
 # send multiline string ''' get system status ''' using ssh
-    def ssh(self, cmds, host, user, password=None):
+    def ssh(self, cmds, host, user, password=None, ssh_port=22):
         ''' Send a multi line string via ssh to the fortigate '''
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(host, port=22, username=user, password=password,
+        client.connect(host, port=ssh_port, username=user, password=password,
                        allow_agent=False, timeout=10)
-        LOG.debug("ssh login to  %s ", host)
+        LOG.debug("ssh login to  %s:%s ", host, ssh_port)
         # commands is a multiline string using the ''' string ''' format
         try:
             stdin, stdout, stderr = client.exec_command(cmds)
