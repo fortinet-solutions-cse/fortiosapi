@@ -113,7 +113,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_00login(self):
         # adapt if using eval license or not
         if conf["sut"]["eval"] == "yes":
-            fgt.https('off')
+            fgt.https(status='off')
         else:
             fgt.https('on')
         self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), None)

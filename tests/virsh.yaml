@@ -1,9 +1,1 @@
-sut:
-  virshurl: ""
-  # could be qemu+ssh://ip/system
-  ip: 192.168.122.136
-  vmname: "fostest"
-  user: "admin"
-  passwd: ""
-  vdom: "root"
-  eval: "no"
+virsh60.yaml

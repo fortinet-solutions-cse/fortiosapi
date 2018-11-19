@@ -57,6 +57,7 @@ LOG = logging.getLogger('fortiosapi')
 class FortiOSAPI(object):
     def __init__(self):
         self._https = True
+        self._logged = False
         self._fortiversion = "Version is set when logged"
         # reference the fortinet version of the targeted product.
         self._session = requests.session()  # use single session
@@ -65,8 +66,10 @@ class FortiOSAPI(object):
         # (can be changed to) self._session.verify = '/path/to/certfile'
         self._apitoken = None
         self.yamltreel3 = None
+        self._license = None
 
-    def logging(self, response):
+    @staticmethod
+    def logging(response):
         try:
             LOG.debug("Request : %s on url : %s  ", response.request.method,
                       response.request.url)
@@ -87,6 +90,16 @@ class FortiOSAPI(object):
         # If vdom is global the resp is a dict of resp (even 1)
         # 1 per vdom we check only the first one here (might need a more
         # complex check)
+        if self._license is "Invalid":
+            LOG.debug("License invalid detected")
+            raise Exception("unauthorized probably an invalid license")
+
+        # try:
+        #    if res['http_status'] is 401:
+        #        raise Exception("http code 401 login or license invalid")
+        # except KeyError:
+        #    pass
+
         try:
             if vdom == "global":
                 resp = json.loads(res.content.decode('utf-8'))[0]
@@ -97,15 +110,22 @@ class FortiOSAPI(object):
             return resp
         except:
             # that means res.content does not exist (error in general)
-            # in that case return raw result
+            # in that case return raw result TODO fix that with a loop in case of global
             LOG.warning("in formatresponse res.content does not exist, should not occur")
             return res
+
+    def check_session(self):
+        if not self._logged:
+            raise Exception("Not logged on a session, please login")
+        if self._license is "Invalid":
+            raise Exception("License invalid")
 
     def https(self, status):
         if status == 'on':
             self._https = True
         if status == 'off':
             self._https = False
+        LOG.debug("https mode is %s", self._https)
 
     def update_cookie(self):
         # Retrieve server csrf and update session's headers
@@ -119,38 +139,53 @@ class FortiOSAPI(object):
 
     def login(self, host, username, password):
         self.host = host
-        if self._https is True:
-            self.url_prefix = 'https://' + self.host
-        else:
+        LOG.debug("self._https is %s", self._https)
+        if not self._https:
             self.url_prefix = 'http://' + self.host
+        else:
+            self.url_prefix = 'https://' + self.host
+
         url = self.url_prefix + '/logincheck'
         res = self._session.post(
             url,
             data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
+        # try to check if we can get the version from login request
+        try:
+            LOG.debug("res login redir : %s", res.is_redirect)
+        except:
+            LOG.debug("no version in login result")
         # Ajax=1 documented in 5.6 API ref but available on 5.4
-
+        LOG.debug("logincheck res : %s", res)
         if res.content.decode('ascii')[0] == '1':
             # Update session's csrftoken
             self.update_cookie()
+            self._logged = True
+            try:
+                resp_lic = self.monitor('system', 'license')
+                self.logging(resp_lic)
+                self._fortiversion = resp_lic['version']
+                self._license = "Valid"
+            except:
+                if "license?viewOnly" in res.content.decode('ascii'):
+                    self._license = "Invalid"
+                else:
+                    raise Exception("logged in but can't tell if license is ok")
         else:
+            self._logged = False
             raise Exception('login failed')
-        try:
-            self._fortiversion = self.monitor('system', 'interface')['version']
-        except:
-            raise Exception('can not get following login')
-        # Might be wise to return the license status here
 
     def set_apitoken(self, apitoken):
         # if using apitoken method then login/passwd will be disabled
         self._apitoken = apitoken
 
     def generate_apitoken(self, host, username, password):
+        # TODO create call to generate api token
         pass
-
     # use the API to generate a new token and update the internal _apitoken var.
 
     def get_version(self):
+        self.check_session()
         return self._fortiversion
 
     def get_mkeyname(self, path, name, vdom=None):
@@ -185,6 +220,8 @@ class FortiOSAPI(object):
         self.logging(res)
 
     def cmdb_url(self, path, name, vdom, mkey=None):
+        # all calls will start with a build url so checking login/license here is enough
+        self.check_session()
         # return builded URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
         if mkey:
@@ -200,6 +237,8 @@ class FortiOSAPI(object):
         return url
 
     def mon_url(self, path, name, vdom=None, mkey=None):
+        # all calls will start with a build url so checking login/license here is enough
+        self.check_session()
         # return builded URL
         url_postfix = '/api/v2/monitor/' + path + '/' + name
         if mkey:
@@ -216,6 +255,7 @@ class FortiOSAPI(object):
 
     def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom, mkey)
+        LOG.debug("in monitor url is %s", url)
         res = self._session.get(url, params=parameters)
         LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
@@ -236,7 +276,7 @@ class FortiOSAPI(object):
 
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
-
+        LOG.debug("Calling GET ( %s, %s)", url, parameters)
         res = self._session.get(url, params=parameters)
         LOG.debug("in GET function")
         return self.formatresponse(res, vdom=vdom)
@@ -257,7 +297,7 @@ class FortiOSAPI(object):
     def get_name_path_dict(self, vdom=None):
         # return builded URL
         url_postfix = '/api/v2/cmdb/'
-        if vdom is None:
+        if vdom is not None:
             url_postfix += '?vdom=' + vdom + "&action=schema"
         else:
             url_postfix += "?action=schema"
@@ -370,7 +410,7 @@ class FortiOSAPI(object):
             # TODO fill retcode with the output of the FGT
             raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
                                                 output=results)
-        return (''.join(str(results)), ''.join(str(stderr)))
+        return ''.join(str(results)), ''.join(str(stderr))
 
     def license(self):
         # license check and update
@@ -381,7 +421,7 @@ class FortiOSAPI(object):
         if resp['status'] == 'success':
             return resp
         else:
-            # if vm license not valid we try to update and check again
+            # if license not valid we try to update and check again
             url = self.mon_url('system', 'fortiguard', mkey='update')
             postres = self._session.post(url)
             LOG.debug("Return POST fortiguard %s:", postres)
