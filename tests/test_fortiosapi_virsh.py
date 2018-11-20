@@ -3,7 +3,6 @@ import logging
 import os
 import pexpect
 import unittest
-import yaml
 
 import oyaml as yaml
 from packaging.version import Version
@@ -116,11 +115,13 @@ class TestFortinetRestAPI(unittest.TestCase):
             fgt.https(status='off')
         else:
             fgt.https('on')
-        self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), None)
+        self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), True)
 
     def test_01logout_login(self):
+        # This test if we properly regenerate the CSRF from the cookie when not restarting the program
+        # can include changing login/vdom passwd on the same session
         self.assertEqual(fgt.logout(), None)
-        self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), None)
+        self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), True)
 
     def test_setaccessperm(self):
         data = {
@@ -128,7 +129,8 @@ class TestFortinetRestAPI(unittest.TestCase):
             "allowaccess": "ping https ssh http fgfm snmp",
             "vdom": "root"
         }
-        self.assertEqual(fgt.set('system', 'interface', vdom="root", data=data)['http_status'], 200)
+        # works on both multi and mono vdom
+        self.assertEqual(fgt.set('system', 'interface', vdom="global", data=data)['http_status'], 200)
 
     def test_setfirewalladdress(self):
         data = {
@@ -152,14 +154,20 @@ class TestFortinetRestAPI(unittest.TestCase):
             "device": "port1",
             "gateway": "192.168.40.252",
         }
-        # ensure the seq 8 for route is not present
+        # ensure the seq 8 for route is not present cmd will be ignored on non vdom
         cmds = '''end
+        config vdom
+        edit root
         config router static
         delete 8
-        end '''
+        end
+        end'''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router', 'static', data=data, vdom="root")['http_status'], 200)
-        cmds = '''show router static 8'''
+        # vdom cmds will be ignored on non vdom
+        cmds = '''config vdom
+        edit root
+        show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
         self.assertEqual(fgt.set('router', 'static', data, vdom="root")['http_status'], 200)

@@ -71,6 +71,7 @@ class FortiOSAPI(object):
     @staticmethod
     def logging(response):
         try:
+            LOG.debug("response content type : %s", response.headers['content-type'])
             LOG.debug("Request : %s on url : %s  ", response.request.method,
                       response.request.url)
             LOG.debug("Response : http code %s  reason : %s  ",
@@ -136,6 +137,7 @@ class FortiOSAPI(object):
                 LOG.debug("csrftoken before update  : %s ", csrftoken)
                 self._session.headers.update({'X-CSRFTOKEN': csrftoken})
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
+        LOG.debug("New session header is: %s", self._session.headers)
 
     def login(self, host, username, password):
         self.host = host
@@ -146,31 +148,35 @@ class FortiOSAPI(object):
             self.url_prefix = 'https://' + self.host
 
         url = self.url_prefix + '/logincheck'
+        if not self._session:
+            self._session = requests.session()
+            # may happen if logout is called
+
         res = self._session.post(
             url,
             data='username=' + username + '&secretkey=' + password + "&ajax=1")
         self.logging(res)
-        # try to check if we can get the version from login request
-        try:
-            LOG.debug("res login redir : %s", res.is_redirect)
-        except:
-            LOG.debug("no version in login result")
         # Ajax=1 documented in 5.6 API ref but available on 5.4
-        LOG.debug("logincheck res : %s", res)
+        LOG.debug("logincheck res : %s", res.content)
         if res.content.decode('ascii')[0] == '1':
             # Update session's csrftoken
             self.update_cookie()
             self._logged = True
             try:
-                resp_lic = self.monitor('system', 'license')
-                self.logging(resp_lic)
+                resp_lic = self.monitor('license', 'status', vdom="global")
+                LOG.debug("response monitor license: %s", resp_lic)
                 self._fortiversion = resp_lic['version']
+                # suppose license is valid double check later
+                # Proper validity is complex and different on VM or Hardware
                 self._license = "Valid"
-            except:
-                if "license?viewOnly" in res.content.decode('ascii'):
-                    self._license = "Invalid"
-                else:
-                    raise Exception("logged in but can't tell if license is ok")
+            except Exception as e:
+                raise e
+            if "license?viewOnly" in res.content.decode('ascii'):
+                # should work with hardware and vm (content of license/status differs
+                self._license = "Invalid"
+            else:
+                self._license = "Valid"
+            return True
         else:
             self._logged = False
             raise Exception('login failed')
@@ -217,6 +223,9 @@ class FortiOSAPI(object):
         res = self._session.post(url)
         self._session.close()
         self._session.cookies.clear()
+        self._logged = False
+        # set license to Valid by default to ensure rechecked at login
+        self._license = "Valid"
         self.logging(res)
 
     def cmdb_url(self, path, name, vdom, mkey=None):
