@@ -106,10 +106,10 @@ class FortiOSAPI(object):
                 self._session.headers.update({'X-CSRFTOKEN': csrftoken})
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
 
-    def login(self, host, username, password):
+    def login(self, host, username, password, https_port=443):
         self.host = host
         if self._https is True:
-            self.url_prefix = 'https://' + self.host
+            self.url_prefix = 'https://' + self.host + ':' + https_port
         else:
             self.url_prefix = 'http://' + self.host
         url = self.url_prefix + '/logincheck'
