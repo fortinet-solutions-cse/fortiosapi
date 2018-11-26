@@ -68,7 +68,8 @@ class TestFortinetRestAPI(unittest.TestCase):
     def setUp(self):
         pass
 
-    def sendtoconsole(self, cmds, in_output=False):
+    @staticmethod
+    def sendtoconsole(cmds, in_output=False):
         # Use pexpect to interact with the console
         # check the prompt then send output
         # return True if commands sent and if output found
@@ -130,6 +131,7 @@ class TestFortinetRestAPI(unittest.TestCase):
             "vdom": "root"
         }
         # works on both multi and mono vdom
+        self.assertEqual(fgt.set('system', 'interface', vdom="root", data=data)['http_status'], 200)
         self.assertEqual(fgt.set('system', 'interface', vdom="global", data=data)['http_status'], 200)
 
     def test_setfirewalladdress(self):
@@ -236,6 +238,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         #        yamltree=OrderedDict()
         yamltree = yaml.load(yamldata)
         self.assertTrue(fgt.settree(yamltree), True)
+
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
         child.terminate()
