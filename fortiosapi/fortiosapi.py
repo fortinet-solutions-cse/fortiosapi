@@ -56,6 +56,7 @@ LOG = logging.getLogger('fortiosapi')
 
 class FortiOSAPI(object):
     def __init__(self):
+        self.host = None
         self._https = True
         self._logged = False
         self._fortiversion = "Version is set when logged"
@@ -68,8 +69,9 @@ class FortiOSAPI(object):
         self.timeout = 12
         self.cert = None
         self._apitoken = None
-        self.yamltreel3 = None
+        #        self.yamltreel3 = OrderedDict()
         self._license = None
+        self.url_prefix = None
 
     @staticmethod
     def logging(response):
@@ -83,7 +85,8 @@ class FortiOSAPI(object):
         except:
             LOG.warning("method errors in request when global")
 
-    def debug(self, status):
+    @staticmethod
+    def debug(status):
         if status == 'on':
             LOG.setLevel(logging.DEBUG)
 
@@ -198,6 +201,7 @@ class FortiOSAPI(object):
     def generate_apitoken(self, host, username, password):
         # TODO create call to generate api token
         pass
+
     # use the API to generate a new token and update the internal _apitoken var.
 
     def get_version(self):
@@ -206,7 +210,7 @@ class FortiOSAPI(object):
 
     def get_mkeyname(self, path, name, vdom=None):
         # retreive the table mkey from schema
-        schema = self.schema(path, name, vdom=None)
+        schema = self.schema(path, name, vdom=vdom)
         try:
             keyname = schema['mkey']
         except KeyError:
@@ -216,8 +220,9 @@ class FortiOSAPI(object):
 
     def get_mkey(self, path, name, data, vdom=None):
         # retreive the table mkey from schema
+
         keyname = self.get_mkeyname(path, name, vdom)
-        if keyname == False:
+        if not keyname:
             LOG.warning("there is no mkey for %s/%s", path, name)
             return None
         else:
@@ -280,21 +285,21 @@ class FortiOSAPI(object):
         return self.formatresponse(res, vdom=vdom)
 
     def download(self, path, name, vdom=None, mkey=None, parameters=None):
-        url = self.mon_url(path, name)
+        url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in DOWNLOAD function")
         return res
 
     def upload(self, path, name, vdom=None, mkey=None,
                parameters=None, data=None, files=None):
-        url = self.mon_url(path, name)
+        url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.post(url, params=parameters,
                                  data=data, files=files, timeout=self.timeout)
         LOG.debug("in UPLOAD function")
         return res
 
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
-        url = self.cmdb_url(path, name, vdom, mkey)
+        url = self.cmdb_url(path, name, vdom, mkey=mkey)
         LOG.debug("Calling GET ( %s, %s)", url, parameters)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in GET function")
@@ -303,13 +308,16 @@ class FortiOSAPI(object):
     def schema(self, path, name, vdom=None):
         # vdom or global is managed in cmdb_url
         if vdom is None:
-            url = self.cmdb_url(path, name, vdom) + "?action=schema"
+            url = self.cmdb_url(path, name) + "?action=schema"
         else:
-            url = self.cmdb_url(path, name, vdom) + "&action=schema"
+            url = self.cmdb_url(path, name, vdom=vdom) + "&action=schema"
 
         res = self._session.get(url, timeout=self.timeout)
         if res.status_code is 200:
-            return json.loads(res.content.decode('utf-8'))['results']
+            if vdom is "global":
+                return json.loads(res.content.decode('utf-8'))[0]['results']
+            else:
+                return json.loads(res.content.decode('utf-8'))['results']
         else:
             return json.loads(res.content.decode('utf-8'))
 
@@ -378,7 +386,6 @@ class FortiOSAPI(object):
     # may add a force option to delete and redo if troubles.
     def set(self, path, name, data, mkey=None, vdom=None, parameters=None):
         # post with mkey will return a 404 as the next level is not there yet
-        url = self.cmdb_url(path, name, vdom, mkey=mkey)
         if not mkey:
             mkey = self.get_mkey(path, name, data, vdom=vdom)
         url = self.cmdb_url(path, name, vdom, mkey)
@@ -387,7 +394,7 @@ class FortiOSAPI(object):
         LOG.debug("in SET function after PUT")
         r = self.formatresponse(res, vdom=vdom)
 
-        if r['http_status'] == 404 or r['http_status'] == 405:
+        if r['http_status'] == 404 or r['http_status'] == 405 or r['http_status'] == 500:
             LOG.warning(
                 "Try to put on %s  failed doing a put to force parameters\
                 change consider delete if still fails ",
@@ -399,8 +406,9 @@ class FortiOSAPI(object):
             return r
 
     # send multiline string ''' get system status ''' using ssh
-    def ssh(self, cmds, host, user, password=None, port=22):
-        ''' Send a multi line string via ssh to the fortigate '''
+    @staticmethod
+    def ssh(cmds, host, user, password=None, port=22):
+        """ Send a multi line string via ssh to the fortigate """
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(host, port=port, username=user, password=password,
@@ -460,7 +468,7 @@ class FortiOSAPI(object):
             for path in yamltree[name]:
                 for k in yamltree[name][path].copy():
                     node = yamltree[name][path][k]
-                    if isinstance(node, (dict)):
+                    if isinstance(node, dict):
                         # if the node is a structure remove from yamltree keep in yamltreel3
                         LOG.debug("Delete yamltree k: %s node: %s ", k, node)
                         del yamltree[name][path][k]
@@ -472,6 +480,8 @@ class FortiOSAPI(object):
         LOG.debug("after yamltree is %s ", yamltree)
         LOG.debug("after yamltreel3 is %s ", yamltreel3)
         restree = False
+        # Set the standard value on top of nodes first (example if setting firewall mode
+        # it must be done before pushing a rule l3)
         # Set the standard value on top of nodes first (example if setting firewall mode it must be done before pushing a rule l3)
         for name in yamltree:
             for path in yamltree[name]:
