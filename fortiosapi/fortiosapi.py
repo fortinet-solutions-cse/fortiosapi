@@ -63,7 +63,10 @@ class FortiOSAPI(object):
         self._session = requests.session()  # use single session
         # persistant and same for all
         self._session.verify = False
-        # (can be changed to) self._session.verify = '/path/to/certfile'
+        # (can be changed to) self._session.verify = '/path/to/certfile' or True
+        # Will be switch to true by default
+        self.timeout = 12
+        self.cert = None
         self._apitoken = None
         self.yamltreel3 = None
         self._license = None
@@ -139,7 +142,7 @@ class FortiOSAPI(object):
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
         LOG.debug("New session header is: %s", self._session.headers)
 
-    def login(self, host, username, password):
+    def login(self, host, username, password, verify=False, cert=None, timeout=12):
         self.host = host
         LOG.debug("self._https is %s", self._https)
         if not self._https:
@@ -151,10 +154,17 @@ class FortiOSAPI(object):
         if not self._session:
             self._session = requests.session()
             # may happen if logout is called
+        if verify is not False:
+            self._session.verify = verify
+
+        if cert is not None:
+            self._session.cert = cert
+        # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
+        self.timeout = timeout
 
         res = self._session.post(
             url,
-            data='username=' + username + '&secretkey=' + password + "&ajax=1")
+            data='username=' + username + '&secretkey=' + password + "&ajax=1", timeout=self.timeout)
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
         LOG.debug("logincheck res : %s", res.content)
@@ -220,7 +230,7 @@ class FortiOSAPI(object):
 
     def logout(self):
         url = self.url_prefix + '/logout'
-        res = self._session.post(url)
+        res = self._session.post(url, timeout=self.timeout)
         self._session.close()
         self._session.cookies.clear()
         self._logged = False
@@ -265,13 +275,13 @@ class FortiOSAPI(object):
     def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom, mkey)
         LOG.debug("in monitor url is %s", url)
-        res = self._session.get(url, params=parameters)
+        res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
 
     def download(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name)
-        res = self._session.get(url, params=parameters)
+        res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in DOWNLOAD function")
         return res
 
@@ -279,14 +289,14 @@ class FortiOSAPI(object):
                parameters=None, data=None, files=None):
         url = self.mon_url(path, name)
         res = self._session.post(url, params=parameters,
-                                 data=data, files=files)
+                                 data=data, files=files, timeout=self.timeout)
         LOG.debug("in UPLOAD function")
         return res
 
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey)
         LOG.debug("Calling GET ( %s, %s)", url, parameters)
-        res = self._session.get(url, params=parameters)
+        res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in GET function")
         return self.formatresponse(res, vdom=vdom)
 
@@ -297,7 +307,7 @@ class FortiOSAPI(object):
         else:
             url = self.cmdb_url(path, name, vdom) + "&action=schema"
 
-        res = self._session.get(url)
+        res = self._session.get(url, timeout=self.timeout)
         if res.status_code is 200:
             return json.loads(res.content.decode('utf-8'))['results']
         else:
@@ -312,7 +322,7 @@ class FortiOSAPI(object):
             url_postfix += "?action=schema"
 
         url = self.url_prefix + url_postfix
-        cmdbschema = self._session.get(url)
+        cmdbschema = self._session.get(url, timeout=self.timeout)
         self.logging(cmdbschema)
         j = json.loads(cmdbschema.content.decode('utf-8'))['results']
         dict = []
@@ -337,7 +347,7 @@ class FortiOSAPI(object):
         url = self.cmdb_url(path, name, vdom, mkey=None)
         LOG.debug("POST sent data : %s", json.dumps(data))
         res = self._session.post(
-            url, params=parameters, data=json.dumps(data))
+            url, params=parameters, data=json.dumps(data), timeout=self.timeout)
         LOG.debug("POST raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
@@ -347,7 +357,7 @@ class FortiOSAPI(object):
             mkey = self.get_mkey(path, name, data, vdom=vdom)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.put(url, params=parameters,
-                                data=json.dumps(data))
+                                data=json.dumps(data), timeout=self.timeout)
         LOG.debug("in PUT function")
         return self.formatresponse(res, vdom=vdom)
 
@@ -359,7 +369,7 @@ class FortiOSAPI(object):
             mkey = self.get_mkey(path, name, data, vdom=vdom)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.delete(
-            url, params=parameters, data=json.dumps(data))
+            url, params=parameters, data=json.dumps(data), timeout=self.timeout)
 
         LOG.debug("in DELETE function")
         return self.formatresponse(res, vdom=vdom)
@@ -373,7 +383,7 @@ class FortiOSAPI(object):
             mkey = self.get_mkey(path, name, data, vdom=vdom)
         url = self.cmdb_url(path, name, vdom, mkey)
         res = self._session.put(
-            url, params=parameters, data=json.dumps(data))
+            url, params=parameters, data=json.dumps(data), timeout=self.timeout)
         LOG.debug("in SET function after PUT")
         r = self.formatresponse(res, vdom=vdom)
 
@@ -432,7 +442,7 @@ class FortiOSAPI(object):
         else:
             # if license not valid we try to update and check again
             url = self.mon_url('system', 'fortiguard', mkey='update')
-            postres = self._session.post(url)
+            postres = self._session.post(url, timeout=self.timeout)
             LOG.debug("Return POST fortiguard %s:", postres)
             postresp = json.loads(postres.content.decode('utf-8'))
             if postresp['status'] == 'success':
