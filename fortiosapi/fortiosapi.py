@@ -457,10 +457,11 @@ class FortiOSAPI(object):
                 time.sleep(17)
                 return self.monitor('license', 'status')
 
-    def settree(self, yamltree):
+    def setoverlayconfig(self, yamltree):
         # take a yaml tree with name: path: mkey: structure and recursively set the values.
         # create a copy to only keep the leaf as node (table firewall rules etc
         # Split the tree in 2 yaml objects
+
         yamltreel3 = OrderedDict()
         yamltreel3 = copy.deepcopy(yamltree)
         LOG.debug("intial yamltreel3 is %s ", yamltreel3)

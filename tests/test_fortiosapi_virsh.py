@@ -69,7 +69,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         pass
 
     @staticmethod
-    def sendtoconsole(cmds, in_output=False):
+    def sendtoconsole(cmds, in_output=" "):
         # Use pexpect to interact with the console
         # check the prompt then send output
         # return True if commands sent and if output found
@@ -108,7 +108,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                 pass
             if r != 0:
                 result = False
-        return (result)
+        return result
 
     def test_00login(self):
         # adapt if using eval license or not
@@ -188,6 +188,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         resp = fgt.get('system', 'global', vdom="global")
         fortiversion = resp['version']
         self.assertEqual(resp['status'], 'success')
+        self.assertIsNotNone(fortiversion, msg=fortiversion)
 
     # should put a test on version to disable if less than 5.6 don't work decoration
     # @unittest.skipIf(Version(fgt.get_version()) < Version('5.6'),
@@ -209,7 +210,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom="root")['status'], 'success')
 
-    def test_settree(self):
+    def test_setoverlayconfig(self):
         yamldata = '''
             antivirus:
               profile:
@@ -237,7 +238,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                     '''
         #        yamltree=OrderedDict()
         yamltree = yaml.load(yamldata)
-        self.assertTrue(fgt.settree(yamltree), True)
+        self.assertTrue(fgt.setoverlayconfig(yamltree), True)
 
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
