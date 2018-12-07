@@ -194,9 +194,26 @@ class FortiOSAPI(object):
             self._logged = False
             raise Exception('login failed')
 
-    def set_apitoken(self, apitoken):
+    def tokenlogin(self, host, apitoken):
         # if using apitoken method then login/passwd will be disabled
-        self._apitoken = apitoken
+        self.host = host
+        if not self._session:
+            self._session = requests.session()
+            # may happen at start or if logout is called
+        self._session.headers.update({'Authorization': 'Bearer ' + apitoken})
+        self._logged = True
+        LOG.debug("self._https is %s", self._https)
+        if not self._https:
+            self.url_prefix = 'http://' + self.host
+        else:
+            self.url_prefix = 'https://' + self.host
+        # if verify is not False:
+        self._session.verify = False
+
+        LOG.debug("host is %s", host)
+        resp_lic = self.monitor('license', 'status', vdom="global")
+        LOG.debug("response monitor license: %s", resp_lic)
+        self._fortiversion = resp_lic['version']
 
     def generate_apitoken(self, host, username, password):
         # TODO create call to generate api token
