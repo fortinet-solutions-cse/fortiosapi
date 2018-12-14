@@ -112,17 +112,24 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     def test_00login(self):
         # adapt if using eval license or not
-        if conf["sut"]["eval"] == "yes":
-            fgt.https(status='off')
-        else:
+        if conf["sut"]["ssl"] == "yes":
             fgt.https('on')
-        self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), True)
+        else:
+            fgt.https(status='off')
+
+        try:
+            apikey = conf["sut"]["api-key"]
+            self.assertEqual(fgt.tokenlogin(conf["sut"]["ip"], apikey), True)
+        except KeyError:
+            self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), True)
+        except e:
+            self.fail("issue in the virsh yaml definition :" + e)
 
     def test_01logout_login(self):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program
         # can include changing login/vdom passwd on the same session
         self.assertEqual(fgt.logout(), None)
-        self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"]), True)
+        self.test_00login()
 
     def test_setaccessperm(self):
         data = {
@@ -210,6 +217,11 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom="root")['status'], 'success')
 
+    def test_downloadconfig(self):
+        parameters = {'destination': 'file',
+                      'scope': 'global'}
+        self.assertEqual(fgt.download('system/config', 'backup', vdom="root", parameters=parameters).status_code, 200)
+
     def test_setoverlayconfig(self):
         yamldata = '''
             antivirus:
@@ -238,7 +250,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                     '''
         #        yamltree=OrderedDict()
         yamltree = yaml.load(yamldata)
-        self.assertTrue(fgt.setoverlayconfig(yamltree), True)
+        self.assertTrue(fgt.setoverlayconfig(yamltree, vdom=conf['sut']['vdom']), True)
 
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):

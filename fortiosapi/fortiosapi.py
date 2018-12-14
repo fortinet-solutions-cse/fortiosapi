@@ -194,7 +194,7 @@ class FortiOSAPI(object):
             self._logged = False
             raise Exception('login failed')
 
-    def tokenlogin(self, host, apitoken):
+    def tokenlogin(self, host, apitoken, verify=False, cert=None, timeout=12):
         # if using apitoken method then login/passwd will be disabled
         self.host = host
         if not self._session:
@@ -214,12 +214,8 @@ class FortiOSAPI(object):
         resp_lic = self.monitor('license', 'status', vdom="global")
         LOG.debug("response monitor license: %s", resp_lic)
         self._fortiversion = resp_lic['version']
+        return True
 
-    def generate_apitoken(self, host, username, password):
-        # TODO create call to generate api token
-        pass
-
-    # use the API to generate a new token and update the internal _apitoken var.
 
     def get_version(self):
         self.check_session()
@@ -305,6 +301,7 @@ class FortiOSAPI(object):
         url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in DOWNLOAD function")
+        LOG.debug(" result download : %s", res.content)
         return res
 
     def upload(self, path, name, vdom=None, mkey=None,
@@ -474,7 +471,7 @@ class FortiOSAPI(object):
                 time.sleep(17)
                 return self.monitor('license', 'status')
 
-    def setoverlayconfig(self, yamltree):
+    def setoverlayconfig(self, yamltree, vdom=None):
         # take a yaml tree with name: path: mkey: structure and recursively set the values.
         # create a copy to only keep the leaf as node (table firewall rules etc
         # Split the tree in 2 yaml objects
@@ -505,7 +502,7 @@ class FortiOSAPI(object):
             for path in yamltree[name]:
                 LOG.debug("iterate set in yamltree @ name: %s path %s value %s", name, path, yamltree[name][path])
                 if yamltree[name][path]:
-                    res = self.set(name, path, data=yamltree[name][path])
+                    res = self.set(name, path, data=yamltree[name][path], vdom=vdom)
                     if res['status'] == "success":
                         restree = True
                     else:
@@ -517,7 +514,7 @@ class FortiOSAPI(object):
                 for k in yamltreel3[name][path].copy():
                     node = yamltreel3[name][path][k]
                     LOG.debug("iterate set in yamltreel3 @ node: %s value %s ", k, yamltreel3[name][path][k])
-                    res = self.set(name, path, mkey=k, data=node)
+                    res = self.set(name, path, mkey=k, data=node, vdom=vdom)
                     if res['status'] == "success":
                         restree = True
                     else:
