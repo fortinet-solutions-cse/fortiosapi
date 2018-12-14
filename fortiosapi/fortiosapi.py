@@ -207,8 +207,14 @@ class FortiOSAPI(object):
             self.url_prefix = 'http://' + self.host
         else:
             self.url_prefix = 'https://' + self.host
-        # if verify is not False:
-        self._session.verify = False
+
+        if verify is not False:
+            self._session.verify = verify
+
+        if cert is not None:
+            self._session.cert = cert
+        # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
+        self.timeout = timeout
 
         LOG.debug("host is %s", host)
         resp_lic = self.monitor('license', 'status', vdom="global")
