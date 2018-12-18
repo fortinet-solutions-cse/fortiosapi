@@ -109,6 +109,7 @@ class FortiOSAPI(object):
 
         try:
             if vdom == "global":
+                # in mode global receive a list of responses return the first one for simplicity
                 resp = json.loads(res.content.decode('utf-8'))[0]
                 resp['vdom'] = "global"
             else:
@@ -136,8 +137,9 @@ class FortiOSAPI(object):
 
     def update_cookie(self):
         # Retrieve server csrf and update session's headers
-        LOG.debug("cookies are  : %s ", self._session.cookies)
+        LOG.debug("Session cookies: %s ", self._session.cookies.keys())
         for cookie in self._session.cookies:
+            LOG.debug("cookie is: %s ", cookie)
             if cookie.name == 'ccsrftoken':
                 csrftoken = cookie.value[1:-1]  # token stored as a list
                 LOG.debug("csrftoken before update  : %s ", csrftoken)
@@ -145,7 +147,7 @@ class FortiOSAPI(object):
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
         LOG.debug("New session header is: %s", self._session.headers)
 
-    def login(self, host, username, password, verify=False, cert=None, timeout=12):
+    def login(self, host, username=None, password=None, verify=False, cert=None, timeout=12):
         self.host = host
         LOG.debug("self._https is %s", self._https)
         if not self._https:
@@ -159,30 +161,42 @@ class FortiOSAPI(object):
             # may happen if logout is called
         if verify is not False:
             self._session.verify = verify
+        self.timeout = timeout
 
         if cert is not None:
             self._session.cert = cert
-        # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
-        self.timeout = timeout
+            self.cert = cert
+            LOG.debug("try to log with cert only")
+            res = self._session.post(
+                url,
+                data='username=' + username +"&ajax=1", timeout=self.timeout)
 
-        res = self._session.post(
-            url,
-            data='username=' + username + '&secretkey=' + password + "&ajax=1", timeout=self.timeout)
+            self.update_cookie()
+        else:
+            res = self._session.post(
+                url,
+                data='username=' + username + '&secretkey=' + password + "&ajax=1", timeout=self.timeout)
+
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
-        LOG.debug("logincheck res : %s", res.content)
-        if res.content.decode('ascii')[0] == '1':
+        LOG.debug("logincheck res : %s", res.json())
+        if res.status_code == 200 and (res.content.decode('ascii')[0] == '1') or (res.content.decode('ascii')[0] == '0'):
             # Update session's csrftoken
             self.update_cookie()
             self._logged = True
             try:
                 resp_lic = self.monitor('license', 'status', vdom="global")
                 LOG.debug("response monitor license: %s", resp_lic)
+                #resp_lic has been json formated can not use the usual request format
+                if resp_lic['status'] != "success":
+                    self._logged = False
+                    return False
                 self._fortiversion = resp_lic['version']
                 # suppose license is valid double check later
                 # Proper validity is complex and different on VM or Hardware
                 self._license = "Valid"
             except Exception as e:
+                LOG.debug("Exception trying to get the version")
                 raise e
             if "license?viewOnly" in res.content.decode('ascii'):
                 # should work with hardware and vm (content of license/status differs
@@ -194,33 +208,55 @@ class FortiOSAPI(object):
             self._logged = False
             raise Exception('login failed')
 
-    def tokenlogin(self, host, apitoken, verify=False, cert=None, timeout=12):
+    def tokenlogin(self, host, username, apitoken, verify=False, cert=(None,None), timeout=12, vdom="root"):
         # if using apitoken method then login/passwd will be disabled
         self.host = host
+        # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
+        self.timeout = timeout
         if not self._session:
             self._session = requests.session()
             # may happen at start or if logout is called
         self._session.headers.update({'Authorization': 'Bearer ' + apitoken})
-        self._logged = True
         LOG.debug("self._https is %s", self._https)
         if not self._https:
             self.url_prefix = 'http://' + self.host
         else:
             self.url_prefix = 'https://' + self.host
-
         if verify is not False:
             self._session.verify = verify
 
-        if cert is not None:
+        url = self.url_prefix + '/logincheck'
+        LOG.debug("cert arg is %s", cert)
+        if cert[0] is not None:
             self._session.cert = cert
-        # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
-        self.timeout = timeout
+            LOG.debug("try to log with cert + api in tokenlogin headers: %s ", self._session.headers)
+            res = self._session.post(
+                    url,
+                    data='username=' + username +"&ajax=1",timeout=self.timeout,cert=cert)
+            LOG.debug("cert +API response %s",res.content)
+
+            #if res.content[0] != 1:
+                #self._logged = False
+                #return False
+            self.cert=cert
+            self.update_cookie()
+
+        self._logged = True
+
 
         LOG.debug("host is %s", host)
-        resp_lic = self.monitor('license', 'status', vdom="global")
-        LOG.debug("response monitor license: %s", resp_lic)
-        self._fortiversion = resp_lic['version']
-        return True
+        try:
+            resp_lic = self.monitor('system', 'status', vdom="global")
+            LOG.debug("response monitor status: %s", resp_lic)
+            self._fortiversion = resp_lic['version']
+            return True
+        except KeyError:
+            self._logged=False
+            return False
+        except  Exception as e:
+            self._logged=False
+            raise e
+            return False
 
 
     def get_version(self):
@@ -299,7 +335,7 @@ class FortiOSAPI(object):
     def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom, mkey)
         LOG.debug("in monitor url is %s", url)
-        res = self._session.get(url, params=parameters, timeout=self.timeout)
+        res = self._session.get(url, params=parameters, timeout=self.timeout,cert=self.cert)
         LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
 

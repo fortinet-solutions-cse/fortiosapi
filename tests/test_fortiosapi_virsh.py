@@ -120,15 +120,27 @@ class TestFortinetRestAPI(unittest.TestCase):
             verify = conf["sut"]["verify"]
         except KeyError:
             verify = False
+        try:
+            clientcert = conf["sut"]["clientcert"]
+            clientkey = conf["sut"]["clientkey"]
+        except KeyError:
+            clientcert=None
+            clientkey=None
 
         try:
             apikey = conf["sut"]["api-key"]
-            self.assertEqual(fgt.tokenlogin(conf["sut"]["ip"], apikey, verify=verify), True)
         except KeyError:
-            self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"], verify=verify),
+            apikey = None
+
+        if apikey:
+            self.assertEqual(fgt.tokenlogin(conf["sut"]["ip"],apikey, vdom=conf["sut"]["vdom"], verify=verify, cert=(clientcert,clientkey)),
                              True)
-        except Exception as e:
-            self.fail("issue in the virsh yaml definition : %s" + str(e))
+        else:
+            self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"], verify=verify,cert=(clientcert,clientkey)),
+                             True)
+#        except Exception as e:
+#            #api-key is present but failed trying cert auth)
+#            self.assertEqual(fgt.login(conf["sut"]["ip"], verify=verify,cert=(clientcert, clientkey)),True)
 
     def test_01logout_login(self):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program

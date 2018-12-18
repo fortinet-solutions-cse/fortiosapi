@@ -10,7 +10,7 @@ def readme():
 
 setup(
     name='fortiosapi',
-    version='1.0.0',
+    version='0.99',
     description=('Python modules to interact with fortinet'
                  ' products configuration rest and ssh'),
     long_description=readme(),
