@@ -43,12 +43,11 @@ except ImportError:
         def emit(self, record):
             pass
 # Disable warnings about certificates.
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+# from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+# requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 # may need to move to specifying the ca or use Verify=false
-# cafile = 'cacert.pem'
-# r = requests.get(url, verify=cafile)
+# verify="/etc/ssl/certs/" on Debian to use the system CAs
 logging.getLogger(__name__).addHandler(NullHandler())
 # create logger
 LOG = logging.getLogger('fortiosapi')
@@ -64,12 +63,11 @@ class FortiOSAPI(object):
         self._session = requests.session()  # use single session
         # persistant and same for all
         self._session.verify = False
-        # (can be changed to) self._session.verify = '/path/to/certfile' or True
-        # Will be switch to true by default
+        # (can be changed to) self._session.verify = '/etc/ssl/certs/' or True
+        # Will be switch to true by default it uses the python CA list in this case
         self.timeout = 12
         self.cert = None
         self._apitoken = None
-        #        self.yamltreel3 = OrderedDict()
         self._license = None
         self.url_prefix = None
 

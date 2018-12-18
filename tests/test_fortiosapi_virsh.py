@@ -122,6 +122,14 @@ class TestFortinetRestAPI(unittest.TestCase):
             verify = False
 
         try:
+            fgt.cert = (conf["sut"]["clientcert"], conf["sut"]["clientkey"])
+            fgt._session.cert = fgt.cert
+        except KeyError:
+            fgt.cert = None
+            fgt._session.cert = None
+
+
+        try:
             apikey = conf["sut"]["api-key"]
             self.assertEqual(fgt.tokenlogin(conf["sut"]["ip"], apikey, verify=verify), True)
         except KeyError:
