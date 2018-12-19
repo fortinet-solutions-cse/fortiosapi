@@ -3,8 +3,8 @@ import logging
 import os
 import pexpect
 import unittest
-import yaml
 
+import oyaml as yaml
 from packaging.version import Version
 
 ###################################################################
@@ -36,28 +36,28 @@ from fortiosapi import FortiOSAPI
 # under the License.
 #
 formatter = logging.Formatter(
-        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+    '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')
 hdlr = logging.FileHandler('testfortiosapi.log')
 hdlr.setFormatter(formatter)
-logger.addHandler(hdlr) 
+logger.addHandler(hdlr)
 logger.setLevel(logging.DEBUG)
 
 fgt = FortiOSAPI()
-                           
 
-virshconffile =  os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
-conf = yaml.load(open(virshconffile,'r'))
+virshconffile = os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
+conf = yaml.load(open(virshconffile, 'r'))
 # when python35 pexepct will be fixed#child = pexpect.spawn('virsh console '+conf["sut"]["vmname"],
 # logfile=open("testfortiosapi.lo", "w"))
 
 # child = pexpect.spawn('virsh console '+ str(conf["sut"]["vmname"]).strip(),logfile=open("child.log","w"))
-#child.logfile = sys.stdout
-#TODO add the option to run on a remote VM with -c qemu+ssh://
+# child.logfile = sys.stdout
+# TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
 logpexecpt = open("child.log", "wb")
 child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
                       logfile=logpexecpt)
+
 
 class TestFortinetRestAPI(unittest.TestCase):
 
@@ -68,7 +68,8 @@ class TestFortinetRestAPI(unittest.TestCase):
     def setUp(self):
         pass
 
-    def sendtoconsole(self, cmds, in_output=False):
+    @staticmethod
+    def sendtoconsole(cmds, in_output=" "):
         # Use pexpect to interact with the console
         # check the prompt then send output
         # return True if commands sent and if output found
@@ -77,10 +78,9 @@ class TestFortinetRestAPI(unittest.TestCase):
 
         # Trick: child.sendline(' execute factoryreset keepvmlicense')
 
-
-        #sometime lock waiting for prompt
+        # sometime lock waiting for prompt
         child.sendline('\r')
-        #look for prompt or login
+        # look for prompt or login
         logged = False
         while not logged:
             r = child.expect(['.* login:', '#', 'Escape character'])
@@ -97,7 +97,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                 child.sendline('\r')
         result = True
         for line in cmds.splitlines():
-            child.sendline(line +'\r')
+            child.sendline(line + '\r')
 
         if in_output:
             try:
@@ -108,42 +108,66 @@ class TestFortinetRestAPI(unittest.TestCase):
                 pass
             if r != 0:
                 result = False
-        return (result)
+        return result
 
     def test_00login(self):
         # adapt if using eval license or not
-        if conf["sut"]["eval"] == "yes":
-            fgt.https('off')
-        else:
+        if conf["sut"]["ssl"] == "yes":
             fgt.https('on')
-        self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
-        
+        else:
+            fgt.https(status='off')
+        try:
+            verify = conf["sut"]["verify"]
+        except KeyError:
+            verify = False
+
+        try:
+            fgt.cert = (conf["sut"]["clientcert"], conf["sut"]["clientkey"])
+            fgt._session.cert = fgt.cert
+        except KeyError:
+            fgt.cert = None
+            fgt._session.cert = None
+
+
+        try:
+            apikey = conf["sut"]["api-key"]
+            self.assertEqual(fgt.tokenlogin(conf["sut"]["ip"], apikey, verify=verify), True)
+        except KeyError:
+            self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"], verify=verify),
+                             True)
+        except Exception as e:
+            self.fail("issue in the virsh yaml definition : %s" + str(e))
+
     def test_01logout_login(self):
-        self.assertEqual( fgt.logout(), None)
-        self.assertEqual( fgt.login(conf["sut"]["ip"],conf["sut"]["user"],conf["sut"]["passwd"]) , None )
-                
+        # This test if we properly regenerate the CSRF from the cookie when not restarting the program
+        # can include changing login/vdom passwd on the same session
+        self.assertEqual(fgt.logout(), None)
+        self.test_00login()
+
     def test_setaccessperm(self):
         data = {
             "name": "port1",
             "allowaccess": "ping https ssh http fgfm snmp",
-            "vdom":"root"
+            "vdom": "root"
         }
-        self.assertEqual(fgt.set('system','interface', vdom="root", data=data)['http_status'], 200)
-        
+        # works on both multi and mono vdom
+        self.assertEqual(fgt.set('system', 'interface', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.set('system', 'interface', vdom="global", data=data)['http_status'], 200)
+
     def test_setfirewalladdress(self):
         data = {
             "name": "all.acme.test",
             "wildcard-fqdn": "*.acme.test",
             "type": "wildcard-fqdn",
         }
-        #ensure the seq 8 for route is not present
-        cmds='''config firewall address
+        # ensure the seq 8 for route is not present
+        cmds = '''config firewall address
         delete all.acme.test
-        end '''        
+        end '''
         self.sendtoconsole(cmds)
-        self.assertEqual(fgt.set('firewall','address', vdom="root", data=data)['http_status'], 200)
-#doing it a second time to test put instead of post
-        self.assertEqual(fgt.set('firewall','address', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
+        # doing it a second time to test put instead of post
+        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
 
     def test_posttorouter(self):
         data = {
@@ -152,36 +176,42 @@ class TestFortinetRestAPI(unittest.TestCase):
             "device": "port1",
             "gateway": "192.168.40.252",
         }
-        #ensure the seq 8 for route is not present
+        # ensure the seq 8 for route is not present cmd will be ignored on non vdom
         cmds = '''end
+        config vdom
+        edit root
         config router static
         delete 8
-        end '''
+        end
+        end'''
         self.sendtoconsole(cmds)
-        self.assertEqual(fgt.post('router','static', vdom="root", data=data)['http_status'], 200)
-        cmds = '''show router static 8'''
+        self.assertEqual(fgt.post('router', 'static', data=data, vdom="root")['http_status'], 200)
+        # vdom cmds will be ignored on non vdom
+        cmds = '''config vdom
+        edit root
+        show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
-        self.assertEqual(fgt.set ('router','static', vdom="root", data=data)['http_status'], 200)
+        self.assertEqual(fgt.set('router', 'static', data, vdom="root")['http_status'], 200)
 
-       
     @unittest.expectedFailure
     def test_accesspermfail(self):
         data = {
             "name": "port1",
             "allowaccess": "ping https ssh http fgfm snmp",
-            "vdom":"root"
+            "vdom": "root"
         }
-        self.assertEqual(fgt.set('system','interface', vdom="root", mkey='bad', data=data)['http_status'], 200, "broken")
-        
+        self.assertEqual(fgt.set('system', 'interface', vdom="root", mkey='bad', data=data)['http_status'], 200,
+                         "broken")
 
     def test_02getsystemglobal(self):
-        resp = fgt.get('system','global', vdom="global")
+        resp = fgt.get('system', 'global', vdom="global")
         fortiversion = resp['version']
         self.assertEqual(resp['status'], 'success')
+        self.assertIsNotNone(fortiversion, msg=fortiversion)
 
-    #should put a test on version to disable if less than 5.6 don't work decoration 
-    #@unittest.skipIf(Version(fgt.get_version()) < Version('5.6'),
+    # should put a test on version to disable if less than 5.6 don't work decoration
+    # @unittest.skipIf(Version(fgt.get_version()) < Version('5.6'),
     #                 "not supported with fortios before 5.6")
     def test_is_license_valid(self):
         if Version(fgt.get_version()) > Version('5.6'):
@@ -190,16 +220,50 @@ class TestFortinetRestAPI(unittest.TestCase):
             self.assertTrue(True, "not supported before 5.6")
 
     def test_central_management(self):
-        #This call does not have mkey test used to validate it does not blow up
+        # This call does not have mkey test used to validate it does not blow up
         data = {
             "type": "fortimanager",
             "fmg": "10.210.67.18",
         }
-        self.assertEqual(fgt.put('system','central-management', vdom="root",data=data)['status'], 'success')
-        
-        
+        self.assertEqual(fgt.put('system', 'central-management', vdom="root", data=data)['status'], 'success')
+
     def test_monitorresources(self):
-        self.assertEqual(fgt.monitor('system','vdom-resource', mkey='select', vdom="root")['status'], 'success')
+        self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom="root")['status'], 'success')
+
+    def test_downloadconfig(self):
+        parameters = {'destination': 'file',
+                      'scope': 'global'}
+        self.assertEqual(fgt.download('system/config', 'backup', vdom="root", parameters=parameters).status_code, 200)
+
+    def test_setoverlayconfig(self):
+        yamldata = '''
+            antivirus:
+              profile:
+                apisettree:
+                  "scan-mode": "quick"
+                  'http': {"options": "scan avmonitor",}
+                  "emulator": "enable"
+            firewall:
+              policy:
+                67:
+                  'name': "Testfortiosapi"
+                  'action': "accept"
+                  'srcintf': [{"name": "port1"}]
+                  'dstintf': [{"name": "port2"}]
+                  'srcaddr': [{"name": "all"}]
+                  'dstaddr': [{"name": "all"}]
+                  'schedule': "always"
+                  'service': [{"name": "HTTPS"}]
+                  "utm-status": "enable"
+                  "profile-type": "single"
+                  'av-profile': "apisettree"
+                  'profile-protocol-options': "default"
+                  'ssl-ssh-profile': "certificate-inspection"
+                  'logtraffic': "all"
+                    '''
+        #        yamltree=OrderedDict()
+        yamltree = yaml.load(yamldata)
+        self.assertTrue(fgt.setoverlayconfig(yamltree, vdom=conf['sut']['vdom']), True)
 
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
