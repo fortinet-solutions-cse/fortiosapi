@@ -430,7 +430,7 @@ class FortiOSAPI(object):
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(host, port=port, username=user, password=password,
                        allow_agent=False, timeout=10)
-        LOG.debug("ssh login to  %s:%s ", host, ssh_port)
+        LOG.debug("ssh login to  %s:%s ", host, port)
         # commands is a multiline string using the ''' string ''' format
         try:
             stdin, stdout, stderr = client.exec_command(cmds)
