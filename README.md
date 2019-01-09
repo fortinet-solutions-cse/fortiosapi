@@ -75,6 +75,6 @@ Other tests are welcomed.
 ## Files upload/download
 You will find the calls to exchange files (config, logs, licenses) with Fortigate in this LIB
 
-## Usage
-
-Fortiosapi library is used in Fortinet Ansible modules and in Cloudify plugins. Maintained mainly by Fortinet employees. 
+## Known Usage
+Fortiosapi library is used in Fortinet Ansible modules and in Cloudify plugins. 
+Maintained mainly by Fortinet employees. 

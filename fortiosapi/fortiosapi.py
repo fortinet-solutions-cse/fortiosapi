@@ -65,7 +65,7 @@ class FortiOSAPI(object):
         self._session.verify = False
         # (can be changed to) self._session.verify = '/etc/ssl/certs/' or True
         # Will be switch to true by default it uses the python CA list in this case
-        self.timeout = 12
+        self.timeout = 120
         self.cert = None
         self._apitoken = None
         self._license = None

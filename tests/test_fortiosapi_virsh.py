@@ -219,13 +219,29 @@ class TestFortinetRestAPI(unittest.TestCase):
         else:
             self.assertTrue(True, "not supported before 5.6")
 
-    def test_central_management(self):
+    def test_central_management_put(self):
         # This call does not have mkey test used to validate it does not blow up
         data = {
             "type": "fortimanager",
             "fmg": "10.210.67.18",
         }
         self.assertEqual(fgt.put('system', 'central-management', vdom="root", data=data)['status'], 'success')
+
+    def test_webfilteripsv_set(self):
+        # This call does not have mkey
+        data = {
+            "device": "port1",
+            "distance": "4",
+            "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+            "geo-filter": ""
+        }
+
+        # TODO delete the setting from console first
+        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom="root", data=data)['status'], 'success')
+        # doing a second time to verify set is behaving correctly (imdepotent)
+        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom="root", data=data)['status'], 'success')
+
+
 
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom="root")['status'], 'success')
@@ -234,6 +250,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         parameters = {'destination': 'file',
                       'scope': 'global'}
         self.assertEqual(fgt.download('system/config', 'backup', vdom="root", parameters=parameters).status_code, 200)
+
 
     def test_setoverlayconfig(self):
         yamldata = '''
