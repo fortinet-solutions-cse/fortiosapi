@@ -95,7 +95,7 @@ class FortiOSAPI(object):
         # If vdom is global the resp is a dict of resp (even 1)
         # 1 per vdom we check only the first one here (might need a more
         # complex check)
-        if self._license is "Invalid":
+        if self._license == "Invalid":
             LOG.debug("License invalid detected")
             raise Exception("unauthorized probably an invalid license")
 
@@ -122,7 +122,7 @@ class FortiOSAPI(object):
     def check_session(self):
         if not self._logged:
             raise Exception("Not logged on a session, please login")
-        if self._license is "Invalid":
+        if self._license == "Invalid":
             raise Exception("License invalid")
 
     def https(self, status):
@@ -332,7 +332,7 @@ class FortiOSAPI(object):
 
         res = self._session.get(url, timeout=self.timeout)
         if res.status_code is 200:
-            if vdom is "global":
+            if vdom == "global":
                 return json.loads(res.content.decode('utf-8'))[0]['results']
             else:
                 return json.loads(res.content.decode('utf-8'))['results']
