@@ -260,7 +260,7 @@ class FortiOSAPI(object):
         self._license = "Valid"
         self.logging(res)
 
-    def cmdb_url(self, path, name, vdom, mkey=None):
+    def cmdb_url(self, path, name, vdom=None, mkey=None):
         # all calls will start with a build url so checking login/license here is enough
         self.check_session()
         # return builded URL
