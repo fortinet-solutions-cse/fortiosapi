@@ -36,6 +36,8 @@ from collections import OrderedDict
 import paramiko
 import requests
 
+from .exceptions import (InvalidLicense, NotLogged)
+
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
@@ -121,9 +123,9 @@ class FortiOSAPI(object):
 
     def check_session(self):
         if not self._logged:
-            raise Exception("Not logged on a session, please login")
+            raise NotLogged()
         if self._license == "Invalid":
-            raise Exception("License invalid")
+            raise InvalidLicense()
 
     def https(self, status):
         if status == 'on':
