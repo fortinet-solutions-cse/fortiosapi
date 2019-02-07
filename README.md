@@ -8,7 +8,7 @@ Compare to the REST API there a few add-ons:
  try to post and if failing will put and collect the mkey directly.
  The lib will also find the mkey for you
 
-## New overlay configuration
+## New overlay configuration
 
 You now have an overlayconfig call which can be pass a complex configuration change in yaml.
 Including multiple endpoints (name/path) as the simple example below shows:
