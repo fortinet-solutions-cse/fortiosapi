@@ -6,11 +6,11 @@ Python library to configure Fortigate/Fortios devices (REST API and SSH)
 Compare to the REST API there a few add-ons:
  In addition to get,put,post,delete methods there is a set which will
  try to post and if failing will put and collect the mkey directly.
- The lib will also find the mkey for you 
- 
+ The lib will also find the mkey for you
+
 ## New overlay configuration
 
-You now have an overlayconfig call which can be pass a complex configuration change in yaml. 
+You now have an overlayconfig call which can be pass a complex configuration change in yaml.
 Including multiple endpoints (name/path) as the simple example below shows:
 ```yaml
 antivirus:
@@ -39,7 +39,7 @@ firewall:
 ```
 
 The behaviour will be the change the parameters at the higher level first then do a serie of set on the tables.
-Will fail if one of the set fails. 
+Will fail if one of the set fails.
 Order of commands should be preserved.
 
 ## Login methods
@@ -59,9 +59,9 @@ differents methods to ease writting them.
 ## License (5.6)
 A rest call to check and force license validation check starting with 5.6
 See license.
-usage of schema and mkey for every call for 5.6 
+usage of schema and mkey for every call for 5.6
 
-License validity is now checked at login 
+License validity is now checked at login
 
 ## Versions
 
@@ -77,5 +77,5 @@ You will find the calls to exchange files (config, logs, licenses) with Fortigat
 
 
 ## Known Usage
-Fortiosapi library is used in Fortinet Ansible modules and in Cloudify plugins. 
-Maintained mainly by Fortinet employees. 
+Fortiosapi library is used in Fortinet Ansible modules and in Cloudify plugins.
+Maintained mainly by Fortinet employees.
