@@ -410,9 +410,10 @@ class FortiOSAPI(object):
 
 
     def move(self, path, name, vdom=None, mkey=None,
-             where=None, reference_key=None, parameters=None):
+             where=None, reference_key=None, parameters={}):
         url = self.cmdb_url(path, name, vdom, mkey)
-        url += "&action=move&" + where + "=" + reference_key
+        parameters['action'] = 'move'
+        parameters[where] = str(reference_key)
         res = self._session.put(url, params=parameters, timeout=self.timeout)
         LOG.debug("in MOVE function")
         return self.formatresponse(res, vdom=vdom)
