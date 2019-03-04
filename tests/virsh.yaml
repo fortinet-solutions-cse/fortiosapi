@@ -1,1 +1,12 @@
-virsh60.yaml
+sut:
+  virshurl: ""
+  # could be qemu+ssh://ip/system
+  ip: 192.168.122.137:8443
+  vmname: fos56
+  user: "admin"
+  passwd: "toto"
+  vdom: "root"
+  # ssl off for eva
+  ssl: "yes"
+  verify: None
+# could use "/etc/ssl/certs/" for use host certs
