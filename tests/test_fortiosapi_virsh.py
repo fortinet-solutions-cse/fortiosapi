@@ -3,6 +3,7 @@ import logging
 import os
 import pexpect
 import unittest
+import re
 
 import oyaml as yaml
 from packaging.version import Version
@@ -68,6 +69,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     def setUp(self):
         pass
 
+
     @staticmethod
     def sendtoconsole(cmds, in_output=" "):
         # Use pexpect to interact with the console
@@ -110,6 +112,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                 result = False
         return result
 
+
     def test_00login(self):
         # adapt if using eval license or not
         if conf["sut"]["ssl"] == "yes":
@@ -138,11 +141,13 @@ class TestFortinetRestAPI(unittest.TestCase):
         except Exception as e:
             self.fail("issue in the virsh yaml definition : %s" + str(e))
 
+
     def test_01logout_login(self):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program
         # can include changing login/vdom passwd on the same session
         self.assertEqual(fgt.logout(), None)
         self.test_00login()
+
 
     def test_setaccessperm(self):
         data = {
@@ -153,6 +158,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         # works on both multi and mono vdom
         self.assertEqual(fgt.set('system', 'interface', vdom="root", data=data)['http_status'], 200)
         self.assertEqual(fgt.set('system', 'interface', vdom="global", data=data)['http_status'], 200)
+
 
     def test_setfirewalladdress(self):
         data = {
@@ -168,6 +174,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
         # doing it a second time to test put instead of post
         self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
+
 
     def test_posttorouter(self):
         data = {
@@ -193,6 +200,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
         self.assertEqual(fgt.set('router', 'static', data, vdom="root")['http_status'], 200)
+
 
     @unittest.expectedFailure
     def test_accesspermfail(self):
@@ -241,8 +249,6 @@ class TestFortinetRestAPI(unittest.TestCase):
         # doing a second time to verify set is behaving correctly (imdepotent)
         self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom="root", data=data)['status'], 'success')
 
-
-
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom="root")['status'], 'success')
 
@@ -250,7 +256,6 @@ class TestFortinetRestAPI(unittest.TestCase):
         parameters = {'destination': 'file',
                       'scope': 'global'}
         self.assertEqual(fgt.download('system/config', 'backup', vdom="root", parameters=parameters).status_code, 200)
-
 
     def test_setoverlayconfig(self):
         yamldata = '''
@@ -281,6 +286,50 @@ class TestFortinetRestAPI(unittest.TestCase):
         #        yamltree=OrderedDict()
         yamltree = yaml.load(yamldata)
         self.assertTrue(fgt.setoverlayconfig(yamltree, vdom=conf['sut']['vdom']), True)
+
+    def test_movecommand(self):
+        data = {
+            "policyid": "1",
+            "name": "first",
+            "action": "accept",
+            "srcintf": [{"name": "port1"}],
+            "dstintf": [{"name": "port1"}],
+            "srcaddr": [{"name": "all"}],
+            "dstaddr": [{"name": "all"}],
+            "service": [{"name": "HTTPS"}],
+            "schedule": "always",
+            "logtraffic": "all"
+        }
+
+        fgt.delete('firewall', 'policy', vdom="root", data=data)
+        self.assertEqual(fgt.set('firewall', 'policy', vdom="root", data=data)['status'], 'success')
+
+        data = {
+            "policyid": "2",
+            "name": "second",
+            "action": "accept",
+            "srcintf": [{"name": "port1"}],
+            "dstintf": [{"name": "port1"}],
+            "srcaddr": [{"name": "all"}],
+            "dstaddr": [{"name": "all"}],
+            "service": [{"name": "HTTPS"}],
+            "schedule": "always",
+            "logtraffic": "all"
+        }
+
+        fgt.delete('firewall', 'policy', vdom="root", data=data)
+        self.assertEqual(fgt.set('firewall', 'policy', vdom="root", data=data)['status'], 'success')
+
+        results = (fgt.get('firewall', 'policy', vdom="root"))
+
+        self.assertIsNotNone(re.search(".*first.*second.*", str(results['results'])))
+        self.assertIsNone(re.search(".*second.*first.*", str(results['results'])))
+
+        self.assertEqual(fgt.move('firewall', 'policy', vdom="root", mkey="1", where="after", reference_key="2")['status'], 'success')
+
+        results = (fgt.get('firewall', 'policy', vdom="root"))
+        self.assertIsNotNone(re.search(".*second.*first.*", str(results['results'])))
+        self.assertIsNone(re.search(".*first.*second.*", str(results['results'])))
 
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
