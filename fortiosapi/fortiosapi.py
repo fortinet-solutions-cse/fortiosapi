@@ -71,6 +71,7 @@ class FortiOSAPI(object):
         self._license = None
         self.url_prefix = None
 
+
     @staticmethod
     def logging(response):
         try:
@@ -83,10 +84,12 @@ class FortiOSAPI(object):
         except:
             LOG.warning("method errors in request when global")
 
+
     @staticmethod
     def debug(status):
         if status == 'on':
             LOG.setLevel(logging.DEBUG)
+
 
     def formatresponse(self, res, vdom=None):
         LOG.debug("formating response")
@@ -119,11 +122,13 @@ class FortiOSAPI(object):
             LOG.warning("in formatresponse res.content does not exist, should not occur")
             return res
 
+
     def check_session(self):
         if not self._logged:
             raise Exception("Not logged on a session, please login")
         if self._license == "Invalid":
             raise Exception("License invalid")
+
 
     def https(self, status):
         if status == 'on':
@@ -131,6 +136,7 @@ class FortiOSAPI(object):
         if status == 'off':
             self._https = False
         LOG.debug("https mode is %s", self._https)
+
 
     def update_cookie(self):
         # Retrieve server csrf and update session's headers
@@ -142,6 +148,7 @@ class FortiOSAPI(object):
                 self._session.headers.update({'X-CSRFTOKEN': csrftoken})
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
         LOG.debug("New session header is: %s", self._session.headers)
+
 
     def login(self, host, username, password, verify=False, cert=None, timeout=12):
         self.host = host
@@ -192,6 +199,7 @@ class FortiOSAPI(object):
             self._logged = False
             raise Exception('login failed')
 
+
     def tokenlogin(self, host, apitoken, verify=False, cert=None, timeout=12):
         # if using apitoken method then login/passwd will be disabled
         self.host = host
@@ -225,6 +233,7 @@ class FortiOSAPI(object):
         self.check_session()
         return self._fortiversion
 
+
     def get_mkeyname(self, path, name, vdom=None):
         # retreive the table mkey from schema
         schema = self.schema(path, name, vdom=vdom)
@@ -234,6 +243,7 @@ class FortiOSAPI(object):
             LOG.warning("there is no mkey for %s/%s", path, name)
             return False
         return keyname
+
 
     def get_mkey(self, path, name, data, vdom=None):
         # retreive the table mkey from schema
@@ -250,6 +260,7 @@ class FortiOSAPI(object):
                 return None
             return mkey
 
+
     def logout(self):
         url = self.url_prefix + '/logout'
         res = self._session.post(url, timeout=self.timeout)
@@ -259,6 +270,7 @@ class FortiOSAPI(object):
         # set license to Valid by default to ensure rechecked at login
         self._license = "Valid"
         self.logging(res)
+
 
     def cmdb_url(self, path, name, vdom=None, mkey=None):
         # all calls will start with a build url so checking login/license here is enough
@@ -277,6 +289,7 @@ class FortiOSAPI(object):
         LOG.debug("urlbuild is %s with crsf: %s", url, self._session.headers)
         return url
 
+
     def mon_url(self, path, name, vdom=None, mkey=None):
         # all calls will start with a build url so checking login/license here is enough
         self.check_session()
@@ -294,6 +307,7 @@ class FortiOSAPI(object):
         url = self.url_prefix + url_postfix
         return url
 
+
     def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom, mkey)
         LOG.debug("in monitor url is %s", url)
@@ -301,12 +315,14 @@ class FortiOSAPI(object):
         LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
 
+
     def download(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in DOWNLOAD function")
         LOG.debug(" result download : %s", res.content)
         return res
+
 
     def upload(self, path, name, vdom=None, mkey=None,
                parameters=None, data=None, files=None):
@@ -316,12 +332,14 @@ class FortiOSAPI(object):
         LOG.debug("in UPLOAD function")
         return res
 
+
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.cmdb_url(path, name, vdom, mkey=mkey)
         LOG.debug("Calling GET ( %s, %s)", url, parameters)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in GET function")
         return self.formatresponse(res, vdom=vdom)
+
 
     def schema(self, path, name, vdom=None):
         # vdom or global is managed in cmdb_url
@@ -338,6 +356,7 @@ class FortiOSAPI(object):
                 return json.loads(res.content.decode('utf-8'))['results']
         else:
             return json.loads(res.content.decode('utf-8'))
+
 
     def get_name_path_dict(self, vdom=None):
         # return builded URL
@@ -356,6 +375,7 @@ class FortiOSAPI(object):
             if "__tree__" not in keys['path']:
                 dict.append(keys['path'] + " " + keys['name'])
         return dict
+
 
     def post(self, path, name, data, vdom=None,
              mkey=None, parameters=None):
@@ -377,6 +397,7 @@ class FortiOSAPI(object):
         LOG.debug("POST raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
+
     def put(self, path, name, vdom=None,
             mkey=None, parameters=None, data=None):
         if not mkey:
@@ -386,6 +407,17 @@ class FortiOSAPI(object):
                                 data=json.dumps(data), timeout=self.timeout)
         LOG.debug("in PUT function")
         return self.formatresponse(res, vdom=vdom)
+
+
+    def move(self, path, name, vdom=None, mkey=None,
+             where=None, reference_key=None, parameters={}):
+        url = self.cmdb_url(path, name, vdom, mkey)
+        parameters['action'] = 'move'
+        parameters[where] = str(reference_key)
+        res = self._session.put(url, params=parameters, timeout=self.timeout)
+        LOG.debug("in MOVE function")
+        return self.formatresponse(res, vdom=vdom)
+
 
     def delete(self, path, name, vdom=None,
                mkey=None, parameters=None, data=None):
@@ -423,6 +455,7 @@ class FortiOSAPI(object):
         else:
             return r
 
+
     @staticmethod
     def ssh(cmds, host, user, password=None, port=22):
         """ Send a multi line string via ssh to the fortigate """
@@ -456,6 +489,7 @@ class FortiOSAPI(object):
                                                 output=results)
         return ''.join(str(results)), ''.join(str(stderr))
 
+
     def license(self):
         # license check and update
         # GET /api/v2/monitor/license/status
@@ -473,6 +507,7 @@ class FortiOSAPI(object):
             if postresp['status'] == 'success':
                 time.sleep(17)
                 return self.monitor('license', 'status')
+
 
     def setoverlayconfig(self, yamltree, vdom=None):
         # take a yaml tree with name: path: mkey: structure and recursively set the values.
