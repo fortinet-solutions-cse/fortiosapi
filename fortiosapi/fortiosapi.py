@@ -487,7 +487,7 @@ class FortiOSAPI(object):
             # TODO fill retcode with the output of the FGT
             raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
                                                 output=results)
-        return ''.join(str(results)), ''.join(str(stderr))
+        return ''.join(str(results)), ''.join(str(stderr.read().strip()))
 
 
     def license(self):
