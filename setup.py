@@ -10,7 +10,7 @@ def readme():
 
 setup(
     name='fortiosapi',
-    version='0.10.4',
+    version='0.10.5',
     description=('Python modules to use Fortigate APIs'
                  'full configuration, monitoring, lifecycle rest and ssh'),
     long_description=readme(),
