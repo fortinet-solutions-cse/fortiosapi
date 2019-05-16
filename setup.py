@@ -10,7 +10,7 @@ def readme():
 
 setup(
     name='fortiosapi',
-    version='0.10.5',
+    version='0.10.6',
     description=('Python modules to use Fortigate APIs'
                  'full configuration, monitoring, lifecycle rest and ssh'),
     long_description=readme(),
@@ -23,7 +23,7 @@ setup(
         'Topic :: Security',
     ],
     keywords='Fortinet fortigate fortios rest api',
-    install_requires=['requests', 'paramiko', 'oyaml'],
+    install_requires=['requests', 'paramiko', 'oyaml', 'copy', 'json'],
     author='Nicolas Thomas',
     author_email='nthomas@fortinet.com',
     url='https://github.com/fortinet-solutions-cse/fortiosapi',
