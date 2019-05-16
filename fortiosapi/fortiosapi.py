@@ -35,6 +35,7 @@ from collections import OrderedDict
 
 import paramiko
 import requests
+import urllib
 
 from .exceptions import (InvalidLicense, NotLogged)
 
@@ -167,7 +168,7 @@ class FortiOSAPI(object):
 
         res = self._session.post(
             url,
-            data='username=' + username + '&secretkey=' + password + "&ajax=1", timeout=self.timeout)
+            data='username=' + urllib.parse.quote(username) + '&secretkey=' + urllib.parse.quote(password) + "&ajax=1", timeout=self.timeout)
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
         LOG.debug("logincheck res : %s", res.content)
@@ -221,7 +222,6 @@ class FortiOSAPI(object):
         LOG.debug("response monitor license: %s", resp_lic)
         self._fortiversion = resp_lic['version']
         return True
-
 
     def get_version(self):
         self.check_session()
@@ -389,6 +389,15 @@ class FortiOSAPI(object):
         LOG.debug("in PUT function")
         return self.formatresponse(res, vdom=vdom)
 
+    def move(self, path, name, vdom=None, mkey=None,
+             where=None, reference_key=None, parameters={}):
+        url = self.cmdb_url(path, name, vdom, mkey)
+        parameters['action'] = 'move'
+        parameters[where] = str(reference_key)
+        res = self._session.put(url, params=parameters, timeout=self.timeout)
+        LOG.debug("in MOVE function")
+        return self.formatresponse(res, vdom=vdom)
+
     def delete(self, path, name, vdom=None,
                mkey=None, parameters=None, data=None):
         # Need to find the type of the mkey to avoid error when integer assume
@@ -456,7 +465,7 @@ class FortiOSAPI(object):
             # TODO fill retcode with the output of the FGT
             raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
                                                 output=results)
-        return ''.join(str(results)), ''.join(str(stderr))
+        return ''.join(str(results)), ''.join(str(stderr.read().strip()))
 
     def license(self):
         # license check and update
