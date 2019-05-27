@@ -296,13 +296,6 @@ class FortiOSAPI(object):
         url = self.url_prefix + url_postfix
         return url
 
-    def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
-        url = self.mon_url(path, name, vdom, mkey)
-        LOG.debug("in monitor url is %s", url)
-        res = self._session.get(url, params=parameters, timeout=self.timeout)
-        LOG.debug("in MONITOR function")
-        return self.formatresponse(res, vdom=vdom)
-
     def download(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
@@ -324,6 +317,17 @@ class FortiOSAPI(object):
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in GET function")
         return self.formatresponse(res, vdom=vdom)
+
+    def monitor_get(self, path, name, vdom=None, mkey=None, parameters=None):
+        url = self.mon_url(path, name, vdom, mkey)
+        LOG.debug("in monitor url is %s", url)
+        res = self._session.get(url, params=parameters, timeout=self.timeout)
+        LOG.debug("in MONITOR function")
+        return self.formatresponse(res, vdom=vdom)
+
+    def monitor(self, path, name, vdom=None, mkey=None, parameters=None):  # Deprecated, use monitor_get
+        # Deprecated, use monitor_get
+        return self.monitor_get(path, name, vdom, mkey, parameters)
 
     def schema(self, path, name, vdom=None):
         # vdom or global is managed in cmdb_url
@@ -373,6 +377,16 @@ class FortiOSAPI(object):
         # post with mkey will return a 404 as the next level is not there yet
         # we pushed mkey in data if needed.
         url = self.cmdb_url(path, name, vdom, mkey=None)
+        LOG.debug("POST sent data : %s", json.dumps(data))
+        res = self._session.post(
+            url, params=parameters, data=json.dumps(data), timeout=self.timeout)
+        LOG.debug("POST raw results: %s", res)
+        return self.formatresponse(res, vdom=vdom)
+
+    def monitor_post(self, path, name, data, vdom=None, parameters=None):
+        LOG.debug("in POST function")
+
+        url = self.mon_url(path, name, vdom)
         LOG.debug("POST sent data : %s", json.dumps(data))
         res = self._session.post(
             url, params=parameters, data=json.dumps(data), timeout=self.timeout)
