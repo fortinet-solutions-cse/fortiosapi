@@ -318,16 +318,12 @@ class FortiOSAPI(object):
         LOG.debug("in GET function")
         return self.formatresponse(res, vdom=vdom)
 
-    def monitor_get(self, path, name, vdom=None, mkey=None, parameters=None):
+    def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom, mkey)
         LOG.debug("in monitor url is %s", url)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
-
-    def monitor(self, path, name, vdom=None, mkey=None, parameters=None):  # Deprecated, use monitor_get
-        # Deprecated, use monitor_get
-        return self.monitor_get(path, name, vdom, mkey, parameters)
 
     def schema(self, path, name, vdom=None):
         # vdom or global is managed in cmdb_url
@@ -383,14 +379,14 @@ class FortiOSAPI(object):
         LOG.debug("POST raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
-    def monitor_post(self, path, name, data, vdom=None, parameters=None):
-        LOG.debug("in POST function")
+    def exec(self, path, name, data, vdom=None, parameters=None):
+        LOG.debug("in EXEC function")
 
         url = self.mon_url(path, name, vdom)
-        LOG.debug("POST sent data : %s", json.dumps(data))
+        LOG.debug("EXEC sent data : %s", json.dumps(data))
         res = self._session.post(
             url, params=parameters, data=json.dumps(data), timeout=self.timeout)
-        LOG.debug("POST raw results: %s", res)
+        LOG.debug("EXEC raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
     def put(self, path, name, vdom=None,
