@@ -31,11 +31,11 @@ import json
 import logging
 import subprocess
 import time
+import urllib
 from collections import OrderedDict
 
 import paramiko
 import requests
-import urllib
 
 from .exceptions import (InvalidLicense, NotLogged)
 
@@ -379,7 +379,7 @@ class FortiOSAPI(object):
         LOG.debug("POST raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
-    def exec(self, path, name, data, vdom=None, parameters=None):
+    def execute(self, path, name, data, vdom=None, parameters=None):
         LOG.debug("in EXEC function")
 
         url = self.mon_url(path, name, vdom)

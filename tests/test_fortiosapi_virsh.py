@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import logging
 import os
-import pexpect
-import unittest
 import re
+import unittest
 
 import oyaml as yaml
+import pexpect
 from packaging.version import Version
 
 ###################################################################
@@ -235,6 +235,10 @@ class TestFortinetRestAPI(unittest.TestCase):
         }
         self.assertEqual(fgt.put('system', 'central-management', vdom="root", data=data)['status'], 'success')
 
+    def test_execute_update(self):
+        # Excuting the udate now command to ensure it does post to monitor interface (not compatible prior to 5.6)
+        self.assertEqual(fgt.execute('system', 'fortiguard/update', None, vdom="root")['status'], 'success')
+
     def test_webfilteripsv_set(self):
         # This call does not have mkey
         data = {
@@ -284,7 +288,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                   'logtraffic': "all"
                     '''
         #        yamltree=OrderedDict()
-        yamltree = yaml.load(yamldata)
+        yamltree = yaml.load(yamldata, Loader=yaml.SafeLoader)
         self.assertTrue(fgt.setoverlayconfig(yamltree, vdom=conf['sut']['vdom']), True)
 
     def test_movecommand(self):

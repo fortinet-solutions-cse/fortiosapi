@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-import setuptools
+from setuptools import setup, find_packages
 
 with open('README.md') as fh:
     long_description = fh.read()
 
-setuptools.setup(
+setup(
     name='fortiosapi',
-    version='0.10.7',
+    version='0.10.8',
     description="Python modules to use Fortigate APIs",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -20,7 +20,8 @@ setuptools.setup(
         'Topic :: Security',
     ],
     keywords='Fortinet fortigate fortios rest api',
-    packages=setuptools.find_packages(),
+    packages=find_packages(),
+    install_requires=['requests', 'paramiko', 'oyaml'],
     author='Nicolas Thomas',
     author_email='nthomas@fortinet.com',
     url='https://github.com/fortinet-solutions-cse/fortiosapi',
