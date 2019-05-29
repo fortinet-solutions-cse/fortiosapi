@@ -31,11 +31,11 @@ import json
 import logging
 import subprocess
 import time
+import urllib
 from collections import OrderedDict
 
 import paramiko
 import requests
-import urllib
 
 from .exceptions import (InvalidLicense, NotLogged)
 
@@ -296,13 +296,6 @@ class FortiOSAPI(object):
         url = self.url_prefix + url_postfix
         return url
 
-    def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
-        url = self.mon_url(path, name, vdom, mkey)
-        LOG.debug("in monitor url is %s", url)
-        res = self._session.get(url, params=parameters, timeout=self.timeout)
-        LOG.debug("in MONITOR function")
-        return self.formatresponse(res, vdom=vdom)
-
     def download(self, path, name, vdom=None, mkey=None, parameters=None):
         url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
@@ -323,6 +316,13 @@ class FortiOSAPI(object):
         LOG.debug("Calling GET ( %s, %s)", url, parameters)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in GET function")
+        return self.formatresponse(res, vdom=vdom)
+
+    def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
+        url = self.mon_url(path, name, vdom, mkey)
+        LOG.debug("in monitor url is %s", url)
+        res = self._session.get(url, params=parameters, timeout=self.timeout)
+        LOG.debug("in MONITOR function")
         return self.formatresponse(res, vdom=vdom)
 
     def schema(self, path, name, vdom=None):
@@ -377,6 +377,20 @@ class FortiOSAPI(object):
         res = self._session.post(
             url, params=parameters, data=json.dumps(data), timeout=self.timeout)
         LOG.debug("POST raw results: %s", res)
+        return self.formatresponse(res, vdom=vdom)
+
+    def execute(self, path, name, data, vdom=None,
+                mkey=None, parameters=None):
+        # execute is an action done on a running fortigate
+        # it is actually doing a post to the monitor part of the API
+        # we choose this name for clarity
+        LOG.debug("in EXEC function")
+
+        url = self.mon_url(path, name, vdom, mkey=mkey)
+        LOG.debug("EXEC sent data : %s", json.dumps(data))
+        res = self._session.post(
+            url, params=parameters, data=json.dumps(data), timeout=self.timeout)
+        LOG.debug("EXEC raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
     def put(self, path, name, vdom=None,
@@ -477,10 +491,8 @@ class FortiOSAPI(object):
             return resp
         else:
             # if license not valid we try to update and check again
-            url = self.mon_url('system', 'fortiguard', mkey='update')
-            postres = self._session.post(url, timeout=self.timeout)
-            LOG.debug("Return POST fortiguard %s:", postres)
-            postresp = json.loads(postres.content.decode('utf-8'))
+            postresp = self.execute('system', 'fortiguard/update', None, vdom="root")
+            LOG.debug("Return EXECUTE fortiguard %s:", postresp)
             if postresp['status'] == 'success':
                 time.sleep(17)
                 return self.monitor('license', 'status')
