@@ -238,6 +238,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_execute_update(self):
         # Excuting the udate now command to ensure it does post to monitor interface (not compatible prior to 5.6)
         self.assertEqual(fgt.execute('system', 'fortiguard/update', None, vdom="root")['status'], 'success')
+        self.assertEqual(fgt.execute('system', 'fortiguard', None, mkey="update", vdom="global")['status'], 'success')
 
     def test_webfilteripsv_set(self):
         # This call does not have mkey

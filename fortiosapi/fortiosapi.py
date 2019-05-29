@@ -379,10 +379,14 @@ class FortiOSAPI(object):
         LOG.debug("POST raw results: %s", res)
         return self.formatresponse(res, vdom=vdom)
 
-    def execute(self, path, name, data, vdom=None, parameters=None):
+    def execute(self, path, name, data, vdom=None,
+                mkey=None, parameters=None):
+        # execute is an action done on a running fortigate
+        # it is actually doing a post to the monitor part of the API
+        # we choose this name for clarity
         LOG.debug("in EXEC function")
 
-        url = self.mon_url(path, name, vdom)
+        url = self.mon_url(path, name, vdom, mkey=mkey)
         LOG.debug("EXEC sent data : %s", json.dumps(data))
         res = self._session.post(
             url, params=parameters, data=json.dumps(data), timeout=self.timeout)
@@ -487,10 +491,8 @@ class FortiOSAPI(object):
             return resp
         else:
             # if license not valid we try to update and check again
-            url = self.mon_url('system', 'fortiguard', mkey='update')
-            postres = self._session.post(url, timeout=self.timeout)
-            LOG.debug("Return POST fortiguard %s:", postres)
-            postresp = json.loads(postres.content.decode('utf-8'))
+            postresp = self.execute('system', 'fortiguard/update', None, vdom="root")
+            LOG.debug("Return EXECUTE fortiguard %s:", postresp)
             if postresp['status'] == 'success':
                 time.sleep(17)
                 return self.monitor('license', 'status')
