@@ -37,6 +37,8 @@ from collections import OrderedDict
 import paramiko
 import requests
 
+import sys
+
 from .exceptions import (InvalidLicense, NotLogged)
 
 try:  # Python 2.7+
@@ -166,9 +168,15 @@ class FortiOSAPI(object):
         # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
         self.timeout = timeout
 
-        res = self._session.post(
-            url,
-            data='username=' + urllib.parse.quote(username) + '&secretkey=' + urllib.parse.quote(password) + "&ajax=1", timeout=self.timeout)
+        if sys.version_info >= (3,):
+            res = self._session.post(
+                url,
+                data='username=' + urllib.parse.quote(username) + '&secretkey=' + urllib.parse.quote(password) + "&ajax=1", timeout=self.timeout)
+        else:
+            res = self._session.post(
+                url,
+                data='username=' + urllib.quote(username) + '&secretkey=' + urllib.quote(password) + "&ajax=1", timeout=self.timeout)
+
         self.logging(res)
         # Ajax=1 documented in 5.6 API ref but available on 5.4
         LOG.debug("logincheck res : %s", res.content)
