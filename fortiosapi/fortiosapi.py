@@ -193,7 +193,7 @@ class FortiOSAPI(object):
             return True
         else:
             self._logged = False
-            raise Exception('login failed')
+            raise NotLogged
 
     def tokenlogin(self, host, apitoken, verify=False, cert=None, timeout=12):
         # if using apitoken method then login/passwd will be disabled
