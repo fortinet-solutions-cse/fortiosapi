@@ -43,11 +43,10 @@ hdlr = logging.FileHandler('testfortiosapi.log')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.DEBUG)
-
 fgt = FortiOSAPI()
 
 virshconffile = os.getenv('VIRSH_CONF_FILE', "virsh.yaml")
-conf = yaml.load(open(virshconffile, 'r'))
+conf = yaml.load(open(virshconffile, 'r'), Loader=yaml.SafeLoader)
 # when python35 pexepct will be fixed#child = pexpect.spawn('virsh console '+conf["sut"]["vmname"],
 # logfile=open("testfortiosapi.lo", "w"))
 
@@ -58,13 +57,14 @@ fgt.debug('on')
 logpexecpt = open("child.log", "wb")
 child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
                       logfile=logpexecpt)
-
+vdom = "root"
 
 class TestFortinetRestAPI(unittest.TestCase):
 
     # Note that, for Python 3 compatibility reasons, we are using spawnu and
     # importing unicode_literals (above). spawnu accepts Unicode input and
     # unicode_literals makes all string literals in this script Unicode by default.
+    vdom = "root"
 
     def setUp(self):
         pass
@@ -94,6 +94,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                 logged = True
             if r == 1:
                 child.sendline('\r')
+
                 logged = True
             if r == 2:
                 child.sendline('\r')
@@ -131,12 +132,12 @@ class TestFortinetRestAPI(unittest.TestCase):
             fgt.cert = None
             fgt._session.cert = None
 
-
         try:
             apikey = conf["sut"]["api-key"]
-            self.assertEqual(fgt.tokenlogin(conf["sut"]["ip"], apikey, verify=verify), True)
+            self.assertEqual(fgt.tokenlogin(conf["sut"]["ip"], apikey, verify=verify, vdom=conf["sut"]["vdom"]), True)
         except KeyError:
-            self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"], verify=verify),
+            self.assertEqual(fgt.login(conf["sut"]["ip"], conf["sut"]["user"], conf["sut"]["passwd"], verify=verify,
+                                       vdom=conf["sut"]["vdom"]),
                              True)
         except Exception as e:
             self.fail("issue in the virsh yaml definition : %s" + str(e))
@@ -148,7 +149,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         self.assertEqual(fgt.logout(), None)
         self.test_00login()
 
-
+    @unittest.skipIf(vdom is not ("root" or "global"), "test for root/global only")
     def test_setaccessperm(self):
         data = {
             "name": "port1",
@@ -171,9 +172,9 @@ class TestFortinetRestAPI(unittest.TestCase):
         delete all.acme.test
         end '''
         self.sendtoconsole(cmds)
-        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
+        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # doing it a second time to test put instead of post
-        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom="root")['http_status'], 200)
+        self.assertEqual(fgt.set('firewall', 'address', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
 
 
     def test_posttorouter(self):
@@ -192,14 +193,14 @@ class TestFortinetRestAPI(unittest.TestCase):
         end
         end'''
         self.sendtoconsole(cmds)
-        self.assertEqual(fgt.post('router', 'static', data=data, vdom="root")['http_status'], 200)
+        self.assertEqual(fgt.post('router', 'static', data=data, vdom=vdom)['http_status'], 200)
         # vdom cmds will be ignored on non vdom
         cmds = '''config vdom
         edit root
         show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
-        self.assertEqual(fgt.set('router', 'static', data, vdom="root")['http_status'], 200)
+        self.assertEqual(fgt.set('router', 'static', data, vdom=vdom)['http_status'], 200)
 
 
     @unittest.expectedFailure
@@ -207,9 +208,9 @@ class TestFortinetRestAPI(unittest.TestCase):
         data = {
             "name": "port1",
             "allowaccess": "ping https ssh http fgfm snmp",
-            "vdom": "root"
+            "vdom": vdom
         }
-        self.assertEqual(fgt.set('system', 'interface', vdom="root", mkey='bad', data=data)['http_status'], 200,
+        self.assertEqual(fgt.set('system', 'interface', vdom=vdom, mkey='bad', data=data)['http_status'], 200,
                          "broken")
 
     def test_02getsystemglobal(self):
@@ -233,11 +234,13 @@ class TestFortinetRestAPI(unittest.TestCase):
             "type": "fortimanager",
             "fmg": "10.210.67.18",
         }
-        self.assertEqual(fgt.put('system', 'central-management', vdom="root", data=data)['status'], 'success')
+        self.assertEqual(fgt.put('system', 'central-management', vdom=conf["sut"]["vdom"], data=data)['status'],
+                         'success')
 
     def test_execute_update(self):
         # Excuting the udate now command to ensure it does post to monitor interface (not compatible prior to 5.6)
-        self.assertEqual(fgt.execute('system', 'fortiguard/update', None, vdom="root")['status'], 'success')
+        self.assertEqual(fgt.execute('system', 'fortiguard/update', None, vdom=conf["sut"]["vdom"])['status'],
+                         'success')
         self.assertEqual(fgt.execute('system', 'fortiguard', None, mkey="update", vdom="global")['status'], 'success')
 
     def test_webfilteripsv_set(self):
@@ -250,17 +253,21 @@ class TestFortinetRestAPI(unittest.TestCase):
         }
 
         # TODO delete the setting from console first
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom="root", data=data)['status'], 'success')
+        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                         'success')
         # doing a second time to verify set is behaving correctly (imdepotent)
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom="root", data=data)['status'], 'success')
+        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                         'success')
 
     def test_monitorresources(self):
-        self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom="root")['status'], 'success')
+        self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom=conf["sut"]["vdom"])['status'],
+                         'success')
 
     def test_downloadconfig(self):
         parameters = {'destination': 'file',
                       'scope': 'global'}
-        self.assertEqual(fgt.download('system/config', 'backup', vdom="root", parameters=parameters).status_code, 200)
+        self.assertEqual(
+            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code, 200)
 
     def test_setoverlayconfig(self):
         yamldata = '''
@@ -306,8 +313,8 @@ class TestFortinetRestAPI(unittest.TestCase):
             "logtraffic": "all"
         }
 
-        fgt.delete('firewall', 'policy', vdom="root", data=data)
-        self.assertEqual(fgt.set('firewall', 'policy', vdom="root", data=data)['status'], 'success')
+        fgt.delete('firewall', 'policy', vdom=conf["sut"]["vdom"], data=data)
+        self.assertEqual(fgt.set('firewall', 'policy', vdom=conf["sut"]["vdom"], data=data)['status'], 'success')
 
         data = {
             "policyid": "2",
@@ -322,17 +329,19 @@ class TestFortinetRestAPI(unittest.TestCase):
             "logtraffic": "all"
         }
 
-        fgt.delete('firewall', 'policy', vdom="root", data=data)
-        self.assertEqual(fgt.set('firewall', 'policy', vdom="root", data=data)['status'], 'success')
+        fgt.delete('firewall', 'policy', vdom=conf["sut"]["vdom"], data=data)
+        self.assertEqual(fgt.set('firewall', 'policy', vdom=conf["sut"]["vdom"], data=data)['status'], 'success')
 
-        results = (fgt.get('firewall', 'policy', vdom="root"))
+        results = (fgt.get('firewall', 'policy', vdom=conf["sut"]["vdom"]))
 
         self.assertIsNotNone(re.search(".*first.*second.*", str(results['results'])))
         self.assertIsNone(re.search(".*second.*first.*", str(results['results'])))
 
-        self.assertEqual(fgt.move('firewall', 'policy', vdom="root", mkey="1", where="after", reference_key="2")['status'], 'success')
+        self.assertEqual(
+            fgt.move('firewall', 'policy', vdom=conf["sut"]["vdom"], mkey="1", where="after", reference_key="2")[
+                'status'], 'success')
 
-        results = (fgt.get('firewall', 'policy', vdom="root"))
+        results = (fgt.get('firewall', 'policy', vdom=conf["sut"]["vdom"]))
         self.assertIsNotNone(re.search(".*second.*first.*", str(results['results'])))
         self.assertIsNone(re.search(".*first.*second.*", str(results['results'])))
 

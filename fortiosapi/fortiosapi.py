@@ -31,11 +31,11 @@ import json
 import logging
 import subprocess
 import time
-import urllib
 from collections import OrderedDict
 
 import paramiko
 import requests
+import six.moves.urllib as urllib
 
 from .exceptions import (InvalidLicense, NotLogged)
 
@@ -146,7 +146,7 @@ class FortiOSAPI(object):
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
         LOG.debug("New session header is: %s", self._session.headers)
 
-    def login(self, host, username, password, verify=False, cert=None, timeout=12):
+    def login(self, host, username, password, verify=False, cert=None, timeout=12, vdom="global"):
         self.host = host
         LOG.debug("self._https is %s", self._https)
         if not self._https:
@@ -165,6 +165,7 @@ class FortiOSAPI(object):
             self._session.cert = cert
         # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
         self.timeout = timeout
+        self.timeout = timeout
 
         res = self._session.post(
             url,
@@ -177,17 +178,18 @@ class FortiOSAPI(object):
             self.update_cookie()
             self._logged = True
             try:
-                resp_lic = self.monitor('license', 'status', vdom="global")
+                resp_lic = self.monitor('license', 'status', vdom=vdom)
                 LOG.debug("response monitor license: %s", resp_lic)
                 self._fortiversion = resp_lic['version']
                 # suppose license is valid double check later
                 # Proper validity is complex and different on VM or Hardware
                 self._license = "Valid"
             except Exception as e:
-                raise e
+                pass
+            ## TODO disabling raising an error need to review code behavior entorley
             if "license?viewOnly" in res.content.decode('ascii'):
                 # should work with hardware and vm (content of license/status differs
-                self._license = "Invalid"
+                self._license = "Unknown"
             else:
                 self._license = "Valid"
             return True
