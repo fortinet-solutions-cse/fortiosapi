@@ -31,11 +31,11 @@ import json
 import logging
 import subprocess
 import time
-import urllib
 from collections import OrderedDict
 
 import paramiko
 import requests
+import six.moves.urllib as urllib
 
 from .exceptions import (InvalidLicense, NotLogged)
 
@@ -100,7 +100,7 @@ class FortiOSAPI(object):
         # complex check)
         if self._license == "Invalid":
             LOG.debug("License invalid detected")
-            raise Exception("unauthorized probably an invalid license")
+            raise Exception("invalid license")
 
         # try:
         #    if res['http_status'] is 401:
@@ -146,7 +146,7 @@ class FortiOSAPI(object):
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
         LOG.debug("New session header is: %s", self._session.headers)
 
-    def login(self, host, username, password, verify=False, cert=None, timeout=12):
+    def login(self, host, username, password, verify=False, cert=None, timeout=12, vdom="global"):
         self.host = host
         LOG.debug("self._https is %s", self._https)
         if not self._https:
@@ -165,6 +165,7 @@ class FortiOSAPI(object):
             self._session.cert = cert
         # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
         self.timeout = timeout
+        self.timeout = timeout
 
         res = self._session.post(
             url,
@@ -176,26 +177,13 @@ class FortiOSAPI(object):
             # Update session's csrftoken
             self.update_cookie()
             self._logged = True
-            try:
-                resp_lic = self.monitor('license', 'status', vdom="global")
-                LOG.debug("response monitor license: %s", resp_lic)
-                self._fortiversion = resp_lic['version']
-                # suppose license is valid double check later
-                # Proper validity is complex and different on VM or Hardware
-                self._license = "Valid"
-            except Exception as e:
-                raise e
-            if "license?viewOnly" in res.content.decode('ascii'):
-                # should work with hardware and vm (content of license/status differs
-                self._license = "Invalid"
-            else:
-                self._license = "Valid"
+            LOG.debug("host is %s", host)
+            resp_lic = self.get('system', 'status', vdom=vdom)
+            LOG.debug("response system/status : %s", resp_lic)
+            self._fortiversion = resp_lic['version']
             return True
-        else:
-            self._logged = False
-            raise Exception('login failed')
 
-    def tokenlogin(self, host, apitoken, verify=False, cert=None, timeout=12):
+    def tokenlogin(self, host, apitoken, verify=False, cert=None, timeout=12, vdom="global"):
         # if using apitoken method then login/passwd will be disabled
         self.host = host
         if not self._session:
@@ -218,8 +206,8 @@ class FortiOSAPI(object):
         self.timeout = timeout
 
         LOG.debug("host is %s", host)
-        resp_lic = self.monitor('license', 'status', vdom="global")
-        LOG.debug("response monitor license: %s", resp_lic)
+        resp_lic = self.get('system', 'status', vdom=vdom)
+        LOG.debug("response system/status : %s", resp_lic)
         self._fortiversion = resp_lic['version']
         return True
 
@@ -263,7 +251,7 @@ class FortiOSAPI(object):
         self.logging(res)
 
     def cmdb_url(self, path, name, vdom=None, mkey=None):
-        # all calls will start with a build url so checking login/license here is enough
+
         self.check_session()
         # return builded URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
@@ -280,7 +268,6 @@ class FortiOSAPI(object):
         return url
 
     def mon_url(self, path, name, vdom=None, mkey=None):
-        # all calls will start with a build url so checking login/license here is enough
         self.check_session()
         # return builded URL
         url_postfix = '/api/v2/monitor/' + path + '/' + name
@@ -481,21 +468,26 @@ class FortiOSAPI(object):
                                                 output=results)
         return ''.join(str(results)), ''.join(str(stderr.read().strip()))
 
-    def license(self):
+    def license(self, vdom="root"):
         # license check and update
         # GET /api/v2/monitor/license/status
         # force (exec update-now) with FortiGuard if invalid
         # POST api/v2/monitor/system/fortiguard/update
-        resp = self.monitor('license', 'status')
+        resp = self.monitor('license', 'status', vdom=vdom)
         if resp['status'] == 'success':
+            LOG.debug("response monitor license status: %s", resp)
             return resp
+        # TODO check the return message for Warning or even Invalid (yet)
         else:
             # if license not valid we try to update and check again
-            postresp = self.execute('system', 'fortiguard/update', None, vdom="root")
+            postresp = self.execute('system', 'fortiguard/update', None, vdom=vdom)
             LOG.debug("Return EXECUTE fortiguard %s:", postresp)
             if postresp['status'] == 'success':
                 time.sleep(17)
-                return self.monitor('license', 'status')
+                resp2 = self.monitor('license', 'status', vdom=vdom)
+                LOG.debug("after update response monitor license status: %s", resp2)
+                return resp2
+
 
     def setoverlayconfig(self, yamltree, vdom=None):
         # take a yaml tree with name: path: mkey: structure and recursively set the values.
