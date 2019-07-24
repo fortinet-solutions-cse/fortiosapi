@@ -65,9 +65,8 @@ class FortiOSAPI(object):
         # reference the fortinet version of the targeted product.
         self._session = requests.session()  # use single session
         # persistant and same for all
-        self._session.verify = False
-        # (can be changed to) self._session.verify = '/etc/ssl/certs/' or True
-        # Will be switch to true by default it uses the python CA list in this case
+        self._session.verify = True
+        # (can be changed to) self._session.verify = '/etc/ssl/certs/' or False
         self.timeout = 120
         self.cert = None
         self._apitoken = None
@@ -146,7 +145,7 @@ class FortiOSAPI(object):
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
         LOG.debug("New session header is: %s", self._session.headers)
 
-    def login(self, host, username, password, verify=False, cert=None, timeout=12, vdom="global"):
+    def login(self, host, username, password, verify=True, cert=None, timeout=12, vdom="global"):
         self.host = host
         LOG.debug("self._https is %s", self._https)
         if not self._https:
@@ -158,8 +157,7 @@ class FortiOSAPI(object):
         if not self._session:
             self._session = requests.session()
             # may happen if logout is called
-        if verify is not False:
-            self._session.verify = verify
+        self._session.verify = verify
 
         if cert is not None:
             self._session.cert = cert
@@ -183,7 +181,7 @@ class FortiOSAPI(object):
             self._fortiversion = resp_lic['version']
             return True
 
-    def tokenlogin(self, host, apitoken, verify=False, cert=None, timeout=12, vdom="global"):
+    def tokenlogin(self, host, apitoken, verify=True, cert=None, timeout=12, vdom="global"):
         # if using apitoken method then login/passwd will be disabled
         self.host = host
         if not self._session:
@@ -197,8 +195,7 @@ class FortiOSAPI(object):
         else:
             self.url_prefix = 'https://' + self.host
 
-        if verify is not False:
-            self._session.verify = verify
+        self._session.verify = verify
 
         if cert is not None:
             self._session.cert = cert
