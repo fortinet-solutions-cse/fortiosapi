@@ -98,7 +98,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                 if rr > 2:
                     child.sendline('end\n')
                     logged = False
-            if r == 1 or r == 2:
+            if r in (1,2):
                 child.sendline('\n')
                 child.expect(['.* #', '.* $'])
                 logged = True
