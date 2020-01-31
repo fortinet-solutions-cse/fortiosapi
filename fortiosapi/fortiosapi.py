@@ -56,7 +56,7 @@ logging.getLogger(__name__).addHandler(NullHandler())
 LOG = logging.getLogger('fortiosapi')
 
 
-class FortiOSAPI(object):
+class FortiOSAPI:
     def __init__(self):
         self.host = None
         self._https = True
