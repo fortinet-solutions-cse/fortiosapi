@@ -92,7 +92,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                     child.send(conf["sut"]["passwd"] + "\n")
                     child.expect(['.* #', '.* $'], timeout=8)
                     logged = True
-                if rr == 1 or rr == 2:
+                if rr in (1,2):
                     child.sendline('\n')
                     logged = True
                 if rr > 2:
