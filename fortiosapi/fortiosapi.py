@@ -39,6 +39,11 @@ import six.moves.urllib as urllib
 
 from .exceptions import (InvalidLicense, NotLogged)
 
+try:
+    import urllib.parse as urlencoding
+except:
+    import urllib as urlencoding
+
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
@@ -253,7 +258,7 @@ class FortiOSAPI(object):
         # return builded URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
         if mkey:
-            url_postfix = url_postfix + '/' + str(mkey)
+            url_postfix = url_postfix + '/' + urlencoding.quote(str(mkey), safe='')
         if vdom:
             LOG.debug("vdom is: %s", vdom)
             if vdom == "global":
@@ -269,7 +274,7 @@ class FortiOSAPI(object):
         # return builded URL
         url_postfix = '/api/v2/monitor/' + path + '/' + name
         if mkey:
-            url_postfix = url_postfix + '/' + str(mkey)
+            url_postfix = url_postfix + '/' + urlencoding.quote(str(mkey), safe='')
         if vdom:
             LOG.debug("vdom is: %s", vdom)
             if vdom == "global":
