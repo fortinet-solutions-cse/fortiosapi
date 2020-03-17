@@ -18,7 +18,7 @@
 
 ###################################################################
 #
-# fortiosapi.py aims at simplyfing the configuration and
+# fortiosapi.py aims at simplifying the configuration and
 # integration of Fortgate configuration using the restapi
 #
 # A Python module to abstract configuration using FortiOS REST API
@@ -167,7 +167,6 @@ class FortiOSAPI(object):
         if cert is not None:
             self._session.cert = cert
         # set the default at 12 see request doc for details http://docs.python-requests.org/en/master/user/advanced/
-        self.timeout = timeout
         self.timeout = timeout
 
         res = self._session.post(
@@ -498,7 +497,7 @@ class FortiOSAPI(object):
 
         yamltreel3 = OrderedDict()
         yamltreel3 = copy.deepcopy(yamltree)
-        LOG.debug("intial yamltreel3 is %s ", yamltreel3)
+        LOG.debug("initial yamltreel3 is %s ", yamltreel3)
         for name in yamltree.copy():
             for path in yamltree[name]:
                 for k in yamltree[name][path].copy():
@@ -511,7 +510,7 @@ class FortiOSAPI(object):
                     else:
                         # Should then be a string only so remove from yamltreel3
                         del yamltreel3[name][path]
-        # yamltree and yamltreel3 are now differents
+        # yamltree and yamltreel3 are now different
         LOG.debug("after yamltree is %s ", yamltree)
         LOG.debug("after yamltreel3 is %s ", yamltreel3)
         restree = False
