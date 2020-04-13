@@ -45,7 +45,7 @@ Order of commands should be preserved.
 ## Login methods
 User/password
 
-Token (api key) documented in the Fortigate API Spec that you can find if having an account on http://fndn.fortinet.com/
+Token (api key) documented in the Fortigate API Spec that you can find if having an account on http://fndn.fortinet.net/
 
 ## Multi vdom
 In multi vdom environment use vdom=global in the API call.
