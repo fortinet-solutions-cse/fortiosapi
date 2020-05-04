@@ -8,6 +8,11 @@ Compare to the REST API there a few add-ons:
  try to post and if failing will put and collect the mkey directly.
  The lib will also find the mkey for you 
  
+##Examples
+
+You can find and propose examples here: https://github.com/fortinet-solutions-cse/fortiosapi-examples 
+Separated to avoid cluttering those who integrate the fortiosapi module.
+ 
 ## New overlay configuration
 
 You now have an overlayconfig call which can be pass a complex configuration change in yaml. 
