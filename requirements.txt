@@ -1,3 +1,4 @@
 pexpect
 nose
 packaging
+oyaml
