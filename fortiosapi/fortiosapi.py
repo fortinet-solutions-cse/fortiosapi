@@ -239,7 +239,7 @@ class FortiOSAPI(object):
             try:
                 mkey = data[keyname]
             except KeyError:
-                LOG.warning("mkey %s not set in the data", mkey)
+                LOG.warning("mkey not set in the data")
                 return None
             return mkey
 
