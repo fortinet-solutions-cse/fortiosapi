@@ -29,12 +29,13 @@ import copy
 import json
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
-import paramiko
-import requests
-import six.moves.urllib as urllib
 import subprocess
 import time
 from collections import OrderedDict
+
+import paramiko
+import requests
+import six.moves.urllib as urllib
 
 from .exceptions import (InvalidLicense, NotLogged)
 
@@ -213,7 +214,10 @@ class FortiOSAPI:
         LOG.debug("host is %s", host)
         resp_lic = self.get('system', 'status', vdom=vdom)
         LOG.debug("response system/status : %s", resp_lic)
-        self._fortiversion = resp_lic['version']
+        try:
+            self._fortiversion = resp_lic['version']
+        except TypeError:
+            raise NotLogged
         return True
 
     def get_version(self):
