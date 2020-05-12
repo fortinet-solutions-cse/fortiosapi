@@ -194,7 +194,6 @@ class FortiOSAPI(object):
             self._session = requests.session()
             # may happen at start or if logout is called
         self._session.headers.update({'Authorization': 'Bearer ' + apitoken})
-        self._logged = True
         LOG.debug("self._https is %s", self._https)
         if not self._https:
             self.url_prefix = 'http://' + self.host
@@ -212,6 +211,7 @@ class FortiOSAPI(object):
         resp_lic = self.get('system', 'status', vdom=vdom)
         LOG.debug("response system/status : %s", resp_lic)
         self._fortiversion = resp_lic['version']
+        self._logged = True
         return True
 
     def get_version(self):
