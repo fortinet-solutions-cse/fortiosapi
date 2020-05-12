@@ -29,13 +29,12 @@ import copy
 import json
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
-import subprocess
-import time
-from collections import OrderedDict
-
 import paramiko
 import requests
 import six.moves.urllib as urllib
+import subprocess
+import time
+from collections import OrderedDict
 
 from .exceptions import (InvalidLicense, NotLogged)
 
@@ -81,7 +80,8 @@ class FortiOSAPI(object):
     @staticmethod
     def logging(response):
         try:
-            LOG.debug("response content type : %s", response.headers['content-type'])
+            LOG.debug("response content type : %s",
+                      response.headers['content-type'])
             LOG.debug("Request : %s on url : %s  ", response.request.method,
                       response.request.url)
             LOG.debug("Response : http code %s  reason : %s  ",
@@ -123,7 +123,8 @@ class FortiOSAPI(object):
         except:
             # that means res.content does not exist (error in general)
             # in that case return raw result TODO fix that with a loop in case of global
-            LOG.warning("in formatresponse res.content does not exist, should not occur")
+            LOG.warning(
+                "in formatresponse res.content does not exist, should not occur")
             return res
 
     def check_session(self):
@@ -258,7 +259,8 @@ class FortiOSAPI(object):
         # return builded URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
         if mkey:
-            url_postfix = url_postfix + '/' + urlencoding.quote(str(mkey), safe='')
+            url_postfix = url_postfix + '/' + \
+                          urlencoding.quote(str(mkey), safe='')
         if vdom:
             LOG.debug("vdom is: %s", vdom)
             if vdom == "global":
@@ -274,7 +276,8 @@ class FortiOSAPI(object):
         # return builded URL
         url_postfix = '/api/v2/monitor/' + path + '/' + name
         if mkey:
-            url_postfix = url_postfix + '/' + urlencoding.quote(str(mkey), safe='')
+            url_postfix = url_postfix + '/' + \
+                          urlencoding.quote(str(mkey), safe='')
         if vdom:
             LOG.debug("vdom is: %s", vdom)
             if vdom == "global":
@@ -355,7 +358,8 @@ class FortiOSAPI(object):
         LOG.debug("in POST function")
         if mkey:
             mkeyname = self.get_mkeyname(path, name, vdom)
-            LOG.debug("in post calculated mkeyname : %s mkey: %s ", mkeyname, mkey)
+            LOG.debug("in post calculated mkeyname : %s mkey: %s ",
+                      mkeyname, mkey)
             # if mkey is forced on the function call then we change it in the data
             # even if inconsistent data/mkey is passed
             data[mkeyname] = mkey
@@ -482,14 +486,15 @@ class FortiOSAPI(object):
         # TODO check the return message for Warning or even Invalid (yet)
         else:
             # if license not valid we try to update and check again
-            postresp = self.execute('system', 'fortiguard/update', None, vdom=vdom)
+            postresp = self.execute(
+                'system', 'fortiguard/update', None, vdom=vdom)
             LOG.debug("Return EXECUTE fortiguard %s:", postresp)
             if postresp['status'] == 'success':
                 time.sleep(17)
                 resp2 = self.monitor('license', 'status', vdom=vdom)
-                LOG.debug("after update response monitor license status: %s", resp2)
+                LOG.debug(
+                    "after update response monitor license status: %s", resp2)
                 return resp2
-
 
     def setoverlayconfig(self, yamltree, vdom=None):
         # take a yaml tree with name: path: mkey: structure and recursively set the values.
@@ -520,9 +525,11 @@ class FortiOSAPI(object):
         # Set the standard value on top of nodes first (example if setting firewall mode it must be done before pushing a rule l3)
         for name in yamltree:
             for path in yamltree[name]:
-                LOG.debug("iterate set in yamltree @ name: %s path %s value %s", name, path, yamltree[name][path])
+                LOG.debug("iterate set in yamltree @ name: %s path %s value %s",
+                          name, path, yamltree[name][path])
                 if yamltree[name][path]:
-                    res = self.set(name, path, data=yamltree[name][path], vdom=vdom)
+                    res = self.set(
+                        name, path, data=yamltree[name][path], vdom=vdom)
                     if res['status'] == "success":
                         restree = True
                     else:
@@ -533,7 +540,8 @@ class FortiOSAPI(object):
             for path in yamltreel3[name]:
                 for k in yamltreel3[name][path].copy():
                     node = yamltreel3[name][path][k]
-                    LOG.debug("iterate set in yamltreel3 @ node: %s value %s ", k, yamltreel3[name][path][k])
+                    LOG.debug(
+                        "iterate set in yamltreel3 @ node: %s value %s ", k, yamltreel3[name][path][k])
                     res = self.set(name, path, mkey=k, data=node, vdom=vdom)
                     if res['status'] == "success":
                         restree = True
