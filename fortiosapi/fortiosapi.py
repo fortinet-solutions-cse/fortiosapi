@@ -185,6 +185,9 @@ class FortiOSAPI:
             LOG.debug("response system/status : %s", resp_lic)
             self._fortiversion = resp_lic['version']
             return True
+        else:
+            self._logged = False
+            raise NotLogged
 
     def tokenlogin(self, host, apitoken, verify=True, cert=None, timeout=12, vdom="global"):
         # if using apitoken method then login/passwd will be disabled
