@@ -62,6 +62,9 @@ LOG = logging.getLogger('fortiosapi')
 
 
 class FortiOSAPI:
+    """
+    Global class / example for FortiOSAPI
+    """
     def __init__(self):
         self.host = None
         self._https = True
@@ -428,13 +431,15 @@ class FortiOSAPI:
     # may add a force option to delete and redo if troubles.
     def set(self, path, name, data, mkey=None, vdom=None, parameters=None):
         """
+        Fortios API definition is at https://fndn.fortinet.net
         Function targeting config management. You pass the data of the part of cmdb you want to be set and the function
-        will try POST and PUT to ensure your modification go through
+        will try POST and PUT to ensure your modification go through.
 
         :param path: first part of the Fortios API URL like
-        :param name:  https://myfortigate:8040/api/v2/cmdb/<path>/<name>
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
         :param data: json containing the param/values of the object to be set
-        :param mkey:
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
         :param vdom:
         :param parameters:
         :return:
