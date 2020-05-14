@@ -36,6 +36,9 @@ from fortiosapi import FortiOSAPI
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+# Disable ssl verification warnings (be responsible)
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')

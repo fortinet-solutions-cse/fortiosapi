@@ -427,6 +427,18 @@ class FortiOSAPI:
     # Set will try to put if err code is 424 will try put (ressource exists)
     # may add a force option to delete and redo if troubles.
     def set(self, path, name, data, mkey=None, vdom=None, parameters=None):
+        """
+        Function targeting config management. You pass the data of the part of cmdb you want to be set and the function
+        will try POST and PUT to ensure your modification go through
+
+        :param path: first part of the Fortios API URL like
+        :param name:  https://myfortigate:8040/api/v2/cmdb/<path>/<name>
+        :param data: json containing the param/values of the object to be set
+        :param mkey:
+        :param vdom:
+        :param parameters:
+        :return:
+        """
         # post with mkey will return a 404 as the next level is not there yet
         if not mkey:
             mkey = self.get_mkey(path, name, data, vdom=vdom)
