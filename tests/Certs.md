@@ -1,4 +1,4 @@
-# Explanation about certificates to test validity with the api and auth with cert
+### Explanation about certificates to test validity with the api and auth with cert
 
 From: https://cookbook.fortinet.com/preventing-certificate-warnings-self-signed-60/
 ```bash
