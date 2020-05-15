@@ -253,7 +253,7 @@ class FortiOSAPI:
             return mkey
 
     def logout(self):
-        url = str(self.url_prefix) + '/logout'
+        url = self.url_prefix + '/logout'
         res = self._session.post(url, timeout=self.timeout)
         self._session.close()
         self._session.cookies.clear()
