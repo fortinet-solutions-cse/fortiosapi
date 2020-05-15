@@ -1,0 +1,17 @@
+sut:
+  virshurl: ""
+  # could be qemu+ssh://ip/system
+  ip: 40domain.com
+  vmname: "fostest"
+  vdom: "root"
+  user: "admin"
+  # Password is mandatory for vish console access
+  passwd: ""
+  porta: "port1"
+  portb: "port2"
+  # ssl off for eva
+  ssl: "yes"
+  verify: False
+  api-key: "9fq6d61gg7fsk5dft0xx9sm4sphzyk"
+  clientcert: /home/thomas/src/fortiosapi/MyClient1.pem
+  clientkey: /home/thomas/src/fortiosapi/MyClient1.key
