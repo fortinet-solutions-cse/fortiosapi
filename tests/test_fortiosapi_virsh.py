@@ -259,19 +259,24 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     def test_webfilteripsv_set(self):
         # This call does not have mkey
-        data = {
-            "device": conf["sut"]["porta"],
-            "distance": "4",
-            "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-            "geo-filter": ""
-        }
+        if Version(fgt.get_version()) >= Version('6.0'):
+            data = {
+                "device": conf["sut"]["porta"],
+                "distance": "4",
+                "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                "geo-filter": ""
+            }
 
-        # TODO delete the setting from console first
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                         'success')
-        # doing a second time to verify set is behaving correctly (imdepotent)
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                         'success')
+            # TODO delete the setting from console first
+            self.assertEqual(
+                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                'success')
+            # doing a second time to verify set is behaving correctly (imdepotent)
+            self.assertEqual(
+                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                'success')
+        else:
+            self.assertTrue(True, "not supported before 6.0")
 
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom=conf["sut"]["vdom"])['status'],
@@ -285,8 +290,12 @@ class TestFortinetRestAPI(unittest.TestCase):
             parameters = {'destination': 'file',
                           'scope': 'vdom',
                           'vdom': conf["sut"]["vdom"]}
-        self.assertEqual(
-            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code, 200)
+        if Version(fgt.get_version()) >= Version('6.0'):
+            self.assertEqual(
+                fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
+                200)
+        else:
+            self.assertTrue(True, "not supported before 6.0")
 
     def test_setoverlayconfig(self):
         yamldata = '''
