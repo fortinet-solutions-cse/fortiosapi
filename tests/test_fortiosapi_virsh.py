@@ -6,20 +6,6 @@ import unittest
 
 import oyaml as yaml
 import pexpect
-from packaging.version import Version
-
-###################################################################
-#
-# fortiosapi.py unit test rely on a local VM so can verify from
-# the console (pexpect)
-# user must be able to do all kvm/qemu function
-# parameters in virsh.yaml or a file as a conf
-# will use a fortios.qcow2 image create the vm and destroy it at the
-# end this will allow to test a list of versions/products automated
-#
-###################################################################
-from fortiosapi import FortiOSAPI
-
 # Copyright 2015 Fortinet, Inc.
 #
 # All Rights Reserved
@@ -38,6 +24,20 @@ from fortiosapi import FortiOSAPI
 #
 # Disable ssl verification warnings (be responsible)
 import urllib3
+from packaging.version import Version
+
+###################################################################
+#
+# fortiosapi.py unit test rely on a local VM so can verify from
+# the console (pexpect)
+# user must be able to do all kvm/qemu function
+# parameters in virsh.yaml or a file as a conf
+# will use a fortios.qcow2 image create the vm and destroy it at the
+# end this will allow to test a list of versions/products automated
+#
+###################################################################
+from fortiosapi import FortiOSAPI
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -67,7 +67,6 @@ class TestFortinetRestAPI(unittest.TestCase):
     # Note that, for Python 3 compatibility reasons, we are using spawnu and
     # importing unicode_literals (above). spawnu accepts Unicode input and
     # unicode_literals makes all string literals in this script Unicode by default.
-    vdom = "root"
 
     def setUp(self):
         pass
@@ -197,10 +196,10 @@ class TestFortinetRestAPI(unittest.TestCase):
             "device": conf["sut"]["porta"],
             "gateway": "192.168.40.252",
         }
-        # ensure the seq 8 for route is not present cmd will be ignored on non vdom
+        # ensure the seq 8 for route is not present cmd will be ignored on non multi-vdom
         cmds = '''end
         config vdom
-        edit root
+        edit ''' + conf["sut"]["vdom"] + '''
         config router static
         delete 8
         end
@@ -209,7 +208,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         self.assertEqual(fgt.post('router', 'static', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # vdom cmds will be ignored on non vdom
         cmds = '''config vdom
-        edit root
+        edit ''' + conf["sut"]["vdom"] + '''
         show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
