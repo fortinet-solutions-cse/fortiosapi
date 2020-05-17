@@ -190,6 +190,7 @@ class FortiOSAPI:
             LOG.debug("response system/status : %s", resp_lic)
             try:
                 self._fortiversion = resp_lic['version']
+                return True
             except KeyError:
                 if resp_lic['status'] == 'success':
                     self._logged = True
