@@ -57,7 +57,7 @@ conf = yaml.load(open(virshconffile, 'r'), Loader=yaml.SafeLoader)
 # child.logfile = sys.stdout
 # TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
-logpexecpt = open("child.log", "wb")
+logpexecpt = open("virsconsole.log", "wb")
 child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
                       logfile=logpexecpt)
 child.delaybeforesend = 0.3
@@ -81,6 +81,7 @@ class TestFortinetRestAPI(unittest.TestCase):
 
         # Trick: child.sendline(' execute factoryreset keepvmlicense')
 
+        child.sendline('\r')
         child.sendline('\r')
         # look for prompt or login
 
