@@ -185,8 +185,8 @@ class FortiOSAPI:
             self.update_cookie()
             self._logged = True
             LOG.debug("host is %s", host)
-            #            resp_lic = self.get('system', 'status', vdom=vdom)
-            resp_lic = self.monitor('system', 'vdom-resource', mkey='select', vdom=vdom)
+            resp_lic = self.get('system', 'status', vdom=vdom)
+            #resp_lic = self.monitor('system', 'vdom-resource', mkey='select', vdom=vdom)
             LOG.debug("response system/status : %s", resp_lic)
             try:
                 self._fortiversion = resp_lic['version']
