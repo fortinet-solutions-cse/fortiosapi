@@ -467,12 +467,12 @@ class FortiOSAPI:
         # commands is a multiline string using the ''' string ''' format
         try:
             stdin, stdout, stderr = client.exec_command(cmds)
+            retcode = stdout.channel.recv_exit_status()
         except Exception:
             LOG.debug("exec_command failed")
-            raise subprocess.CalledProcessError(cmd=cmds)
+            raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds)
         LOG.debug("ssh command in:  %s out: %s err: %s ",
                   stdin, stdout, stderr)
-        retcode = stdout.channel.recv_exit_status()
         LOG.debug("Paramiko return code : %s ", retcode)
         client.close()  # @TODO re-use connections
         if retcode > 0:
