@@ -41,7 +41,7 @@ from .exceptions import (InvalidLicense, NotLogged)
 
 try:
     import urllib.parse as urlencoding
-except:
+except Exception:
     import urllib as urlencoding
 
 try:  # Python 2.7+
@@ -77,6 +77,7 @@ class FortiOSAPI:
         self._apitoken = None
         self._license = None
         self.url_prefix = None
+        self.port = None
 
     @staticmethod
     def logging(response):
@@ -88,7 +89,7 @@ class FortiOSAPI:
             LOG.debug("Response : http code %s  reason : %s  ",
                       response.status_code, response.reason)
             LOG.debug("raw response:  %s ", response.content)
-        except:
+        except Exception:
             LOG.warning("method errors in request when global")
 
     @staticmethod
@@ -121,7 +122,7 @@ class FortiOSAPI:
                 LOG.debug("content res: %s", res.content)
                 resp = json.loads(res.content.decode('utf-8'))
             return resp
-        except:
+        except Exception:
             # that means res.content does not exist (error in general)
             # in that case return raw result TODO fix that with a loop in case of global
             LOG.warning(
@@ -152,13 +153,16 @@ class FortiOSAPI:
                 LOG.debug("csrftoken after update  : %s ", csrftoken)
         LOG.debug("New session header is: %s", self._session.headers)
 
-    def login(self, host, username, password, verify=True, cert=None, timeout=12, vdom="global"):
+    def login(self, host, username, password, verify=True, cert=None, timeout=12, vdom="global",
+              port=None):
         self.host = host
         LOG.debug("self._https is %s", self._https)
+        if port:
+            self.port = port
         if not self._https:
-            self.url_prefix = 'http://' + self.host
+            self.url_prefix = 'http://' + self.host + (':' + str(self.port) if self.port else '')
         else:
-            self.url_prefix = 'https://' + self.host
+            self.url_prefix = 'https://' + self.host + (':' + str(self.port) if self.port else '')
 
         url = self.url_prefix + '/logincheck'
         if not self._session:
@@ -190,7 +194,8 @@ class FortiOSAPI:
             self._logged = False
             raise NotLogged
 
-    def tokenlogin(self, host, apitoken, verify=True, cert=None, timeout=12, vdom="global"):
+    def tokenlogin(self, host, apitoken, verify=True, cert=None, timeout=12, vdom="global",
+                   port=None):
         # if using apitoken method then login/passwd will be disabled
         self.host = host
         if not self._session:
@@ -199,10 +204,14 @@ class FortiOSAPI:
         self._session.headers.update({'Authorization': 'Bearer ' + apitoken})
         self._logged = True
         LOG.debug("self._https is %s", self._https)
+        if port:
+            self.port = port
         if not self._https:
-            self.url_prefix = 'http://' + self.host
+            self.url_prefix =\
+                'http://' + self.host + (':' + str(self.port) if str(self.port) else '')
         else:
-            self.url_prefix = 'https://' + self.host
+            self.url_prefix =\
+                'https://' + self.host + (':' + str(self.port) if str(self.port) else '')
 
         self._session.verify = verify
 
@@ -262,7 +271,7 @@ class FortiOSAPI:
     def cmdb_url(self, path, name, vdom=None, mkey=None):
 
         self.check_session()
-        # return builded URL
+        # return constructed URL
         url_postfix = '/api/v2/cmdb/' + path + '/' + name
         if mkey:
             url_postfix = url_postfix + '/' + \
@@ -458,10 +467,9 @@ class FortiOSAPI:
         # commands is a multiline string using the ''' string ''' format
         try:
             stdin, stdout, stderr = client.exec_command(cmds)
-        except:
+        except Exception:
             LOG.debug("exec_command failed")
-            raise subprocess.CalledProcessError(returncode=retcode, cmd=cmds,
-                                                output=output)
+            raise subprocess.CalledProcessError(cmd=cmds)
         LOG.debug("ssh command in:  %s out: %s err: %s ",
                   stdin, stdout, stderr)
         retcode = stdout.channel.recv_exit_status()
