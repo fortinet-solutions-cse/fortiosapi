@@ -186,7 +186,7 @@ class FortiOSAPI:
             self._logged = True
             LOG.debug("host is %s", host)
             param = "{ vdom = " + vdom + " }"
-            resp_lic = self.monitor('license', 'status‘, parameters = param)
+            resp_lic = self.monitor('license', 'status', parameters = param)
             LOG.debug("response system/status : %s", resp_lic)
             try:
                 self._fortiversion = resp_lic['version']
