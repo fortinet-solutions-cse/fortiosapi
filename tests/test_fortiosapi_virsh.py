@@ -197,14 +197,22 @@ class TestFortinetRestAPI(unittest.TestCase):
             "device": conf["sut"]["porta"],
             "gateway": "192.168.40.252",
         }
-        # ensure the seq 8 for route is not present cmd will be ignored on non multi-vdom
-        cmds = '''end
-        config vdom
-        edit ''' + conf["sut"]["vdom"] + '''
-        config router static
-        delete 8
-        end
-        end'''
+        # ensure the seq 8 for route is not present cmd will be ignored
+        # assume that if vdom is root then multi-vdom is not activated.
+        if  conf["sut"]["vdom"] =="root":
+            cmds = '''end
+            config router static
+            delete 8
+            end
+            '''
+        else:
+            cmds = '''end
+            config vdom
+            edit ''' + conf["sut"]["vdom"] + '''
+            config router static
+            delete 8
+            end
+            end'''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router', 'static', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # vdom cmds will be ignored on non vdom
