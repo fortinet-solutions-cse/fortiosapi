@@ -185,7 +185,7 @@ class FortiOSAPI:
             self.update_cookie()
             self._logged = True
             LOG.debug("host is %s", host)
-            param={ "vdom"= vdom}
+            param={ "vdom" = vdom}
             resp_lic = self.monitor('license', 'status‘, parameters = param)
             LOG.debug("response system/status : %s", resp_lic)
             try:
