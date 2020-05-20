@@ -3,13 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to fortiosapi's documentation!
-======================================
+Fortiosapi's documentation!
+===========================
+You will find here the overall documentation of the opensource fortiosapi module for Fortigate/Fortios devices
+Available on pypi.
+
+
 .. automodule:: fortiosapi
     :members:
-
-.. autoclass:: FortiOSAPI
-   :members:
 
 
 .. toctree::
@@ -17,10 +18,17 @@ Welcome to fortiosapi's documentation!
    :caption: Contents:
 
 .. toctree::
+   :maxdepth: 2
+   :caption: Module:
+
+.. autoclass:: FortiOSAPI
+   :members:
+
+.. toctree::
    :maxdepth: 1
    :caption: Docs:
 
-   docs/README.md
+   README.md
    HACKING.md
 
 Indices and tables
