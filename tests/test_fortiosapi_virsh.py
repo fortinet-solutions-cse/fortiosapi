@@ -18,11 +18,13 @@
 import logging
 import os
 import re
-import unittest
 import time
+import unittest
 
 import oyaml as yaml
 import pexpect
+# Disable ssl verification warnings (be responsible)
+import urllib3
 from packaging.version import Version
 
 ###################################################################
@@ -37,9 +39,6 @@ from packaging.version import Version
 ###################################################################
 from fortiosapi import FortiOSAPI
 
-
-# Disable ssl verification warnings (be responsible)
-import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -99,16 +98,17 @@ class TestFortinetRestAPI(unittest.TestCase):
             r = child.expect(['.* login:', '.* #', '.* $', 'Escape character'])
             if r == 0:
                 child.send(conf["sut"]["user"] + "\n")
-                rr = child.expect(["Password:", '.* #', '.* $'], timeout=6)
+                rr = child.expect(["Password:", '.* #', '.* $'], timeout=10)
                 if rr == 0:
                     child.send(conf["sut"]["passwd"] + "\n")
-                    child.expect(['.* #', '.* $'], timeout=8)
+                    child.expect(['.* #', '.* $'], timeout=9)
                     logged = True
                 if rr in (1,2):
                     child.sendline('\n')
                     logged = True
                 if rr > 2:
                     child.sendline('end\n')
+                    child.sendline('exit\n')
                     logged = False
             if r in (1,2):
                 child.sendline('\n')
@@ -237,6 +237,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         # vdom cmds will be ignored on non vdom
         cmds = '''config vdom
         edit root
+        
         show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
@@ -293,13 +294,17 @@ class TestFortinetRestAPI(unittest.TestCase):
             "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
             "geo-filter": ""
         }
-
-        # TODO delete the setting from console first
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                         'success')
-        # doing a second time to verify set is behaving correctly (imdepotent)
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                         'success')
+        if Version(fgt.get_version()) > Version('6.0'):
+            # TODO delete the setting from console first
+            self.assertEqual(
+                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                'success')
+            # doing a second time to verify set is behaving correctly (imdepotent)
+            self.assertEqual(
+                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                'success')
+        else:
+            self.assertTrue(True, "not supported before 6.0")
 
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom=conf["sut"]["vdom"])['status'],
@@ -313,9 +318,15 @@ class TestFortinetRestAPI(unittest.TestCase):
             parameters = {'destination': 'file',
                           'scope': 'vdom',
                           'vdom': conf["sut"]["vdom"]}
+        if Version(fgt.get_version()) > Version('6.0'):
+            http_result = 200
+        else:
+            http_result = 403
         self.assertEqual(
-            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code, 200)
+            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
+            http_result)
     ##TODO add an upload certificat test (no issues with messing up config)
+
     def test_setoverlayconfig(self):
         yamldata = '''
             antivirus:
