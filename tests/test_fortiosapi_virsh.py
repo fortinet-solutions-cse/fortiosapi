@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import unittest
+import time
 
 import oyaml as yaml
 import pexpect
@@ -126,7 +127,6 @@ class TestFortinetRestAPI(unittest.TestCase):
             except:
                 r = 99
                 result = False
-                pass
             if r != 0:
                 result = False
         return result
