@@ -175,7 +175,14 @@ class TestFortinetRestAPI(unittest.TestCase):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program
         # can include changing login/vdom passwd on the same session
         # Check the  license validity/force a license update and wait in license call..
-        self.test_is_license_valid()
+        if Version(fgt.get_version()) > Version('5.6'):
+            try:
+                self.assertTrue(fgt.license()['results']['vm']['status'] == "vm_valid" or "vm_eval")
+            except KeyError:
+                time.sleep(35)
+        else:
+            self.assertTrue(True, "not supported before 5.6")
+            time.sleep(35)
         # do a logout then login again
         # TODO a expcetion check
         self.assertEqual(fgt.logout(), None)
@@ -299,7 +306,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                          'success')
 
     def test_downloadconfig(self):
-        if conf["sut"]["vdom"] is "global":
+        if conf["sut"]["vdom"] == "global":
             parameters = {'destination': 'file',
                           'scope': 'global'}
         else:
