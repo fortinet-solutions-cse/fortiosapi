@@ -174,9 +174,11 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_01logout_login(self):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program
         # can include changing login/vdom passwd on the same session
-        self.assertEqual(fgt.logout(), None)
         # Check the  license validity/force a license update and wait in license call..
         self.test_is_license_valid()
+        # do a logout then login again
+        # TODO a expcetion check
+        self.assertEqual(fgt.logout(), None)
         self.test_00login()
 
     def test_setaccessperm(self):
