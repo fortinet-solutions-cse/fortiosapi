@@ -1,11 +1,4 @@
 #!/usr/bin/env python
-import logging
-import os
-import re
-import unittest
-
-import oyaml as yaml
-import pexpect
 # Copyright 2015 Fortinet, Inc.
 #
 # All Rights Reserved
@@ -22,8 +15,13 @@ import pexpect
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-# Disable ssl verification warnings (be responsible)
-import urllib3
+import logging
+import os
+import re
+import unittest
+
+import oyaml as yaml
+import pexpect
 from packaging.version import Version
 
 ###################################################################
@@ -38,6 +36,9 @@ from packaging.version import Version
 ###################################################################
 from fortiosapi import FortiOSAPI
 
+
+# Disable ssl verification warnings (be responsible)
+import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -57,7 +58,7 @@ conf = yaml.load(open(virshconffile, 'r'), Loader=yaml.SafeLoader)
 # child.logfile = sys.stdout
 # TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
-logpexecpt = open("virsconsole.log", "wb")
+logpexecpt = open("child.log", "wb")
 child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
                       logfile=logpexecpt)
 child.delaybeforesend = 0.3
@@ -67,12 +68,20 @@ class TestFortinetRestAPI(unittest.TestCase):
     # Note that, for Python 3 compatibility reasons, we are using spawnu and
     # importing unicode_literals (above). spawnu accepts Unicode input and
     # unicode_literals makes all string literals in this script Unicode by default.
+    vdom = "root"
 
     def setUp(self):
         pass
 
     @staticmethod
     def sendtoconsole(cmds, in_output=" "):
+        """
+        Send config cli command through the virsh console in order to autoverify what the API calls does or
+        prepare the Fortigate under test.
+        :param cmds:
+        :param in_output:
+        :return:
+        """
         # Use pexpect to interact with the console
         # check the prompt then send output
         # return True if commands sent and if output found
@@ -81,7 +90,6 @@ class TestFortinetRestAPI(unittest.TestCase):
 
         # Trick: child.sendline(' execute factoryreset keepvmlicense')
 
-        child.sendline('\r')
         child.sendline('\r')
         # look for prompt or login
 
@@ -125,7 +133,15 @@ class TestFortinetRestAPI(unittest.TestCase):
 
 
     def test_00login(self):
-        # adapt if using eval license or not
+        """
+        Login to the Fortigate under test.
+        User/password or API TOKEN are in config file virsh.yaml
+        Can be changed by environment variable VIRSH_CONF_FILE
+        If API TOKEN is present in the test conf file then we do API login
+        If not do user/password
+        :return:
+            Success/Failure this is a unit test
+        """
         if conf["sut"]["ssl"] == "yes":
             fgt.https('on')
         else:
@@ -159,6 +175,8 @@ class TestFortinetRestAPI(unittest.TestCase):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program
         # can include changing login/vdom passwd on the same session
         self.assertEqual(fgt.logout(), None)
+        # Check the  license validity/force a license update and wait in license call..
+        self.test_is_license_valid()
         self.test_00login()
 
     def test_setaccessperm(self):
@@ -197,27 +215,19 @@ class TestFortinetRestAPI(unittest.TestCase):
             "device": conf["sut"]["porta"],
             "gateway": "192.168.40.252",
         }
-        # ensure the seq 8 for route is not present cmd will be ignored
-        # assume that if vdom is root then multi-vdom is not activated.
-        if  conf["sut"]["vdom"] =="root":
-            cmds = '''end
-            config router static
-            delete 8
-            end
-            '''
-        else:
-            cmds = '''end
-            config vdom
-            edit ''' + conf["sut"]["vdom"] + '''
-            config router static
-            delete 8
-            end
-            end'''
+        # ensure the seq 8 for route is not present cmd will be ignored on non vdom
+        cmds = '''end
+        config vdom
+        edit root
+        config router static
+        delete 8
+        end
+        end'''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router', 'static', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # vdom cmds will be ignored on non vdom
         cmds = '''config vdom
-        edit ''' + conf["sut"]["vdom"] + '''
+        edit root
         show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
         self.assertTrue(res)
@@ -268,24 +278,19 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     def test_webfilteripsv_set(self):
         # This call does not have mkey
-        if Version(fgt.get_version()) >= Version('6.0'):
-            data = {
-                "device": conf["sut"]["porta"],
-                "distance": "4",
-                "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-                "geo-filter": ""
-            }
+        data = {
+            "device": conf["sut"]["porta"],
+            "distance": "4",
+            "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+            "geo-filter": ""
+        }
 
-            # TODO delete the setting from console first
-            self.assertEqual(
-                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                'success')
-            # doing a second time to verify set is behaving correctly (imdepotent)
-            self.assertEqual(
-                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                'success')
-        else:
-            self.assertTrue(True, "not supported before 6.0")
+        # TODO delete the setting from console first
+        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                         'success')
+        # doing a second time to verify set is behaving correctly (imdepotent)
+        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                         'success')
 
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom=conf["sut"]["vdom"])['status'],
@@ -299,13 +304,9 @@ class TestFortinetRestAPI(unittest.TestCase):
             parameters = {'destination': 'file',
                           'scope': 'vdom',
                           'vdom': conf["sut"]["vdom"]}
-        if Version(fgt.get_version()) >= Version('6.0'):
-            self.assertEqual(
-                fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
-                200)
-        else:
-            self.assertTrue(True, "not supported before 6.0")
-
+        self.assertEqual(
+            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code, 200)
+    ##TODO add an upload certificat test (no issues with messing up config)
     def test_setoverlayconfig(self):
         yamldata = '''
             antivirus:
