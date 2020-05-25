@@ -240,7 +240,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         
         show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
-        self.assertTrue(res)
+        self.assertTrue(res, "Found the route destination in the console output")
         self.assertEqual(fgt.set('router', 'static', data, vdom=conf["sut"]["vdom"])['http_status'], 200)
 
     # test which must return an error (500)
