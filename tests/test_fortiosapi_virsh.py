@@ -58,7 +58,7 @@ conf = yaml.load(open(virshconffile, 'r'), Loader=yaml.SafeLoader)
 # child.logfile = sys.stdout
 # TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
-logpexecpt = open("child.log", "wb")
+logpexecpt = open("virsconsole.log", "wb")
 child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
                       logfile=logpexecpt)
 child.delaybeforesend = 0.3
@@ -224,19 +224,27 @@ class TestFortinetRestAPI(unittest.TestCase):
             "device": conf["sut"]["porta"],
             "gateway": "192.168.40.252",
         }
-        # ensure the seq 8 for route is not present cmd will be ignored on non vdom
-        cmds = '''end
-        config vdom
-        edit root
-        config router static
-        delete 8
-        end
-        end'''
+        # ensure the seq 8 for route is not present cmd will be ignored
+        # assume that if vdom is root then multi-vdom is not activated.
+        if  conf["sut"]["vdom"] =="root":
+            cmds = '''end
+            config router static
+            delete 8
+            end
+            '''
+        else:
+            cmds = '''end
+            config vdom
+            edit ''' + conf["sut"]["vdom"] + '''
+            config router static
+            delete 8
+            end
+            end'''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router', 'static', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # vdom cmds will be ignored on non vdom
         cmds = '''config vdom
-        edit root
+        edit ''' + conf["sut"]["vdom"] + '''
         
         show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
@@ -318,14 +326,12 @@ class TestFortinetRestAPI(unittest.TestCase):
             parameters = {'destination': 'file',
                           'scope': 'vdom',
                           'vdom': conf["sut"]["vdom"]}
-        if Version(fgt.get_version()) > Version('6.0'):
-            http_result = 200
+        if Version(fgt.get_version()) >= Version('6.0'):
+            self.assertEqual(
+                fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
+                200)
         else:
-            http_result = 403
-        self.assertEqual(
-            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
-            http_result)
-    ##TODO add an upload certificat test (no issues with messing up config)
+            self.assertTrue(True, "not supported before 6.0")
 
     def test_setoverlayconfig(self):
         yamldata = '''
