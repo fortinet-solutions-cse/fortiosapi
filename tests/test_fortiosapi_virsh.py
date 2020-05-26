@@ -58,7 +58,7 @@ conf = yaml.load(open(virshconffile, 'r'), Loader=yaml.SafeLoader)
 # child.logfile = sys.stdout
 # TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
-logpexecpt = open("virsconsole.log", "wb")
+logpexecpt = open("virshconsole.log", "wb")
 child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
                       logfile=logpexecpt)
 child.delaybeforesend = 0.3
@@ -158,7 +158,7 @@ class TestFortinetRestAPI(unittest.TestCase):
             fgt.cert = None
             fgt._session.cert = None
         # ensure no previous session was left open
-        self.sendtoconsole("end\r")
+        self.sendtoconsole("get system status\r")
 
         try:
             apikey = conf["sut"]["api-key"]
@@ -206,11 +206,11 @@ class TestFortinetRestAPI(unittest.TestCase):
             "wildcard-fqdn": "*.acme.test",
             "type": "wildcard-fqdn",
         }
-        # ensure the seq 8 for route is not present
+        # ensure the all.acme.test address is not defined
         cmds = '''config firewall address
         delete all.acme.test
         end
-        end'''
+        '''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.set('firewall', 'address', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # doing it a second time to test put instead of post
@@ -227,18 +227,18 @@ class TestFortinetRestAPI(unittest.TestCase):
         # ensure the seq 8 for route is not present cmd will be ignored
         # assume that if vdom is root then multi-vdom is not activated.
         if  conf["sut"]["vdom"] =="root":
-            cmds = '''end
+            cmds = '''
             config router static
             delete 8
             end
             '''
         else:
-            cmds = '''end
+            cmds = '''
             config vdom
             edit ''' + conf["sut"]["vdom"] + '''
-            config router static
-            delete 8
-            end
+                config router static
+                delete 8
+                end
             end'''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router', 'static', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
