@@ -39,6 +39,7 @@ from packaging.version import Version
 ###################################################################
 from fortiosapi import FortiOSAPI
 
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -326,12 +327,14 @@ class TestFortinetRestAPI(unittest.TestCase):
             parameters = {'destination': 'file',
                           'scope': 'vdom',
                           'vdom': conf["sut"]["vdom"]}
+
         if Version(fgt.get_version()) >= Version('6.0'):
             self.assertEqual(
                 fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
                 200)
         else:
             self.assertTrue(True, "not supported before 6.0")
+
 
     def test_setoverlayconfig(self):
         yamldata = '''

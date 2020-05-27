@@ -96,6 +96,15 @@ class FortiOSAPI:
 
     @staticmethod
     def debug(status):
+        """
+        Set the debug to on to have all the debug information from the library
+        You should add logging.getLogger(\'fortiosapi\') to your log handler
+
+        :param status: on to set the log level to DEBUG
+        :return:
+            None
+        """
+
         if status == 'on':
             LOG.setLevel(logging.DEBUG)
 
@@ -109,12 +118,6 @@ class FortiOSAPI:
         if self._license == "Invalid":
             LOG.debug("License invalid detected")
             raise Exception("invalid license")
-
-        # try:
-        #    if res['http_status'] is 401:
-        #        raise Exception("http code 401 login or license invalid")
-        # except KeyError:
-        #    pass
 
         try:
             if vdom == "global":
@@ -132,12 +135,24 @@ class FortiOSAPI:
             return res
 
     def check_session(self):
+        """
+        Helper fonction to check if the session on the FortiOSAPI object is valid
+        :return:
+            True or raise NotLogged or InvalidLicense
+        """
         if not self._logged:
             raise NotLogged()
         if self._license == "Invalid":
             raise InvalidLicense()
 
     def https(self, status):
+        """
+        Allow to use http or https (default).
+        HTTP is necessary to use the API on unlicensed/trial Fortigates
+
+        :param status: 'on' to use https to connect to API, anything else will http
+        :return:
+        """
         if status == 'on':
             self._https = True
         if status == 'off':
@@ -156,6 +171,17 @@ class FortiOSAPI:
         LOG.debug("New session header is: %s", self._session.headers)
 
     def login(self, host, username, password, verify=True, cert=None, timeout=12, vdom="global"):
+        """
+
+        :param host:
+        :param username:
+        :param password:
+        :param verify:
+        :param cert:
+        :param timeout:
+        :param vdom:
+        :return:
+        """
         self.host = host
         LOG.debug("self._https is %s", self._https)
         if not self._https:
@@ -203,7 +229,17 @@ class FortiOSAPI:
             raise NotLogged
 
     def tokenlogin(self, host, apitoken, verify=True, cert=None, timeout=12, vdom="global"):
-        # if using apitoken method then login/passwd will be disabled
+        """
+        if using apitoken method then login/passwd will be disabled
+
+        :param host:
+        :param apitoken:
+        :param verify:
+        :param cert:
+        :param timeout:
+        :param vdom:
+        :return:
+        """
         self.host = host
         if not self._session:
             self._session = requests.session()
@@ -233,10 +269,21 @@ class FortiOSAPI:
         return True
 
     def get_version(self):
+        """
+
+        :return:
+        """
         self.check_session()
         return self._fortiversion
 
     def get_mkeyname(self, path, name, vdom=None):
+        """
+
+        :param path:
+        :param name:
+        :param vdom:
+        :return:
+        """
         # retreive the table mkey from schema
         schema = self.schema(path, name, vdom=vdom)
         try:
@@ -247,6 +294,14 @@ class FortiOSAPI:
         return keyname
 
     def get_mkey(self, path, name, data, vdom=None):
+        """
+
+        :param path:
+        :param name:
+        :param data:
+        :param vdom:
+        :return:
+        """
         # retreive the table mkey from schema
 
         keyname = self.get_mkeyname(path, name, vdom)
@@ -262,6 +317,10 @@ class FortiOSAPI:
             return mkey
 
     def logout(self):
+        """
+
+        :return:
+        """
         url = self.url_prefix + '/logout'
         res = self._session.post(url, timeout=self.timeout)
         self._session.close()
@@ -307,6 +366,19 @@ class FortiOSAPI:
         return url
 
     def download(self, path, name, vdom=None, mkey=None, parameters=None):
+        """
+        Use the download call on the monitoring part of the API.
+        Can get the config, logs etc..
+
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add parameters understood by the API call in json. Must set \"destination\": \"file\" and scope
+        :return:
+            The file is part of the returned json
+        """
         url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
         LOG.debug("in DOWNLOAD function")
@@ -315,6 +387,22 @@ class FortiOSAPI:
 
     def upload(self, path, name, vdom=None, mkey=None,
                parameters=None, data=None, files=None):
+        """
+        Upload a file (refer to the monitoring part), used for license, config, certificates etc.. uploads.
+
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param data: json containing the param/values of the object to be set
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :param files: the file to be uploaded
+        :return:
+            A formatted json with the last response from the API
+        """
+        # TODO should be file not files
+        # TODO add a test
         url = self.mon_url(path, name, vdom=vdom, mkey=mkey)
         res = self._session.post(url, params=parameters,
                                  data=data, files=files, timeout=self.timeout)
@@ -322,6 +410,19 @@ class FortiOSAPI:
         return res
 
     def get(self, path, name, vdom=None, mkey=None, parameters=None):
+        """
+        Execute a GET on the cmdb (i.e. configuration part) of the Fortios API
+
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :return:
+            A formatted json with the last response from the API, values are in return['results']
+
+        """
         url = self.cmdb_url(path, name, vdom, mkey=mkey)
         LOG.debug("Calling GET ( %s, %s)", url, parameters)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
@@ -329,6 +430,18 @@ class FortiOSAPI:
         return self.formatresponse(res, vdom=vdom)
 
     def monitor(self, path, name, vdom=None, mkey=None, parameters=None):
+        """
+        Execute a GET on the montioring part of the Fortios API
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :return:
+            A formatted json with the last response from the API, values are in return['results']
+
+        """
         url = self.mon_url(path, name, vdom, mkey)
         LOG.debug("in monitor url is %s", url)
         res = self._session.get(url, params=parameters, timeout=self.timeout)
@@ -371,8 +484,21 @@ class FortiOSAPI:
 
     def post(self, path, name, data, vdom=None,
              mkey=None, parameters=None):
-        # we always post to the upper name/path the mkey is in the data.
-        # So we can ensure the data set is correctly filled in case mkey is passed.
+        """
+         Execute a REST POST on the API. It will fail if the targeted object already exist.
+         When post to the upper name/path the mkey is in the data.
+         So we can ensure the data set is correctly filled in case mkey is passed.
+
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param data: json containing the param/values of the object to be set
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :return:
+            A formatted json with the last response from the API
+        """
         LOG.debug("in POST function")
         if mkey:
             mkeyname = self.get_mkeyname(path, name, vdom)
@@ -392,9 +518,22 @@ class FortiOSAPI:
 
     def execute(self, path, name, data, vdom=None,
                 mkey=None, parameters=None):
-        # execute is an action done on a running fortigate
-        # it is actually doing a post to the monitor part of the API
-        # we choose this name for clarity
+        """
+        Execute is an action done on a running fortigate
+        it is actually doing a post to the monitor part of the API
+        we choose this name for clarity
+
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param data: json containing the param/values of the object to be set
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :return:
+            A formatted json with the last response from the API
+
+        """
         LOG.debug("in EXEC function")
 
         url = self.mon_url(path, name, vdom, mkey=mkey)
@@ -406,6 +545,20 @@ class FortiOSAPI:
 
     def put(self, path, name, vdom=None,
             mkey=None, parameters=None, data=None):
+        """
+        Execute a REST PUT on the specified object with parameters in the data field as
+        a json formatted field
+
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param data: json containing the param/values of the object to be set
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :return:
+            A formatted json with the last response from the API
+        """
         if not mkey:
             mkey = self.get_mkey(path, name, data, vdom=vdom)
         url = self.cmdb_url(path, name, vdom, mkey)
@@ -416,6 +569,22 @@ class FortiOSAPI:
 
     def move(self, path, name, vdom=None, mkey=None,
              where=None, reference_key=None, parameters={}):
+        # TODO add a test in the tOx suit
+        """
+        Move an object in a cmdb table (firewall/policies for example).
+        Usefull for reordering too
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param data: json containing the param/values of the object to be set
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :param where: the destination mkey in the table
+        :param reference_key: the origin mkey in the table
+        :return:
+            A formatted json with the last response from the API
+        """
         url = self.cmdb_url(path, name, vdom, mkey)
         parameters['action'] = 'move'
         parameters[where] = str(reference_key)
@@ -425,6 +594,19 @@ class FortiOSAPI:
 
     def delete(self, path, name, vdom=None,
                mkey=None, parameters=None, data=None):
+        """
+        Delete a pointed object in the cmdb.
+
+        :param path: first part of the Fortios API URL like
+        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param data: json containing the param/values of the object to be set
+        :param mkey: when the cmdb object have a subtable mkey represent the subobject.
+                     It is optionnal at creation the code will find the mkey name for you.
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
+        :return:
+            A formatted json with the last response from the API
+        """
         # Need to find the type of the mkey to avoid error when integer assume
         # the other types will be ok.
         if not mkey:
@@ -436,7 +618,7 @@ class FortiOSAPI:
         LOG.debug("in DELETE function")
         return self.formatresponse(res, vdom=vdom)
 
-    # Set will try to put if err code is 424 will try put (ressource exists)
+    # Set will try to put if err code is 424 will try post (424 is ressource exists)
     # may add a force option to delete and redo if troubles.
     def set(self, path, name, data, mkey=None, vdom=None, parameters=None):
         """
@@ -449,9 +631,10 @@ class FortiOSAPI:
         :param data: json containing the param/values of the object to be set
         :param mkey: when the cmdb object have a subtable mkey represent the subobject.
                      It is optionnal at creation the code will find the mkey name for you.
-        :param vdom:
-        :param parameters:
+        :param vdom: the vdom on which you want to apply config or global for global settings
+        :param parameters: Add on parameters understood by the API call can be \"&select=\" for example
         :return:
+            A formatted json with the last response from the API
         """
         # post with mkey will return a 404 as the next level is not there yet
         if not mkey:
@@ -475,7 +658,17 @@ class FortiOSAPI:
 
     @staticmethod
     def ssh(cmds, host, user, password=None, port=22):
-        """ Send a multi line string via ssh to the fortigate """
+        """
+        DEPRECATED use paramiko directly.
+        Send a multi line string via ssh to the fortigate
+
+        :param cmds: multi line string with the Fortigate config cli
+        :param host: ip/hostname of the fortigate interface
+        :param user/password: fortigate admin user and password
+        :param port: port 22 if not set or a port on which fortigate listen for ssh commands.
+        :return:
+            The output of the console commands and raise exception if failed
+        """
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(host, port=port, username=user, password=password,
@@ -507,10 +700,17 @@ class FortiOSAPI:
         return ''.join(str(results)), ''.join(str(stderr.read().strip()))
 
     def license(self, vdom="root"):
-        # license check and update
-        # GET /api/v2/monitor/license/status
-        # force (exec update-now) with FortiGuard if invalid
-        # POST api/v2/monitor/system/fortiguard/update
+        """
+        license check and update:
+         - GET /api/v2/monitor/license/status
+         - If pending (exec update-now) with FortiGuard if invalid
+           POST api/v2/monitor/system/fortiguard/update and do the GET again
+          Convinient when Fortigate starts and license validity takes time.
+
+        :param vdom: root by default, can be global to do a global check
+        :return:
+            True if license is valid at the end of the process
+        """
         resp = self.monitor('license', 'status', vdom=vdom)
         if resp['status'] == 'success':
             LOG.debug("response monitor license status: %s", resp)
@@ -529,11 +729,22 @@ class FortiOSAPI:
                 return resp2
 
     def setoverlayconfig(self, yamltree, vdom=None):
-        # take a yaml tree with name: path: mkey: structure and recursively set the values.
-        # create a copy to only keep the leaf as node (table firewall rules etc
-        # Split the tree in 2 yaml objects
+        """
+        take a yaml tree with
+        name:
+            path:
+                mkey:
+        structure and recursively set the values.
+        create a copy to only keep the leaf as node (table firewall rules etc
+        Split the tree in 2 yaml objects and iterates)
+        Update the higher level, up to tables as those config parameters may influence which param are allowed
+        in the level 3 table
+        :param yamltree: a yaml formatted string of the differents part of CMDB to be changed
+        :param vdom: (optionnal) default is root, can use vdom=global to swtich to global settings.
+        :return:
 
-        yamltreel3 = OrderedDict()
+        """
+
         yamltreel3 = copy.deepcopy(yamltree)
         LOG.debug("initial yamltreel3 is %s ", yamltreel3)
         for name in yamltree.copy():
@@ -581,5 +792,5 @@ class FortiOSAPI:
                         restree = False
                         break
 
-        #   Must defined a coherent returned value out
+        # TODO   Must defined a coherent returned value out
         return restree
