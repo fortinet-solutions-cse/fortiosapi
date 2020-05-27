@@ -1,20 +1,26 @@
-# fortiosAPI overview
+
+## fortiosAPI Overview
+
 
 Opensource python library to configure Fortigate/Fortios devices (Fortigate REST API)
 
-## Ready for config management.
+### Ready for config management.
 Compare to the REST API there a few add-ons:
  In addition to get,put,post,delete methods there is a set which will
  try to post and if failing will put and collect the mkey directly.
  The lib will also find the mkey for you 
  
-## Examples
+
+### Examples
+
+
 
 You can find and propose examples here: https://github.com/fortinet-solutions-cse/fortiosapi-examples 
 Separated to avoid cluttering those who integrate the fortiosapi module.
 
  
-## Overlay complex configuration
+
+### New overlay configuration
 
 You now have an overlayconfig call which can be pass a complex configuration change in yaml. 
 Including multiple endpoints (name/path) as the simple example below shows:
@@ -50,40 +56,41 @@ Will fail if one of the set fails.
 
 Order in the yaml is preserved.
 
-## Login methods
+### Login methods
 User/password
 
 Token (api key) documented in the Fortigate API Spec that you can find if having an account on http://fndn.fortinet.net/
 
-## Multi vdom
+### Multi vdom
 In multi vdom environment use vdom=global in the API call.
 As it is a reserved word the API will switch to use the global=1 and
 take care of the differences in the repsonses.
 
-## Schema
+### Schema
 There is a get_schema call and an example to get the schema of the
 differents methods to ease writting them.
 
-## License (5.6)
+### License (5.6)
 A rest call to check and force license validation check starting with 5.6
 See license.
 usage of schema and mkey for every call for 5.6 
 
 License validity is now checked at login 
 
-## Versions
+### Versions
 
 
-## Test driven development
+### Test driven development
 In tests folder you will find a tox based set of tests as examples.
 The test_fortiosapi_virsh need you to have virsh access, especially to the console.
 This allow to perform actions automatically from the CLI and check API calls actual results.
 Other tests are welcomed.
 
-## Files upload/download
+### Files upload/download
 You will find the calls to exchange files (config, logs, licenses) with Fortigate in this LIB
 
 
-## Known Usage
-Fortiosapi library is known to be used in Home assistant, former Ansible modules and in Cloudify plugins. 
+### Known Usage
+Fortiosapi library is used in Home-Assistant, Fortinet Ansible modules and in Cloudify plugins. 
+
 Maintained mainly by Fortinet employees. 

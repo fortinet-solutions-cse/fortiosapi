@@ -18,10 +18,13 @@
 import logging
 import os
 import re
+import time
 import unittest
 
 import oyaml as yaml
 import pexpect
+# Disable ssl verification warnings (be responsible)
+import urllib3
 from packaging.version import Version
 
 ###################################################################
@@ -37,8 +40,6 @@ from packaging.version import Version
 from fortiosapi import FortiOSAPI
 
 
-# Disable ssl verification warnings (be responsible)
-import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -58,7 +59,7 @@ conf = yaml.load(open(virshconffile, 'r'), Loader=yaml.SafeLoader)
 # child.logfile = sys.stdout
 # TODO add the option to run on a remote VM with -c qemu+ssh://
 fgt.debug('on')
-logpexecpt = open("child.log", "wb")
+logpexecpt = open("virshconsole.log", "wb")
 child = pexpect.spawn('virsh', ['console', str(conf["sut"]["vmname"]).strip()],
                       logfile=logpexecpt)
 child.delaybeforesend = 0.3
@@ -98,16 +99,17 @@ class TestFortinetRestAPI(unittest.TestCase):
             r = child.expect(['.* login:', '.* #', '.* $', 'Escape character'])
             if r == 0:
                 child.send(conf["sut"]["user"] + "\n")
-                rr = child.expect(["Password:", '.* #', '.* $'], timeout=6)
+                rr = child.expect(["Password:", '.* #', '.* $'], timeout=10)
                 if rr == 0:
                     child.send(conf["sut"]["passwd"] + "\n")
-                    child.expect(['.* #', '.* $'], timeout=8)
+                    child.expect(['.* #', '.* $'], timeout=9)
                     logged = True
                 if rr in (1,2):
                     child.sendline('\n')
                     logged = True
                 if rr > 2:
                     child.sendline('end\n')
+                    child.sendline('exit\n')
                     logged = False
             if r in (1,2):
                 child.sendline('\n')
@@ -126,7 +128,6 @@ class TestFortinetRestAPI(unittest.TestCase):
             except:
                 r = 99
                 result = False
-                pass
             if r != 0:
                 result = False
         return result
@@ -158,7 +159,7 @@ class TestFortinetRestAPI(unittest.TestCase):
             fgt.cert = None
             fgt._session.cert = None
         # ensure no previous session was left open
-        self.sendtoconsole("end\r")
+        self.sendtoconsole("get system status\r")
 
         try:
             apikey = conf["sut"]["api-key"]
@@ -174,6 +175,17 @@ class TestFortinetRestAPI(unittest.TestCase):
     def test_01logout_login(self):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program
         # can include changing login/vdom passwd on the same session
+        # Check the  license validity/force a license update and wait in license call..
+        if Version(fgt.get_version()) > Version('5.6'):
+            try:
+                self.assertTrue(fgt.license()['results']['vm']['status'] == "vm_valid" or "vm_eval")
+            except KeyError:
+                time.sleep(35)
+        else:
+            self.assertTrue(True, "not supported before 5.6")
+            time.sleep(35)
+        # do a logout then login again
+        # TODO a expcetion check
         self.assertEqual(fgt.logout(), None)
         self.test_00login()
 
@@ -195,11 +207,11 @@ class TestFortinetRestAPI(unittest.TestCase):
             "wildcard-fqdn": "*.acme.test",
             "type": "wildcard-fqdn",
         }
-        # ensure the seq 8 for route is not present
+        # ensure the all.acme.test address is not defined
         cmds = '''config firewall address
         delete all.acme.test
         end
-        end'''
+        '''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.set('firewall', 'address', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # doing it a second time to test put instead of post
@@ -213,22 +225,31 @@ class TestFortinetRestAPI(unittest.TestCase):
             "device": conf["sut"]["porta"],
             "gateway": "192.168.40.252",
         }
-        # ensure the seq 8 for route is not present cmd will be ignored on non vdom
-        cmds = '''end
-        config vdom
-        edit root
-        config router static
-        delete 8
-        end
-        end'''
+        # ensure the seq 8 for route is not present cmd will be ignored
+        # assume that if vdom is root then multi-vdom is not activated.
+        if  conf["sut"]["vdom"] =="root":
+            cmds = '''
+            config router static
+            delete 8
+            end
+            '''
+        else:
+            cmds = '''
+            config vdom
+            edit ''' + conf["sut"]["vdom"] + '''
+                config router static
+                delete 8
+                end
+            end'''
         self.sendtoconsole(cmds)
         self.assertEqual(fgt.post('router', 'static', data=data, vdom=conf["sut"]["vdom"])['http_status'], 200)
         # vdom cmds will be ignored on non vdom
         cmds = '''config vdom
-        edit root
+        edit ''' + conf["sut"]["vdom"] + '''
+        
         show router static 8'''
         res = self.sendtoconsole(cmds, in_output="192.168.40.252")
-        self.assertTrue(res)
+        self.assertTrue(res, "Found the route destination in the console output")
         self.assertEqual(fgt.set('router', 'static', data, vdom=conf["sut"]["vdom"])['http_status'], 200)
 
     # test which must return an error (500)
@@ -282,29 +303,39 @@ class TestFortinetRestAPI(unittest.TestCase):
             "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
             "geo-filter": ""
         }
-
-        # TODO delete the setting from console first
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                         'success')
-        # doing a second time to verify set is behaving correctly (imdepotent)
-        self.assertEqual(fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                         'success')
+        if Version(fgt.get_version()) > Version('6.0'):
+            # TODO delete the setting from console first
+            self.assertEqual(
+                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                'success')
+            # doing a second time to verify set is behaving correctly (imdepotent)
+            self.assertEqual(
+                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+                'success')
+        else:
+            self.assertTrue(True, "not supported before 6.0")
 
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom=conf["sut"]["vdom"])['status'],
                          'success')
 
     def test_downloadconfig(self):
-        if conf["sut"]["vdom"] is "global":
+        if conf["sut"]["vdom"] == "global":
             parameters = {'destination': 'file',
                           'scope': 'global'}
         else:
             parameters = {'destination': 'file',
                           'scope': 'vdom',
                           'vdom': conf["sut"]["vdom"]}
-        self.assertEqual(
-            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code, 200)
-    ##TODO add an upload certificat test (no issues with messing up config)
+
+        if Version(fgt.get_version()) >= Version('6.0'):
+            self.assertEqual(
+                fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
+                200)
+        else:
+            self.assertTrue(True, "not supported before 6.0")
+
+
     def test_setoverlayconfig(self):
         yamldata = '''
             antivirus:

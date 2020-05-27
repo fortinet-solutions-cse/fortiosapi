@@ -211,10 +211,19 @@ class FortiOSAPI:
             self.update_cookie()
             self._logged = True
             LOG.debug("host is %s", host)
-            resp_lic = self.get('system', 'status', vdom=vdom)
+            param = "{ vdom = " + vdom + " }"
+            resp_lic = self.monitor('license', 'status', parameters = param)
             LOG.debug("response system/status : %s", resp_lic)
-            self._fortiversion = resp_lic['version']
-            return True
+            try:
+                self._fortiversion = resp_lic['version']
+                return True
+            except KeyError:
+                if resp_lic['status'] == 'success':
+                    self._logged = True
+                    return True
+                else:
+                    self._logged = False
+                    raise NotLogged
         else:
             self._logged = False
             raise NotLogged
