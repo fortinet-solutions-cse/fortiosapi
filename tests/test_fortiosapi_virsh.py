@@ -1,4 +1,20 @@
 #!/usr/bin/env python
+# Copyright 2015 Fortinet, Inc.
+#
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
 import logging
 import os
 import re
@@ -20,22 +36,10 @@ from packaging.version import Version
 ###################################################################
 from fortiosapi import FortiOSAPI
 
-# Copyright 2015 Fortinet, Inc.
-#
-# All Rights Reserved
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
+
+# Disable ssl verification warnings (be responsible)
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 logger = logging.getLogger('fortiosapi')
@@ -71,6 +75,13 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     @staticmethod
     def sendtoconsole(cmds, in_output=" "):
+        """
+        Send config cli command through the virsh console in order to autoverify what the API calls does or
+        prepare the Fortigate under test.
+        :param cmds:
+        :param in_output:
+        :return:
+        """
         # Use pexpect to interact with the console
         # check the prompt then send output
         # return True if commands sent and if output found
@@ -122,7 +133,15 @@ class TestFortinetRestAPI(unittest.TestCase):
 
 
     def test_00login(self):
-        # adapt if using eval license or not
+        """
+        Login to the Fortigate under test.
+        User/password or API TOKEN are in config file virsh.yaml
+        Can be changed by environment variable VIRSH_CONF_FILE
+        If API TOKEN is present in the test conf file then we do API login
+        If not do user/password
+        :return:
+            Success/Failure this is a unit test
+        """
         if conf["sut"]["ssl"] == "yes":
             fgt.https('on')
         else:
@@ -285,7 +304,7 @@ class TestFortinetRestAPI(unittest.TestCase):
                           'vdom': conf["sut"]["vdom"]}
         self.assertEqual(
             fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code, 200)
-
+    ##TODO add an upload certificat test (no issues with messing up config)
     def test_setoverlayconfig(self):
         yamldata = '''
             antivirus:

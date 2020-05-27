@@ -1,6 +1,6 @@
-# fortiosAPI
+# fortiosAPI overview
 
-Python library to configure Fortigate/Fortios devices (REST API and SSH)
+Opensource python library to configure Fortigate/Fortios devices (Fortigate REST API)
 
 ## Ready for config management.
 Compare to the REST API there a few add-ons:
@@ -8,12 +8,13 @@ Compare to the REST API there a few add-ons:
  try to post and if failing will put and collect the mkey directly.
  The lib will also find the mkey for you 
  
-##Examples
+## Examples
 
 You can find and propose examples here: https://github.com/fortinet-solutions-cse/fortiosapi-examples 
 Separated to avoid cluttering those who integrate the fortiosapi module.
+
  
-## New overlay configuration
+## Overlay complex configuration
 
 You now have an overlayconfig call which can be pass a complex configuration change in yaml. 
 Including multiple endpoints (name/path) as the simple example below shows:
@@ -43,9 +44,11 @@ firewall:
       'logtraffic': "all"
 ```
 
-The behaviour will be the change the parameters at the higher level first then do a serie of set on the tables.
+The behaviour is to change the parameters at the higher level in the CMDB tree first then do a serie of set on the tables.
+
 Will fail if one of the set fails. 
-Order of commands should be preserved.
+
+Order in the yaml is preserved.
 
 ## Login methods
 User/password
@@ -82,5 +85,5 @@ You will find the calls to exchange files (config, logs, licenses) with Fortigat
 
 
 ## Known Usage
-Fortiosapi library is used in Fortinet Ansible modules and in Cloudify plugins. 
+Fortiosapi library is known to be used in Home assistant, former Ansible modules and in Cloudify plugins. 
 Maintained mainly by Fortinet employees. 
