@@ -3,6 +3,7 @@ sut:
   # could be qemu+ssh://ip/system
   ip: 40domain.com
   vmname: "fostest"
+  version: "6.0.2"
   vdom: "root"
   user: "admin"
   # Password is mandatory for vish console access
