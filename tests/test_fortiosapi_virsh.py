@@ -198,7 +198,7 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     #        self.assertEqual(fgt.set('system', 'interface', vdom="global", data=data)['http_status'], 200)
 
-    def check_version(self):
+    def test_check_version(self):
         self.assertEqual(conf["sut"]["version"],fgt.get_version())
 
     def test_setfirewalladdress(self):
