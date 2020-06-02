@@ -158,7 +158,6 @@ class TestFortinetRestAPI(unittest.TestCase):
             fgt.cert = None
             fgt._session.cert = None
         # ensure no previous session was left open
-        self.sendtoconsole("get system status")
 
         try:
             apikey = conf["sut"]["api-key"]
@@ -199,7 +198,7 @@ class TestFortinetRestAPI(unittest.TestCase):
     #        self.assertEqual(fgt.set('system', 'interface', vdom="global", data=data)['http_status'], 200)
 
     def test_check_version(self):
-        self.assertEqual(conf["sut"]["version"],fgt.get_version())
+        self.assertEqual("v"+conf["sut"]["version"],fgt.get_version())
 
     def test_setfirewalladdress(self):
         data = {
