@@ -39,7 +39,6 @@ from packaging.version import Version
 ###################################################################
 from fortiosapi import FortiOSAPI
 
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 formatter = logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -96,26 +95,26 @@ class TestFortinetRestAPI(unittest.TestCase):
 
         logged = False
         while not logged:
-            r = child.expect(['.* login:', '.* #', '.* $', 'Escape character'])
+            r = child.expect(['.* login:', '.* # ', '.* $ ', 'Escape character', 'Password:'], timeout=3)
             if r == 0:
-                child.send(conf["sut"]["user"] + "\n")
-                rr = child.expect(["Password:", '.* #', '.* $'], timeout=10)
+                child.sendline(conf["sut"]["user"])
+                rr = child.expect(["Password:", '.* # ', '.* $ '], timeout=3)
                 if rr == 0:
-                    child.send(conf["sut"]["passwd"] + "\n")
-                    child.expect(['.* #', '.* $'], timeout=9)
+                    child.sendline(conf["sut"]["passwd"])
+                    child.expect(['.* # ', '.* $ '], timeout=2)
                     logged = True
-                if rr in (1,2):
+                if rr in (1, 2):
                     child.sendline('\n')
                     logged = True
                 if rr > 2:
                     child.sendline('end\n')
                     child.sendline('exit\n')
                     logged = False
-            if r in (1,2):
+            if r in (1, 2):
                 child.sendline('\n')
-                child.expect(['.* #', '.* $'])
+                child.expect(['.* # ', '.* $ '], timeout=2)
                 logged = True
-            if r == 3:
+            if r > 3:
                 child.sendline('\n')
                 logged = False
         result = True
@@ -124,13 +123,13 @@ class TestFortinetRestAPI(unittest.TestCase):
 
         if in_output:
             try:
-                r = child.expect([in_output], timeout=6)
+                r = child.expect([in_output], timeout=2)
             except:
                 r = 99
                 result = False
             if r != 0:
                 result = False
-        return result
+        return result, child.readline()
 
 
     def test_00login(self):
@@ -159,7 +158,6 @@ class TestFortinetRestAPI(unittest.TestCase):
             fgt.cert = None
             fgt._session.cert = None
         # ensure no previous session was left open
-        self.sendtoconsole("get system status\r")
 
         try:
             apikey = conf["sut"]["api-key"]
@@ -170,7 +168,6 @@ class TestFortinetRestAPI(unittest.TestCase):
                              True)
         except Exception as e:
             self.fail("issue in the virsh yaml definition : %s" + str(e))
-
 
     def test_01logout_login(self):
         # This test if we properly regenerate the CSRF from the cookie when not restarting the program
@@ -200,6 +197,8 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     #        self.assertEqual(fgt.set('system', 'interface', vdom="global", data=data)['http_status'], 200)
 
+    def test_check_version(self):
+        self.assertEqual("v"+conf["sut"]["version"],fgt.get_version())
 
     def test_setfirewalladdress(self):
         data = {
@@ -271,11 +270,9 @@ class TestFortinetRestAPI(unittest.TestCase):
 
     @unittest.skipIf(conf["sut"]["vdom"] != "root",
                      "not allowed for non admin vdom")
+    @unittest.skipIf(Version(conf["sut"]["version"]) < Version('6.0'), "not supported before 6.0")
     def test_is_license_valid(self):
-        if Version(fgt.get_version()) > Version('5.6'):
-            self.assertTrue(fgt.license()['results']['vm']['status'] == "vm_valid" or "vm_eval")
-        else:
-            self.assertTrue(True, "not supported before 5.6")
+        self.assertTrue(fgt.license()['results']['vm']['status'] == "vm_valid" or "vm_eval")
 
     @unittest.skipIf(conf["sut"]["vdom"] != "root",
                      "not allowed for non admin vdom")
@@ -295,6 +292,7 @@ class TestFortinetRestAPI(unittest.TestCase):
         self.assertEqual(fgt.execute('system', 'fortiguard', None, mkey="update", vdom=conf["sut"]["vdom"])['status'],
                          'success')
 
+    @unittest.skipIf(Version(conf["sut"]["version"])< Version('6.0'),"not supported before 6.0")
     def test_webfilteripsv_set(self):
         # This call does not have mkey
         data = {
@@ -303,22 +301,19 @@ class TestFortinetRestAPI(unittest.TestCase):
             "gateway6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
             "geo-filter": ""
         }
-        if Version(fgt.get_version()) > Version('6.0'):
-            # TODO delete the setting from console first
-            self.assertEqual(
-                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                'success')
-            # doing a second time to verify set is behaving correctly (imdepotent)
-            self.assertEqual(
-                fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
-                'success')
-        else:
-            self.assertTrue(True, "not supported before 6.0")
+        self.assertEqual(
+            fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+            'success')
+        # doing a second time to verify set is behaving correctly (imdepotent)
+        self.assertEqual(
+            fgt.set('webfilter', 'ips-urlfilter-setting6', vdom=conf["sut"]["vdom"], data=data)['status'],
+            'success')
 
     def test_monitorresources(self):
         self.assertEqual(fgt.monitor('system', 'vdom-resource', mkey='select', vdom=conf["sut"]["vdom"])['status'],
                          'success')
 
+    @unittest.skipIf(Version(conf["sut"]["version"])< Version('6.0'),"not supported before 6.0")
     def test_downloadconfig(self):
         if conf["sut"]["vdom"] == "global":
             parameters = {'destination': 'file',
@@ -327,14 +322,9 @@ class TestFortinetRestAPI(unittest.TestCase):
             parameters = {'destination': 'file',
                           'scope': 'vdom',
                           'vdom': conf["sut"]["vdom"]}
-
-        if Version(fgt.get_version()) >= Version('6.0'):
-            self.assertEqual(
-                fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
-                200)
-        else:
-            self.assertTrue(True, "not supported before 6.0")
-
+        self.assertEqual(
+            fgt.download('system/config', 'backup', vdom=conf["sut"]["vdom"], parameters=parameters).status_code,
+            200)
 
     def test_setoverlayconfig(self):
         yamldata = '''
@@ -417,9 +407,8 @@ class TestFortinetRestAPI(unittest.TestCase):
     # tests are run on alphabetic sorting so this must be last call
     def test_zzlogout(self):
         # close the console session too
-        self.sendtoconsole("exit\r")
-        self.sendtoconsole("\r")
-        child.terminate()
+        self.sendtoconsole("exit")
+        child.close()
         logpexecpt.close()  # avoid py35 warning
         self.assertEqual(fgt.logout(), None)
 
