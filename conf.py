@@ -23,7 +23,7 @@ author = 'Nicolas Thomas'
 
 # The full version, including alpha/beta/rc tags
 release = '1.0.3'
-
+master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
@@ -31,8 +31,10 @@ release = '1.0.3'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc', 'recommonmark'
+    'sphinx.ext.autodoc', 'recommonmark', 'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',    'sphinx.ext.viewcode',
 ]
+##src https://opensource.com/article/19/11/document-python-sphinx
 source_suffix = {
     '.rst': 'restructuredtext',
     '.txt': 'markdown',
