@@ -433,7 +433,7 @@ class FortiOSAPI:
         """
         Execute a GET on the montioring part of the Fortios API
         :param path: first part of the Fortios API URL like
-        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param name: https://myfgt:8040/api/v2/monitor/<path>/<name>
         :param mkey: when the cmdb object have a subtable mkey represent the subobject.
                      It is optionnal at creation the code will find the mkey name for you.
         :param vdom: the vdom on which you want to apply config or global for global settings
@@ -524,7 +524,7 @@ class FortiOSAPI:
         we choose this name for clarity
 
         :param path: first part of the Fortios API URL like
-        :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
+        :param name: https://myfgt:8040/api/v2/monitor/<path>/<name>
         :param data: json containing the param/values of the object to be set
         :param mkey: when the cmdb object have a subtable mkey represent the subobject.
                      It is optionnal at creation the code will find the mkey name for you.
