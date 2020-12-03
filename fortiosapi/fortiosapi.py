@@ -172,14 +172,16 @@ class FortiOSAPI:
 
     def login(self, host, username, password, verify=True, cert=None, timeout=12, vdom="global"):
         """
+        Initialize the connection to the API with the related credentials.
+        Further calls on the object will reuse the session initiated here.
 
-        :param host:
-        :param username:
-        :param password:
-        :param verify:
-        :param cert:
-        :param timeout:
-        :param vdom:
+        :param host: ip or name (fqdn) can include a port like 10.40.40.40:8443
+        :param username: name of API user
+        :param password: password of API user
+        :param verify: True verify validity of the Fortigate API ssl certificate, False ignore
+        :param cert: client certificate to authenticate
+        :param timeout: global timeout on the url session
+        :param vdom: default is root, can use global or name of the vdom to use
         :return:
         """
         self.host = host
@@ -230,14 +232,16 @@ class FortiOSAPI:
 
     def tokenlogin(self, host, apitoken, verify=True, cert=None, timeout=12, vdom="global"):
         """
-        if using apitoken method then login/passwd will be disabled
+        Initialize the connection to the API with the related apitoken.
+        Further calls on the object will reuse the session initiated here.
+        Using apitoken method then login/passwd will be disabled
 
-        :param host:
-        :param apitoken:
-        :param verify:
-        :param cert:
-        :param timeout:
-        :param vdom:
+        :param host: ip or name (fqdn) can include a port like 10.40.40.40:8443
+        :param apitoken: Token obtained on the Fortigate or forced see official doc
+        :param verify: True verify validity of the Fortigate API ssl certificate, False ignore
+        :param cert: client certificate to authenticate
+        :param timeout: global timeout on the url session
+        :param vdom: default is root, can use global or name of the vdom to use
         :return:
         """
         self.host = host
@@ -271,7 +275,7 @@ class FortiOSAPI:
     def get_version(self):
         """
 
-        :return:
+        :return: the version of the fortigate used
         """
         self.check_session()
         return self._fortiversion
@@ -575,7 +579,6 @@ class FortiOSAPI:
         Usefull for reordering too
         :param path: first part of the Fortios API URL like
         :param name: https://myfgt:8040/api/v2/cmdb/<path>/<name>
-        :param data: json containing the param/values of the object to be set
         :param mkey: when the cmdb object have a subtable mkey represent the subobject.
                      It is optionnal at creation the code will find the mkey name for you.
         :param vdom: the vdom on which you want to apply config or global for global settings
