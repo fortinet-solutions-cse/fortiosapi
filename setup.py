@@ -20,7 +20,7 @@ setup(
         'Topic :: Security',
     ],
     keywords='Fortinet fortigate fortios rest api',
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     install_requires=['requests', 'paramiko', 'oyaml'],
     author='Nicolas Thomas',
     author_email='nthomas@fortinet.com',
