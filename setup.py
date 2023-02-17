@@ -21,7 +21,7 @@ setup(
     ],
     keywords='Fortinet fortigate fortios rest api',
     packages=find_packages(),
-    install_requires=['requests', 'paramiko', 'oyaml'],
+    install_requires=['requests', 'paramiko', 'oyaml', 'six'],
     author='Nicolas Thomas',
     author_email='nthomas@fortinet.com',
     url='https://github.com/fortinet-solutions-cse/fortiosapi',
