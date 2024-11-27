@@ -264,7 +264,7 @@ class FortiOSAPI:
         self.timeout = timeout
 
         LOG.debug("host is %s", host)
-        resp_lic = self.get('system', 'status', vdom=vdom)
+        resp_lic = self.monitor('system', 'status', vdom=vdom)
         LOG.debug("response system/status : %s", resp_lic)
         try:
             self._fortiversion = resp_lic['version']
